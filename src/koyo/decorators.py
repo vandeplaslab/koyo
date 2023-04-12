@@ -1,3 +1,4 @@
+"""Decorators."""
 import functools
 import warnings
 

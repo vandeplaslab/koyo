@@ -7,7 +7,7 @@
     <content url="file://$MODULE_DIR$/../yugo/src">
       <sourceFolder url="file://$MODULE_DIR$/../yugo/src" isTestSource="false" />
     </content>
-    <orderEntry type="inheritedJdk" />
+    <orderEntry type="jdk" jdkName="jupyter" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

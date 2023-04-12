@@ -4,6 +4,8 @@ import typing as ty
 import numba
 import numpy as np
 
+from koyo.typing import SimpleArrayLike
+
 
 @numba.njit(fastmath=True, cache=True)
 def ppm_error(
@@ -46,13 +48,15 @@ def ppm_diff(a: np.ndarray, axis=-1) -> np.ndarray:
 
 
 @numba.njit()
-def find_between(data: np.ndarray, min_value: float, max_value: float):
+def find_between(
+    data: SimpleArrayLike, min_value: float, max_value: float
+) -> np.ndarray:
     """Find indices between windows."""
     return np.where(np.logical_and(data >= min_value, data <= max_value))[0]
 
 
 @numba.njit()
-def find_between_ppm(data: np.ndarray, value: float, ppm: float):
+def find_between_ppm(data: SimpleArrayLike, value: float, ppm: float):
     """Find indices between window and ppm."""
     window = get_window_for_ppm(value, abs(ppm))
     return find_between(data, value - window, value + window)
