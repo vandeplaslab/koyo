@@ -2,24 +2,107 @@
 import re
 import typing as ty
 import unicodedata
+from collections.abc import Iterable
 from math import ceil
 
+import numba as nb
 import numpy as np
 
-__all__ = [
-    "get_value",
-    "rescale",
-    "rescale_value",
-    "chunks",
-    "zip_chunks",
-    "sequential_chunks",
-    "get_min_max",
-    "check_image_orientation",
-    "slugify",
-    "get_kws",
-    "format_count",
-    "format_size",
-]
+from koyo.typing import SimpleArrayLike
+
+
+@nb.njit()
+def find_nearest_index_array(
+    data: SimpleArrayLike, value: ty.Union[np.ndarray, ty.Iterable]
+) -> np.ndarray:
+    """Find nearest index of asked value.
+
+    Parameters
+    ----------
+    data : ArrayLike
+        input array (e.g. m/z values)
+    value : Union[int, float, np.ndarray]
+        asked value
+
+    Returns
+    -------
+    index :
+        index value
+    """
+    data = np.asarray(data)
+    return np.asarray([np.argmin(np.abs(data - _value)) for _value in value])
+
+
+@nb.njit()
+def find_nearest_index_single(data: SimpleArrayLike, value: ty.Union[int, float]):
+    """Find nearest index of asked value.
+
+    Parameters
+    ----------
+    data : ArrayLike
+        input array (e.g. m/z values)
+    value : Union[int, float, np.ndarray]
+        asked value
+
+    Returns
+    -------
+    index :
+        index value
+    """
+    return np.argmin(np.abs(data - value))
+
+
+def find_nearest_index(
+    data: np.ndarray, value: ty.Union[int, float, np.ndarray, Iterable]
+):
+    """Find nearest index of asked value.
+
+    Parameters
+    ----------
+    data : np.array
+        input array (e.g. m/z values)
+    value : Union[int, float, np.ndarray]
+        asked value
+
+    Returns
+    -------
+    index :
+        index value
+    """
+    data = np.asarray(data)
+    if isinstance(value, Iterable):
+        return np.asarray(
+            [np.argmin(np.abs(data - _value)) for _value in value], dtype=np.int64
+        )
+    return np.argmin(np.abs(data - value))
+
+
+def find_nearest_index_batch(array: np.ndarray, values: np.ndarray) -> np.ndarray:
+    """Find nearest index."""
+    # make sure array is a numpy array
+    array = np.asarray(array)
+    values = np.asarray(values)
+    if not array.size or not values.size:
+        return np.array([])
+
+    # get insert positions
+    idxs = np.searchsorted(array, values, side="left")
+
+    # find indexes where previous index is closer
+    prev_idx_is_less = (idxs == len(array)) | (
+        np.fabs(values - array[np.maximum(idxs - 1, 0)])
+        < np.fabs(values - array[np.minimum(idxs, len(array) - 1)])
+    )
+    idxs[prev_idx_is_less] -= 1
+    return idxs
+
+
+def find_nearest_value(
+    data: ty.Iterable, value: ty.Union[int, float, np.ndarray, Iterable]
+):
+    """Find nearest value."""
+    idx = find_nearest_index(data, value)
+    return data[idx]
 
 
 def get_kws(func: ty.Callable, **kwargs) -> ty.Dict:
@@ -252,3 +335,27 @@ def slugify(value, allow_unicode=False):
         )
     value = re.sub(r"[^.=\w\s-]", "", value.lower())
     return re.sub(r"[-\s]+", "-", value).strip("-_")
+
+
+def get_array_window(array: np.ndarray, min_val: float, max_val: float, *arrays):
+    """Get narrower view of array based on upper and lower limits.
+
+    The first array is the one that is used to create mask.
+    """
+    mask = np.logical_and(array >= min_val, array <= max_val)
+    _arrays = [array[mask]]
+    for _array in arrays:
+        if _array.shape[0] != mask.shape[0]:
+            raise ValueError("Incorrect shape of the input arrays")
+        _arrays.append(_array[mask])
+    return _arrays
+
+
+def _remove_duplicates_from_dict(data):
+    """Remove duplicates from list of dictionaries."""
+    # list of dictionaries
+    if isinstance(data, list):
+        # check if list of dictionaries
+        if all(isinstance(d, dict) for d in data):
+            return [dict(t) for t in {tuple(d.items()) for d in data}]
+    return data

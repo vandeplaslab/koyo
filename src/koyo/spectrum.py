@@ -1,6 +1,5 @@
 """Utilities for spectrum analysis."""
 import typing as ty
-from collections.abc import Iterable
 
 import numba
 import numpy as np
@@ -44,59 +43,6 @@ def ppm_diff(a: np.ndarray, axis=-1) -> np.ndarray:
     slice1 = tuple(slice1)
     slice2 = tuple(slice2)
     return (np.subtract(a[slice1], a[slice2]) / a[slice2]) * 1e6
-
-
-def find_nearest_index(
-    data: np.ndarray, value: ty.Union[int, float, np.ndarray, Iterable]
-):
-    """Find nearest index of asked value.
-
-    Parameters
-    ----------
-    data : np.array
-        input array (e.g. m/z values)
-    value : Union[int, float, np.ndarray]
-        asked value
-
-    Returns
-    -------
-    index :
-        index value
-    """
-    data = np.asarray(data)
-    if isinstance(value, Iterable):
-        return np.asarray(
-            [np.argmin(np.abs(data - _value)) for _value in value], dtype=np.int64
-        )
-    return np.argmin(np.abs(data - value))
-
-
-def find_nearest_index_batch(array: np.ndarray, values: np.ndarray):
-    """Find nearest index."""
-    # make sure array is a numpy array
-    array = np.asarray(array)
-    values = np.asarray(values)
-    if not array.size or not values.size:
-        return np.array([])
-
-    # get insert positions
-    idxs = np.searchsorted(array, values, side="left")
-
-    # find indexes where previous index is closer
-    prev_idx_is_less = (idxs == len(array)) | (
-        np.fabs(values - array[np.maximum(idxs - 1, 0)])
-        < np.fabs(values - array[np.minimum(idxs, len(array) - 1)])
-    )
-    idxs[prev_idx_is_less] -= 1
-    return idxs
-
-
-def find_nearest_value(
-    data: ty.Iterable, value: ty.Union[int, float, np.ndarray, Iterable]
-):
-    """Find nearest value."""
-    idx = find_nearest_index(data, value)
-    return data[idx]
 
 
 @numba.njit()
