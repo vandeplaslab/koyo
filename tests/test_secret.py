@@ -1,6 +1,5 @@
 """Test secret"""
 import numpy as np
-
 from koyo.secret import get_short_hash, hash_iterable
 
 

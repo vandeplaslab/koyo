@@ -1,7 +1,6 @@
 """Timer utilities."""
 import time
 import typing as ty
-
 from contextlib import contextmanager
 
 __all__ = [
@@ -102,11 +101,11 @@ class MeasureTimer:
         return formatted
 
     def __repr__(self):
-        """Return nicely formatted execution time"""
+        """Return nicely formatted execution time."""
         return f"{self.__class__.__name__}<total={self()}"
 
     def __str__(self):
-        """Return nicely formatted execution time"""
+        """Return nicely formatted execution time."""
         return self()
 
     def __enter__(self):
@@ -145,14 +144,14 @@ def report_measure_time(human: bool = True) -> ty.Callable:
 
 
 def report_time(t_start: float):
-    """Returns nicely formatted execution time"""
+    """Returns nicely formatted execution time."""
     return format_time(time.time() - t_start)
 
 
 def time_loop(
     t_start: float, n_item: int, n_total: int, as_percentage: bool = True
 ) -> str:
-    """Calculate average, remaining and total times
+    """Calculate average, remaining and total times.
 
     Parameters
     ----------
@@ -183,7 +182,7 @@ def time_loop(
 
 
 def time_average(t_start: float, n_total: int) -> str:
-    """Calculate average and total time of a task
+    """Calculate average and total time of a task.
 
     Parameters
     ----------
@@ -194,7 +193,8 @@ def time_average(t_start: float, n_total: int) -> str:
 
     Returns
     -------
-
+    value : str
+        formatted text
     """
     t_tot = time.time() - t_start
     t_avg = t_tot / (n_total + 1)
@@ -203,11 +203,11 @@ def time_average(t_start: float, n_total: int) -> str:
 
 
 class Timer:
-    """Timer class"""
+    """Timer class."""
 
     def __init__(self, value=None, init=False):
-        """Initialize timer"""
-        self.timers = dict()
+        """Initialize timer."""
+        self.timers = {}
         self._last_key = None
         if value:
             self.append(value)
@@ -216,11 +216,11 @@ class Timer:
             self.qappend()
 
     def reset(self):
-        """Reset timer"""
-        self.timers = dict()
+        """Reset timer."""
+        self.timers = {}
 
     def append(self, value, label=""):
-        """Adds new timed object to the dict"""
+        """Adds new timed object to the dict."""
         _n = len(self.timers)
         if label == "":
             label = f"timer {_n + 1}"
@@ -231,7 +231,7 @@ class Timer:
         self.append(time.time(), label)
 
     def get(self, add_total=True, sep="\n"):
-        """Return computed timings"""
+        """Return computed timings."""
         keys = list(self.timers.keys())
         n_keys = len(keys)
 
@@ -263,13 +263,13 @@ class Timer:
         return sep.join(reversed(timings))
 
     def show(self, add_total=True, sep="\n"):
-        """Returns computed timings"""
+        """Returns computed timings."""
         self.get(add_total, sep)
 
     def last(self):
-        """Retrieve last time"""
+        """Retrieve last time."""
         return self.timers[self._last_key][0]
 
     def first(self):
-        """Retrieve first time"""
+        """Retrieve first time."""
         return self.timers[0][0]

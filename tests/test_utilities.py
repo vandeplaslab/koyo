@@ -1,6 +1,6 @@
-import pytest
 import numpy as np
-from koyo.utilities import format_size, get_min_max, check_image_orientation, rescale
+import pytest
+from koyo.utilities import check_image_orientation, format_size, get_min_max, rescale
 
 
 @pytest.mark.parametrize(

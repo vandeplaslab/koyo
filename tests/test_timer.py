@@ -1,7 +1,7 @@
-import pytest
 import time
 
-from koyo.timer import time_average, time_loop, format_time
+import pytest
+from koyo.timer import format_time, time_average, time_loop
 
 
 @pytest.mark.parametrize(

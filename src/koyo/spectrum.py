@@ -10,7 +10,7 @@ import numpy as np
 def ppm_error(
     x: ty.Union[float, np.ndarray], y: ty.Union[float, np.ndarray]
 ) -> ty.Union[float, np.ndarray]:
-    """Calculate ppm error"""
+    """Calculate ppm error."""
     return ((x - y) / y) * 1e6
 
 
@@ -49,7 +49,7 @@ def ppm_diff(a: np.ndarray, axis=-1) -> np.ndarray:
 def find_nearest_index(
     data: np.ndarray, value: ty.Union[int, float, np.ndarray, Iterable]
 ):
-    """Find nearest index of asked value
+    """Find nearest index of asked value.
 
     Parameters
     ----------
@@ -94,7 +94,7 @@ def find_nearest_index_batch(array: np.ndarray, values: np.ndarray):
 def find_nearest_value(
     data: ty.Iterable, value: ty.Union[int, float, np.ndarray, Iterable]
 ):
-    """Find nearest value"""
+    """Find nearest value."""
     idx = find_nearest_index(data, value)
     return data[idx]
 

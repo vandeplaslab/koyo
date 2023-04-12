@@ -1,6 +1,6 @@
-import numpy as np
 from contextlib import contextmanager
 
+import numpy as np
 
 __all__ = [
     "get_random_seed",

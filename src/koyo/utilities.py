@@ -1,10 +1,10 @@
 """Generic utilities."""
-import numpy as np
-import typing as ty
-from math import ceil
-import unicodedata
 import re
+import typing as ty
+import unicodedata
+from math import ceil
 
+import numpy as np
 
 __all__ = [
     "get_value",
@@ -47,7 +47,7 @@ def format_count(value):
 
 
 def format_size(size: int) -> str:
-    """Convert bytes to nicer format"""
+    """Convert bytes to nicer format."""
     if size < 2**10:
         return "%s" % size
     elif size < 2**20:
@@ -62,7 +62,7 @@ def format_size(size: int) -> str:
 
 
 def isnumber(value):
-    """Quick and easy way to check if input is a number
+    """Quick and easy way to check if input is a number.
 
     Parameters
     ----------
@@ -78,7 +78,7 @@ def isnumber(value):
 
 
 def check_value_order(value_min, value_max):
-    """Check whether the value order is correct (min -> max)
+    """Check whether the value order is correct (min -> max).
 
     Parameters
     ----------
@@ -103,7 +103,7 @@ def check_value_order(value_min, value_max):
 
 
 def get_value(new_value, current_value):
-    """Get value"""
+    """Get value."""
     if new_value is None:
         return current_value
     return new_value
@@ -112,7 +112,7 @@ def get_value(new_value, current_value):
 def rescale(
     values: ty.Union[np.ndarray, ty.List], new_min: float, new_max: float, dtype=None
 ) -> np.ndarray:
-    """Rescale values from one range to another
+    """Rescale values from one range to another.
 
     Parameters
     ----------
@@ -148,7 +148,7 @@ def rescale_value(
     new_max: float = 1.0,
     clip: bool = True,
 ) -> float:
-    """Rescale value to new range
+    """Rescale value to new range.
 
     Parameters
     ----------
@@ -187,14 +187,17 @@ def chunks(item_list, n_items: int = 0, n_tasks: int = 0):
 
 
 def zip_chunks(item_list, n_items: int, *items):
-    """Yield successive n-sized chunks from `item_list`"""
+    """Yield successive n-sized chunks from `item_list`."""
     yield from zip(chunks(item_list, n_items), *[chunks(x, n_items) for x in items])
 
 
 def sequential_chunks(item_list, n_items: int):
-    """Create multiple lists of chunks that will be subsequent in nature. For instance if the `item_list` has
+    """Create multiple lists of chunks that will be subsequent in nature.
+
+    For instance if the `item_list` has
     the following values: [0, 1, 2, 3] and `n_items=2`, it will generate two lists of [0, 2] and [1, 3]. This can
-    be helpful when doing tasks in chunks but want to see results of subsequent chunks."""
+    be helpful when doing tasks in chunks but want to see results of subsequent chunks.
+    """
     n = len(item_list)
     n_pots = ceil(n / n_items)
     pots = [[] for _ in range(n_pots)]
@@ -209,13 +212,12 @@ def sequential_chunks(item_list, n_items: int):
 
 
 def get_min_max(values):
-    """Get the minimum and maximum value of an array"""
+    """Get the minimum and maximum value of an array."""
     return [np.min(values), np.max(values)]
 
 
 def check_image_orientation(array):
-    """Transpose image if the primary size is larger than the secondary size in order to improve
-    images
+    """Transpose image if the primary size is larger than the secondary size in order to improve images.
 
     Parameters
     ----------
@@ -234,11 +236,10 @@ def check_image_orientation(array):
 
 
 def slugify(value, allow_unicode=False):
-    """
-    Convert to ASCII if 'allow_unicode' is False. Convert spaces or repeated
-    dashes to single dashes. Remove characters that aren't alphanumerics,
-    underscores, or hyphens. Convert to lowercase. Also strip leading and
-    trailing whitespace, dashes, and underscores.
+    """Convert to ASCII if 'allow_unicode' is False.
+
+    Convert spaces or repeated dashes to single dashes. Remove characters that aren't alphanumerics, underscores,
+    or hyphens. Convert to lowercase. Also strip leading and trailing whitespace, dashes, and underscores.
     """
     value = str(value)
     if allow_unicode:
