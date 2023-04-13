@@ -65,7 +65,6 @@ repository = "https://github.com/lukasz-migas/koyo"
 # [project.entry-points."spam.magical"]
 # tomatoes = "spam:main_tomatoes"
 
-# include = ["/src", "/tests"]
 # https://github.com/psf/black
 [tool.black]
 line-length = 120
