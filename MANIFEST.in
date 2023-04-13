@@ -4,7 +4,7 @@ global-exclude .ipynb_checkpoints
 global-exclude *.py[co]
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
-global-exclude  .idea*
+recursive-exclude .idea *
 
 # Top-level config
 include MANIFEST.in
