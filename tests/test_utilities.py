@@ -3,6 +3,10 @@ import pytest
 from koyo.utilities import (
     check_image_orientation,
     check_value_order,
+    find_nearest_index,
+    find_nearest_index_batch,
+    find_nearest_index_single,
+    find_nearest_value_single,
     format_size,
     get_kws,
     get_min_max,
@@ -10,6 +14,30 @@ from koyo.utilities import (
     is_number,
     rescale,
 )
+
+
+def test_find_nearest_index_single():
+    array = np.arange(10)
+    assert find_nearest_index_single(array, 0) == 0
+    assert find_nearest_index_single(array, 0.5) == 0
+
+    assert find_nearest_index(array, 0) == 0
+    assert find_nearest_index(array, 0.5) == 0
+
+    assert find_nearest_index_single(array, 9.5) == find_nearest_index(array, 9.5)
+
+
+def test_find_nearest_index_batch():
+    array = np.arange(10)
+    assert np.all(find_nearest_index_batch(array, [0, 0.5, 9.5]) == [0, 0, 9])
+
+
+def test_find_nearest_value_single():
+    array = np.arange(10)
+    assert find_nearest_value_single(array, 0) == 0
+    assert find_nearest_value_single(array, 0.5) == 0
+    assert find_nearest_value_single(array, 10) == 9
+    assert find_nearest_value_single(array, 100) == 9
 
 
 def test_is_number():

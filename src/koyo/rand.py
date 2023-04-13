@@ -3,7 +3,7 @@ from contextlib import contextmanager
 import numpy as np
 
 
-def get_random_seed():
+def get_random_seed() -> int:
     """Get random seed."""
     return np.random.randint(0, np.iinfo(np.int32).max - 1, 1)[0]
 

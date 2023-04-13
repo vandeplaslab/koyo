@@ -11,7 +11,7 @@ from koyo.timer import report_measure_time
 from koyo.typing import PathLike
 
 
-def download_progress(t):
+def download_progress(pbar):
     """Wraps tqdm instance.
 
     Don't forget to close() or __exit__()
@@ -36,8 +36,8 @@ def download_progress(t):
             Total size (in tqdm units). If [default: None] remains unchanged.
         """
         if tot_size is not None:
-            t.total = tot_size
-        t.update((b - last_b[0]) * bsize)
+            pbar.total = tot_size
+        pbar.update((b - last_b[0]) * bsize)
         last_b[0] = b
 
     return update_to

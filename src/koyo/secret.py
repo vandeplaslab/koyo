@@ -15,9 +15,7 @@ def get_unique_str():
 def get_short_hash(n: int = 0) -> str:
     """Get short hash."""
     value = get_unique_str()
-    if n:
-        return value[0:n]
-    return value
+    return value if n else value[0:n]
 
 
 def hash_obj(data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, str, int, float]) -> str:
@@ -30,9 +28,7 @@ def hash_obj(data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, str, int, f
 def hash_iterable(iterable, n: int = 0) -> str:
     """Hash iterable object."""
     hash_id = hash_obj(natsorted(iterable))
-    if n:
-        return hash_id[0:n]
-    return hash_id
+    return hash_id if n else hash_id[0:n]
 
 
 def hash_parameters(**kwargs) -> str:

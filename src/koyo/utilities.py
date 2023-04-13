@@ -30,6 +30,27 @@ def get_list_difference(li1: ty.List, li2: ty.List):
     return li_dif
 
 
+def find_nearest_index(data: SimpleArrayLike, value: ty.Union[int, float, np.ndarray, Iterable]):
+    """Find nearest index of asked value.
+
+    Parameters
+    ----------
+    data : np.array
+        input array (e.g. m/z values)
+    value : Union[int, float, np.ndarray]
+        asked value
+
+    Returns
+    -------
+    index :
+        index value
+    """
+    data = np.asarray(data)
+    if isinstance(value, Iterable):
+        return np.asarray([np.argmin(np.abs(data - _value)) for _value in value], dtype=np.int64)
+    return np.argmin(np.abs(data - value))
+
+
 @nb.njit()
 def find_nearest_index_array(data: SimpleArrayLike, value: ty.Union[np.ndarray, ty.Iterable]) -> np.ndarray:
     """Find nearest index of asked value.
@@ -76,28 +97,7 @@ def find_nearest_value_single(data: SimpleArrayLike, value: ty.Union[int, float]
     return data[idx]
 
 
-def find_nearest_index(data: np.ndarray, value: ty.Union[int, float, np.ndarray, Iterable]):
-    """Find nearest index of asked value.
-
-    Parameters
-    ----------
-    data : np.array
-        input array (e.g. m/z values)
-    value : Union[int, float, np.ndarray]
-        asked value
-
-    Returns
-    -------
-    index :
-        index value
-    """
-    data = np.asarray(data)
-    if isinstance(value, Iterable):
-        return np.asarray([np.argmin(np.abs(data - _value)) for _value in value], dtype=np.int64)
-    return np.argmin(np.abs(data - value))
-
-
-def find_nearest_index_batch(array: np.ndarray, values: np.ndarray) -> np.ndarray:
+def find_nearest_index_batch(array: SimpleArrayLike, values: SimpleArrayLike) -> np.ndarray:
     """Find nearest index."""
     # make sure array is a numpy array
     array = np.asarray(array)
@@ -106,18 +106,20 @@ def find_nearest_index_batch(array: np.ndarray, values: np.ndarray) -> np.ndarra
         return np.array([])
 
     # get insert positions
-    idxs = np.searchsorted(array, values, side="left")
+    indices = np.searchsorted(array, values, side="left")
 
     # find indexes where previous index is closer
-    prev_idx_is_less = (idxs == len(array)) | (
-        np.fabs(values - array[np.maximum(idxs - 1, 0)]) < np.fabs(values - array[np.minimum(idxs, len(array) - 1)])
+    prev_idx_is_less = (indices == len(array)) | (
+        np.fabs(values - array[np.maximum(indices - 1, 0)])
+        < np.fabs(values - array[np.minimum(indices, len(array) - 1)])
     )
-    idxs[prev_idx_is_less] -= 1
-    return idxs
+    indices[prev_idx_is_less] -= 1
+    return indices
 
 
 def find_nearest_value(data: ty.Iterable, value: ty.Union[int, float, np.ndarray, Iterable]):
     """Find nearest value."""
+    data = np.asarray(data)
     idx = find_nearest_index(data, value)
     return data[idx]
 
