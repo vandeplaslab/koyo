@@ -2,15 +2,10 @@ from contextlib import contextmanager
 
 import numpy as np
 
-__all__ = [
-    "get_random_seed",
-    "temporary_seed",
-]
-
 
 def get_random_seed():
     """Get random seed."""
-    return np.random.randint(0, 100000, (1,))[0]
+    return np.random.randint(0, np.iinfo(np.int32).max - 1, 1)[0]
 
 
 @contextmanager

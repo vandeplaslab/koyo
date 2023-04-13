@@ -1,6 +1,51 @@
 import numpy as np
 import pytest
-from koyo.utilities import check_image_orientation, format_size, get_min_max, rescale
+from koyo.utilities import (
+    check_image_orientation,
+    check_value_order,
+    format_size,
+    get_kws,
+    get_min_max,
+    is_between,
+    is_number,
+    rescale,
+)
+
+
+def test_is_number():
+    assert is_number(1)
+    assert is_number(1.0)
+    assert not is_number("1")
+    assert not is_number([1])
+    assert not is_number((1,))
+
+
+def test_get_kws():
+    def test_func(a=1, b=2):
+        pass
+
+    kws = get_kws(test_func, a=2, c=3)
+    assert "c" not in kws
+
+
+def test_check_value_order():
+    v1, v2 = 10, 20
+    r1, r2 = check_value_order(v1, v2)
+    assert r1 == v1
+    assert r2 == v2
+
+    v1, v2 = 100, 50
+    r1, r2 = check_value_order(v1, v2)
+    assert r1 == v2
+    assert r2 == v1
+
+
+def test_is_between():
+    assert is_between(0, 0, 1)
+    assert is_between(0.5, 0, 1)
+    assert is_between(1, 0, 1)
+    assert not is_between(1.1, 0, 1)
+    assert not is_between(-0.1, 0, 1)
 
 
 @pytest.mark.parametrize(

@@ -14,7 +14,7 @@ def get_unique_str():
 
 def get_short_hash(n: int = 0) -> str:
     """Get short hash."""
-    value = str(uuid.uuid4().hex)
+    value = get_unique_str()
     if n:
         return value[0:n]
     return value

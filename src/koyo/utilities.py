@@ -126,9 +126,9 @@ def get_kws(func: ty.Callable, **kwargs) -> ty.Dict:
     """Get kwargs."""
     import inspect
 
-    kws = {}
     args = inspect.getfullargspec(func).args
 
+    kws = {}
     for kw in args:
         if kw in kwargs:
             kws[kw] = kwargs[kw]
@@ -161,7 +161,7 @@ def format_size(size: int) -> str:
     return "%.1fP" % (size / float(2**50))
 
 
-def isnumber(value):
+def is_number(value):
     """Quick and easy way to check if input is a number.
 
     Parameters
@@ -194,7 +194,7 @@ def check_value_order(value_min, value_max):
     value_max : int or float or complex
         true maximal value
     """
-    if not isnumber(value_min) or not isnumber(value_max):
+    if not is_number(value_min) or not is_number(value_max):
         return value_min, value_max
 
     if value_max < value_min:
@@ -266,8 +266,7 @@ def rescale_value(
             value = old_min
         if value > old_max:
             value = old_max
-    new_value = ((value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
-    return new_value
+    return ((value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
 
 
 def chunks(item_list, n_items: int = 0, n_tasks: int = 0):

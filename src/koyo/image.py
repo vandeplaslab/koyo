@@ -1,3 +1,4 @@
+"""Image processing functions."""
 import numpy as np
 
 
