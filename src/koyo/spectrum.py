@@ -46,17 +46,36 @@ def ppm_diff(a: np.ndarray, axis=-1) -> np.ndarray:
     return (np.subtract(a[slice1], a[slice2]) / a[slice2]) * 1e6
 
 
-@numba.njit()
-def find_between(data: SimpleArrayLike, min_value: float, max_value: float) -> np.ndarray:
+@numba.njit(cache=True, fastmath=True)
+def find_between(data: SimpleArrayLike, min_value: float, max_value: float):
     """Find indices between windows."""
     return np.where(np.logical_and(data >= min_value, data <= max_value))[0]
 
 
-@numba.njit()
-def find_between_ppm(data: SimpleArrayLike, value: float, ppm: float):
+@numba.njit(cache=True, fastmath=True)
+def find_between_tol(data: np.ndarray, value: float, tol: float):
+    """Find indices between window and ppm."""
+    return find_between(data, value - tol, value + tol)
+
+
+@numba.njit(cache=True, fastmath=True)
+def find_between_ppm(data: np.ndarray, value: float, ppm: float):
     """Find indices between window and ppm."""
     window = get_window_for_ppm(value, abs(ppm))
     return find_between(data, value - window, value + window)
+
+
+@numba.njit(cache=True, fastmath=True)
+def find_between_batch(array: np.ndarray, min_value: np.ndarray, max_value: np.ndarray):
+    """Find indices between specified boundaries for many items."""
+    min_indices = np.searchsorted(array, min_value, side="left")
+    max_indices = np.searchsorted(array, max_value, side="right")
+
+    res = []
+    for i in range(len(min_value)):
+        _array = array[min_indices[i] : max_indices[i]]
+        res.append(min_indices[i] + find_between(_array, min_value[i], max_value[i]))
+    return res
 
 
 def get_peaklist_window_for_ppm(peaklist: np.ndarray, ppm: float) -> ty.List[ty.Tuple[float, float]]:
@@ -73,6 +92,24 @@ def get_peaklist_window_for_da(peaklist: np.ndarray, da: float) -> ty.List[ty.Tu
     for mz in peaklist:
         _peaklist.append((mz, da))
     return _peaklist
+
+
+def get_mzs_for_tol(mzs: np.ndarray, tol: float = None, ppm: float = None):
+    """Get min/max values for specified tolerance or ppm."""
+    if tol is None and ppm is None or tol == 0 and ppm == 0:
+        raise ValueError("Please specify `tol` or `ppm`.")
+    elif tol is not None and ppm is not None:
+        raise ValueError("Please only specify `tol` or `ppm`.")
+
+    mzs = np.asarray(mzs)
+    if tol:
+        mzs_min = mzs - tol
+        mzs_max = mzs + tol
+    else:
+        tol = np.asarray([get_window_for_ppm(mz, ppm) for mz in mzs])
+        mzs_min = mzs - tol
+        mzs_max = mzs + tol
+    return mzs_min, mzs_max
 
 
 def bisect_spectrum(x_spectrum, mz_value, tol: float) -> ty.Tuple[int, int]:

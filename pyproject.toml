@@ -51,10 +51,9 @@ dev = [
     "mypy",
     "pdbpp",
     "pre-commit",
-    "pytest-cov",
-    "pytest",
     "rich",
     "ruff",
+    "koyo[test]"
 ]
 
 [project.urls]
@@ -114,7 +113,6 @@ extend-ignore = [
 
 [tool.ruff.per-file-ignores]
 "tests/*.py" = ["D", "S"]
-"setup.py" = ["D"]
 
 # https://docs.pytest.org/en/6.2.x/customize.html
 [tool.pytest.ini_options]
