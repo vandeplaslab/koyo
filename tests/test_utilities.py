@@ -29,7 +29,8 @@ def test_find_nearest_index_single():
 
 def test_find_nearest_index_batch():
     array = np.arange(10)
-    assert np.all(find_nearest_index_batch(array, [0, 0.5, 9.5]) == [0, 0, 9])
+    indices = find_nearest_index_batch(array, [0, 0.5, 9.5])
+    np.all(indices == [0, 0, 9])
 
 
 def test_find_nearest_value_single():
