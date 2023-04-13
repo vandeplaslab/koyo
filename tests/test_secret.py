@@ -10,8 +10,5 @@ def test_get_short_hash():
 
 def test_hash_iterable():
     assert (
-        hash_iterable([0, 1, 2])
-        == hash_iterable(np.arange(3))
-        == hash_iterable([2, 1, 0])
-        == hash_iterable((2, 1, 0))
+        hash_iterable([0, 1, 2]) == hash_iterable(np.arange(3)) == hash_iterable([2, 1, 0]) == hash_iterable((2, 1, 0))
     )

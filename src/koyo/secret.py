@@ -20,9 +20,7 @@ def get_short_hash(n: int = 0) -> str:
     return value
 
 
-def hash_obj(
-    data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, str, int, float]
-) -> str:
+def hash_obj(data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, str, int, float]) -> str:
     """Hash python object."""
     hash_id = hashlib.md5()
     hash_id.update(repr(data).encode("utf-8"))

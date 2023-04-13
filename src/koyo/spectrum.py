@@ -1,5 +1,6 @@
 """Utilities for spectrum analysis."""
 import typing as ty
+from bisect import bisect_left, bisect_right
 
 import numba
 import numpy as np
@@ -8,9 +9,7 @@ from koyo.typing import SimpleArrayLike
 
 
 @numba.njit(fastmath=True, cache=True)
-def ppm_error(
-    x: ty.Union[float, np.ndarray], y: ty.Union[float, np.ndarray]
-) -> ty.Union[float, np.ndarray]:
+def ppm_error(x: ty.Union[float, np.ndarray], y: ty.Union[float, np.ndarray]) -> ty.Union[float, np.ndarray]:
     """Calculate ppm error."""
     return ((x - y) / y) * 1e6
 
@@ -48,9 +47,7 @@ def ppm_diff(a: np.ndarray, axis=-1) -> np.ndarray:
 
 
 @numba.njit()
-def find_between(
-    data: SimpleArrayLike, min_value: float, max_value: float
-) -> np.ndarray:
+def find_between(data: SimpleArrayLike, min_value: float, max_value: float) -> np.ndarray:
     """Find indices between windows."""
     return np.where(np.logical_and(data >= min_value, data <= max_value))[0]
 
@@ -60,3 +57,38 @@ def find_between_ppm(data: SimpleArrayLike, value: float, ppm: float):
     """Find indices between window and ppm."""
     window = get_window_for_ppm(value, abs(ppm))
     return find_between(data, value - window, value + window)
+
+
+def get_peaklist_window_for_ppm(peaklist: np.ndarray, ppm: float) -> ty.List[ty.Tuple[float, float]]:
+    """Retrieve peaklist + tolerance."""
+    _peaklist = []
+    for mz in peaklist:
+        _peaklist.append((mz, get_window_for_ppm(mz, ppm)))
+    return _peaklist
+
+
+def get_peaklist_window_for_da(peaklist: np.ndarray, da: float) -> ty.List[ty.Tuple[float, float]]:
+    """Retrieve peaklist + tolerance."""
+    _peaklist = []
+    for mz in peaklist:
+        _peaklist.append((mz, da))
+    return _peaklist
+
+
+def bisect_spectrum(x_spectrum, mz_value, tol: float) -> ty.Tuple[int, int]:
+    """Get left/right window of extraction for peak."""
+    ix_l, ix_u = (
+        bisect_left(x_spectrum, mz_value - tol),
+        bisect_right(x_spectrum, mz_value + tol) - 1,
+    )
+    if ix_l == len(x_spectrum):
+        return len(x_spectrum), len(x_spectrum)
+    if ix_u < 1:
+        return 0, 0
+    if ix_u == len(x_spectrum):
+        ix_u -= 1
+    if x_spectrum[ix_l] < (mz_value - tol):
+        ix_l += 1
+    if x_spectrum[ix_u] > (mz_value + tol):
+        ix_u -= 1
+    return ix_l, ix_u

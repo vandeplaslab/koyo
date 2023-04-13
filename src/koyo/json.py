@@ -1,11 +1,15 @@
 """All utility functions that deal with JSON files."""
-import json
 import os
 
 import numpy as np
 
 from koyo.typing import PathLike
 from koyo.utilities import _remove_duplicates_from_dict
+
+try:
+    import ujson as json
+except ImportError:
+    import json
 
 
 def default(o):

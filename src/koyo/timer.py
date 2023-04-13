@@ -148,9 +148,7 @@ def report_time(t_start: float):
     return format_time(time.time() - t_start)
 
 
-def time_loop(
-    t_start: float, n_item: int, n_total: int, as_percentage: bool = True
-) -> str:
+def time_loop(t_start: float, n_item: int, n_total: int, as_percentage: bool = True) -> str:
     """Calculate average, remaining and total times.
 
     Parameters

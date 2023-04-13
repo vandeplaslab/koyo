@@ -11,10 +11,27 @@ import numpy as np
 from koyo.typing import SimpleArrayLike
 
 
+def is_between(value: float, lower: float, upper: float, inclusive: bool = True) -> bool:
+    """Check if value is between lower and upper."""
+    if inclusive:
+        return lower <= value <= upper
+    return lower < value < upper
+
+
+def flatten_nested_list(list_of_lists: ty.List[ty.List]) -> ty.List:
+    """Flatten nested list of lists."""
+    return [item for sublist in list_of_lists for item in sublist]
+
+
+def get_list_difference(li1: ty.List, li2: ty.List):
+    """Get difference between two lists."""
+    # get difference between two lists while keeping the order
+    li_dif = [i for i in li1 + li2 if i not in li1 or i not in li2]
+    return li_dif
+
+
 @nb.njit()
-def find_nearest_index_array(
-    data: SimpleArrayLike, value: ty.Union[np.ndarray, ty.Iterable]
-) -> np.ndarray:
+def find_nearest_index_array(data: SimpleArrayLike, value: ty.Union[np.ndarray, ty.Iterable]) -> np.ndarray:
     """Find nearest index of asked value.
 
     Parameters
@@ -52,9 +69,14 @@ def find_nearest_index_single(data: SimpleArrayLike, value: ty.Union[int, float]
     return np.argmin(np.abs(data - value))
 
 
-def find_nearest_index(
-    data: np.ndarray, value: ty.Union[int, float, np.ndarray, Iterable]
-):
+def find_nearest_value_single(data: SimpleArrayLike, value: ty.Union[int, float]) -> ty.Union[int, float]:
+    """Find nearest value."""
+    data = np.asarray(data)
+    idx = find_nearest_index_single(data, value)
+    return data[idx]
+
+
+def find_nearest_index(data: np.ndarray, value: ty.Union[int, float, np.ndarray, Iterable]):
     """Find nearest index of asked value.
 
     Parameters
@@ -71,9 +93,7 @@ def find_nearest_index(
     """
     data = np.asarray(data)
     if isinstance(value, Iterable):
-        return np.asarray(
-            [np.argmin(np.abs(data - _value)) for _value in value], dtype=np.int64
-        )
+        return np.asarray([np.argmin(np.abs(data - _value)) for _value in value], dtype=np.int64)
     return np.argmin(np.abs(data - value))
 
 
@@ -90,16 +110,13 @@ def find_nearest_index_batch(array: np.ndarray, values: np.ndarray) -> np.ndarra
 
     # find indexes where previous index is closer
     prev_idx_is_less = (idxs == len(array)) | (
-        np.fabs(values - array[np.maximum(idxs - 1, 0)])
-        < np.fabs(values - array[np.minimum(idxs, len(array) - 1)])
+        np.fabs(values - array[np.maximum(idxs - 1, 0)]) < np.fabs(values - array[np.minimum(idxs, len(array) - 1)])
     )
     idxs[prev_idx_is_less] -= 1
     return idxs
 
 
-def find_nearest_value(
-    data: ty.Iterable, value: ty.Union[int, float, np.ndarray, Iterable]
-):
+def find_nearest_value(data: ty.Iterable, value: ty.Union[int, float, np.ndarray, Iterable]):
     """Find nearest value."""
     idx = find_nearest_index(data, value)
     return data[idx]
@@ -192,9 +209,7 @@ def get_value(new_value, current_value):
     return new_value
 
 
-def rescale(
-    values: ty.Union[np.ndarray, ty.List], new_min: float, new_max: float, dtype=None
-) -> np.ndarray:
+def rescale(values: ty.Union[np.ndarray, ty.List], new_min: float, new_max: float, dtype=None) -> np.ndarray:
     """Rescale values from one range to another.
 
     Parameters
@@ -217,9 +232,7 @@ def rescale(
     if dtype is None:
         dtype = values.dtype
     old_min, old_max = get_min_max(values)
-    new_values = ((values - old_min) / (old_max - old_min)) * (
-        new_max - new_min
-    ) + new_min
+    new_values = ((values - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
     return new_values.astype(dtype)
 
 
@@ -253,9 +266,7 @@ def rescale_value(
             value = old_min
         if value > old_max:
             value = old_max
-    new_value = ((value - old_min) / (old_max - old_min)) * (
-        new_max - new_min
-    ) + new_min
+    new_value = ((value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
     return new_value
 
 
@@ -328,11 +339,7 @@ def slugify(value, allow_unicode=False):
     if allow_unicode:
         value = unicodedata.normalize("NFKC", value)
     else:
-        value = (
-            unicodedata.normalize("NFKD", value)
-            .encode("ascii", "ignore")
-            .decode("ascii")
-        )
+        value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode("ascii")
     value = re.sub(r"[^.=\w\s-]", "", value.lower())
     return re.sub(r"[-\s]+", "-", value).strip("-_")
 
@@ -351,6 +358,23 @@ def get_array_window(array: np.ndarray, min_val: float, max_val: float, *arrays)
     return _arrays
 
 
+def split_array(array: np.ndarray, chunk_size: int, axis=0):
+    """Split array according to chunk size."""
+    n = array.shape[axis]
+    while True:
+        if n <= chunk_size:
+            yield array
+            break
+        else:
+            if axis == 0:
+                yield array.iloc[:chunk_size]
+                array = array.iloc[chunk_size:]
+            else:
+                yield array[:, :chunk_size]
+                array = array[:, chunk_size:]
+            n -= chunk_size
+
+
 def _remove_duplicates_from_dict(data):
     """Remove duplicates from list of dictionaries."""
     # list of dictionaries
@@ -359,3 +383,39 @@ def _remove_duplicates_from_dict(data):
         if all(isinstance(d, dict) for d in data):
             return [dict(t) for t in {tuple(d.items()) for d in data}]
     return data
+
+
+class Cycler:
+    """Cycling class similar to itertools.cycle with the addition of `previous` functionality."""
+
+    def __init__(self, c):
+        self._c = c
+        self._index = -1
+
+    def __len__(self):
+        return len(self._c)
+
+    def __next__(self):
+        self._index += 1
+        if self._index >= len(self._c):
+            self._index = 0
+        return self._c[self._index]
+
+    def next(self):
+        """Go forward."""
+        return self.__next__()
+
+    def previous(self):
+        """Go backwards."""
+        self._index -= 1
+        if self._index < 0:
+            self._index = len(self._c) - 1
+        return self._c[self._index]
+
+    def current(self):
+        """Get current index."""
+        return self._c[self._index]
+
+    def set_current(self, index: int):
+        """Set current index."""
+        self._index = index
