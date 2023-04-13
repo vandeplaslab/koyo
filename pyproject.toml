@@ -7,6 +7,9 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[tool.setuptools_scm]
+write_to = "src/koyo/_version.py"
+
 # https://peps.python.org/pep-0621/
 [project]
 name = "koyo"
@@ -25,7 +28,6 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Typing :: Typed",
 ]
 dynamic = ["version"]
@@ -39,7 +41,10 @@ dependencies = [
 # extras
 # https://peps.python.org/pep-0621/#dependencies-optional-dependencies
 [project.optional-dependencies]
-test = ["pytest>=6.0", "pytest-cov"]
+test = [
+    "pytest>=6.0",
+    "pytest-cov",
+]
 dev = [
     "black",
     "ipython",
@@ -53,8 +58,8 @@ dev = [
 ]
 
 [project.urls]
-homepage = "https://github.com/lukasz-migas/koyo"
-repository = "https://github.com/lukasz-migas/koyo"
+homepage = "https://github.com/vandeplaslab/koyo"
+repository = "https://github.com/vandeplaslab/koyo"
 
 # same as console_scripts entry point
 # [project.scripts]
