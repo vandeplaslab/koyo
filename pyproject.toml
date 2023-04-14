@@ -7,9 +7,6 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools_scm]
-write_to = "src/koyo/_version.py"
-
 # https://peps.python.org/pep-0621/
 [project]
 name = "koyo"
@@ -68,6 +65,10 @@ repository = "https://github.com/vandeplaslab/koyo"
 # https://peps.python.org/pep-0621/#entry-points
 # [project.entry-points."spam.magical"]
 # tomatoes = "spam:main_tomatoes"
+
+
+[tool.setuptools_scm]
+write_to = "src/koyo/_version.py"
 
 # https://github.com/psf/black
 [tool.black]
@@ -133,7 +134,6 @@ pretty = true
 # [[tool.mypy.overrides]]
 # module = ["numpy.*",]
 # ignore_errors = true
-
 
 # https://coverage.readthedocs.io/en/6.4/config.html
 [tool.coverage.report]

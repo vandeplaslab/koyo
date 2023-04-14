@@ -9,7 +9,6 @@ recursive-exclude .idea *
 # Top-level config
 include MANIFEST.in
 include LICENSE
-include setup.cfg
 recursive-include tests *
 recursive-include src *.typed
 

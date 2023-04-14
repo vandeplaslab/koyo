@@ -3,6 +3,7 @@ import pytest
 from koyo.utilities import (
     check_image_orientation,
     check_value_order,
+    chunks,
     find_nearest_index,
     find_nearest_index_batch,
     find_nearest_index_single,
@@ -14,6 +15,13 @@ from koyo.utilities import (
     is_number,
     rescale,
 )
+
+
+def test_chunks():
+    values = [0, 1, 2, 3, 4, 5]
+    for chunk in chunks(values, 2):
+        assert len(chunk) == 2
+    assert len(chunks(values, n_tasks=2)) == 2
 
 
 def test_find_nearest_index_single():
