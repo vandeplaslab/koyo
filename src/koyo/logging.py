@@ -20,9 +20,10 @@ COLOR_LOG_FMT = (
 )
 
 
-def set_loguru_env(level: str, enqueue: bool, colorize: bool):
+def set_loguru_env(fmt: str, level: str, enqueue: bool, colorize: bool):
     """Set loguru environment variables."""
     os.environ["LOGURU_AUTOINIT"] = "0"
+    os.environ["LOGURU_FORMAT"] = str(fmt)
     os.environ["LOGURU_LEVEL"] = str(level)
     os.environ["LOGURU_ENQEUE"] = str(enqueue)
     os.environ["LOGURU_COLORIZE"] = str(colorize)
@@ -45,6 +46,15 @@ def get_loguru_level(level: ty.Union[int, str]):
     return level.upper()
 
 
+def get_loguru_env():
+    """Get logoru environment variables."""
+    colorize = bool(os.environ.get("LOGURU_COLORIZE", "True"))
+    level = os.environ.get("LOGURU_LEVEL", "info")
+    enqueue = bool(os.environ.get("LOGURU_ENQEUE", "True"))
+    fmt = os.environ.get("LOGURU_FORMAT", LOG_FMT if not colorize else COLOR_LOG_FMT)
+    return fmt, level, enqueue, colorize
+
+
 def get_loguru_config(
     level: ty.Union[str, int], no_color: bool, enqueue: bool = True
 ) -> ty.Tuple[str, str, bool, bool]:
@@ -61,6 +71,10 @@ def set_loguru_log(
     no_color: bool = False,
     enqueue: bool = True,
     fmt: str = None,
+    diagnose: bool = False,
+    catch: bool = False,
+    colorize: bool = None,
+    remove: bool = True,
     logger: "Logger" = None,
 ):
     """Set loguru formatting."""
@@ -71,5 +85,6 @@ def set_loguru_log(
     fmt = fmt if fmt is not None else (LOG_FMT if no_color else COLOR_LOG_FMT)
     level = get_loguru_level(level)
 
-    logger.remove(None)
-    logger.add(sink, level=level, format=fmt, colorize=not no_color, enqueue=enqueue)
+    if remove:
+        logger.remove(None)
+    logger.add(sink, level=level, format=fmt, colorize=not no_color, enqueue=enqueue, diagnose=diagnose, catch=catch)
