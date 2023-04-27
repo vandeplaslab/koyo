@@ -28,10 +28,10 @@ def set_loguru_env(level: str, enqueue: bool, colorize: bool):
     os.environ["LOGURU_COLORIZE"] = str(colorize)
 
 
-def get_loguru_config(
-    level: ty.Union[str, int], no_color: bool, enqueue: bool = True
-) -> ty.Tuple[str, str, bool, bool]:
-    """Return level."""
+def get_loguru_level(level: ty.Union[int, str]):
+    """Get loguru level."""
+    if isinstance(level, str):
+        return level.upper()
     level = {
         0: "trace",
         5: "trace",
@@ -42,6 +42,14 @@ def get_loguru_config(
         40: "error",
         50: "critical",
     }[level]
+    return level.upper()
+
+
+def get_loguru_config(
+    level: ty.Union[str, int], no_color: bool, enqueue: bool = True
+) -> ty.Tuple[str, str, bool, bool]:
+    """Return level."""
+    level = get_loguru_level(level)
     colorize = not no_color
     fmt = LOG_FMT if no_color else COLOR_LOG_FMT
     return level.upper(), fmt, colorize, enqueue
@@ -61,6 +69,7 @@ def set_loguru_log(
 
     # automatically get format
     fmt = fmt if fmt is not None else (LOG_FMT if no_color else COLOR_LOG_FMT)
+    level = get_loguru_level(level)
 
     logger.remove(None)
     logger.add(sink, level=level, format=fmt, colorize=not no_color, enqueue=enqueue)
