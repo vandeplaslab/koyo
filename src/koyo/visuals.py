@@ -2,7 +2,7 @@
 import numba as nb
 import numpy as np
 from matplotlib.collections import LineCollection
-
+import typing as ty
 
 def fig_to_pil(fig):
     """Convert a Matplotlib figure to a PIL Image and return it."""
@@ -104,3 +104,87 @@ def get_intensity_formatter():
 def set_intensity_formatter(ax):
     """Set intensity formatter on axes."""
     ax.yaxis.set_major_formatter(get_intensity_formatter())
+
+
+
+
+def add_ax_colorbar(mappable):
+    """Add colorbar to axis."""
+    import matplotlib.pyplot as plt
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+    last_axes = plt.gca()
+    ax = mappable.axes
+    fig = ax.figure
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="5%", pad=0.05)
+    cbar = fig.colorbar(mappable, cax=cax)
+    plt.sca(last_axes)
+    return cbar
+
+
+def add_legend(
+    fig,
+    ax,
+    legend_palettes: ty.Dict[str, ty.Dict[str, str]],
+    fontsize: float = 14,
+    labelsize: float = 16,
+    x_pad: float = 0.01,
+):
+    """Add legend to the plot.
+
+    Parameters
+    ----------
+    fig
+        Figure to add legend to.
+    ax
+        Axes to add legend to.
+    legend_palettes
+        Dictionary of tag name to tag to color mapping. The mapping should reflect all labels and colors that should be
+        added to the legend.
+    fontsize
+        Font size of the legend labels.
+    labelsize
+        Font size of the legend title.
+    x_pad : float
+        Padding between the legend and the plot.
+    """
+    from natsort import natsorted
+    from matplotlib.patches import Patch
+
+    def _make_legend(n_col=1, loc="best"):
+        return n_col, ax.legend(
+            handles=lh,
+            loc=loc,
+            title=tag,
+            frameon=False,
+            handlelength=1.2,
+            handleheight=1.4,
+            fontsize=fontsize,
+            title_fontsize=labelsize,
+            ncol=n_col,
+        )
+
+    n_palettes = len(legend_palettes) > 1
+    rend = fig.canvas.get_renderer()
+    x_offset = ax.get_tightbbox(rend).transformed(ax.transAxes.inverted()).xmax + x_pad
+    x_widest, y_offset = 0, 1
+    for tag, tag_to_color in legend_palettes.items():
+        lh = [Patch(facecolor=tag_to_color[tag], label=tag) for tag in natsorted(tag_to_color.keys())]
+        n_col = 1
+        while True:
+            n_col, leg = _make_legend(n_col, loc=(x_offset, y_offset))
+            bb = leg.get_window_extent(rend).transformed(ax.transAxes.inverted())
+            if bb.height <= 1:
+                break
+            n_col += 1
+        # if bb.height > 1:
+        #     n_col, leg = _make_legend(2, (x_offset, y_offset))
+        #     bb = leg.get_window_extent(rend).transformed(ax.transAxes.inverted())
+        y_offset -= bb.height
+        x_widest = max(x_widest, bb.width)
+        if y_offset < 0 and n_palettes:
+            x_offset += x_widest + 0.02
+            y_offset = 1 - bb.height
+        _, leg = _make_legend(n_col, (x_offset, y_offset))
+        ax.add_artist(leg)

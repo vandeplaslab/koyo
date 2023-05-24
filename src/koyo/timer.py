@@ -72,15 +72,16 @@ class MeasureTimer:
         """Return current time."""
         return time.perf_counter_ns() if self.human else time.perf_counter()
 
-    def elapsed(self, n: int = 1) -> float:
+    def elapsed(self, n: int = 1, start: int = None) -> float:
         """Return amount of time that elapsed."""
         end = self.end or self.current()
-        elapsed = end - self.start
+        start = start or self.start
+        elapsed = end - start
         elapsed = elapsed / n
         return elapsed
 
-    def __call__(self, n: int = 1, current: int = 1):
-        elapsed = self.elapsed(n)
+    def __call__(self, n: int = 1, current: int = 1, start: int = None):
+        elapsed = self.elapsed(n, start)
         formatted = format_human_time(elapsed) if self.human else format_time(elapsed)
         if n > 1:
             formatted = f"{formatted} [{current}/{n}]"
