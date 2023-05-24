@@ -56,12 +56,12 @@ def get_loguru_env():
 
 
 def get_loguru_config(
-    level: ty.Union[str, int], no_color: bool, enqueue: bool = True
+    level: ty.Union[str, int], no_color: bool, enqueue: bool = True, fmt: str = LOG_FMT, color_fmt: str = COLOR_LOG_FMT
 ) -> ty.Tuple[str, str, bool, bool]:
     """Return level."""
     level = get_loguru_level(level)
     colorize = not no_color
-    fmt = LOG_FMT if no_color else COLOR_LOG_FMT
+    fmt = fmt if no_color else color_fmt
     return level.upper(), fmt, colorize, enqueue
 
 
