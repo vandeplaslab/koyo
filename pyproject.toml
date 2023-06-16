@@ -33,7 +33,7 @@ dependencies = [
     "scipy",
     "numba",
     "natsort",
-    "loguru"
+    "loguru",
 ]
 
 # extras

@@ -9,6 +9,24 @@ from koyo.typing import SimpleArrayLike
 
 
 @numba.njit(fastmath=True, cache=True)
+def ppm_to_delta_mass(mz: ty.Union[float, np.ndarray], ppm: ty.Union[float, np.ndarray]) -> ty.Union[float, np.ndarray]:
+    """Converts a ppm error range to a delta mass in th (da?).
+
+    Parameters
+    ----------
+    mz : float
+        Observed m/z
+    ppm : float
+        mass range in ppm
+
+    Example
+    -------
+    ppm_to_delta_mass(1234.567, 50)
+    """
+    return ppm * mz / 1_000_000.0
+
+
+@numba.njit(fastmath=True, cache=True)
 def ppm_error(x: ty.Union[float, np.ndarray], y: ty.Union[float, np.ndarray]) -> ty.Union[float, np.ndarray]:
     """Calculate ppm error."""
     return ((x - y) / y) * 1e6

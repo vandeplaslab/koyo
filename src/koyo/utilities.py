@@ -345,6 +345,11 @@ def slugify(value, allow_unicode=False):
     return re.sub(r"[-\s]+", "-", value).strip("-_")
 
 
+def get_array_mask(array: np.ndarray, min_val: float, max_val: float):
+    """Return mask for array."""
+    return np.logical_and(array >= min_val, array <= max_val)
+
+
 def get_array_window(array: np.ndarray, min_val: float, max_val: float, *arrays):
     """Get narrower view of array based on upper and lower limits.
 
@@ -420,3 +425,15 @@ class Cycler:
     def set_current(self, index: int):
         """Set current index."""
         self._index = index
+
+
+def difference_matrix(a: np.ndarray) -> np.ndarray:
+    """Difference matrix.
+
+    Compute difference between each element in a 1d array.
+    """
+    a = np.asarray(a)
+    assert a.ndim == 1, "Input must be 1d array."
+
+    x = np.reshape(a, (len(a), 1))
+    return x - x.transpose()
