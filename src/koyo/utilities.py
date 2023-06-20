@@ -437,3 +437,10 @@ def difference_matrix(a: np.ndarray) -> np.ndarray:
 
     x = np.reshape(a, (len(a), 1))
     return x - x.transpose()
+
+
+def running_as_pyinstaller_app() -> bool:
+    """Infer whether we are running pyinstaller bundle."""
+    import sys
+
+    return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
