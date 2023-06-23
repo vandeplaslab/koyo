@@ -51,7 +51,7 @@ def format_time(seconds: float) -> str:
 class MeasureTimer:
     """Timer class."""
 
-    def __init__(self, func: ty.Callable = None, msg: str = None, human: bool = True):
+    def __init__(self, func: ty.Optional[ty.Callable] = None, msg: ty.Optional[str] = None, human: bool = True):
         self.func = func
         self.msg = msg
         self.human = human
@@ -72,7 +72,7 @@ class MeasureTimer:
         """Return current time."""
         return time.perf_counter_ns() if self.human else time.perf_counter()
 
-    def elapsed(self, n: int = 1, start: int = None) -> float:
+    def elapsed(self, n: int = 1, start: ty.Optional[int] = None) -> float:
         """Return amount of time that elapsed."""
         end = self.end or self.current()
         start = start or self.start
@@ -80,7 +80,7 @@ class MeasureTimer:
         elapsed = elapsed / n
         return elapsed
 
-    def __call__(self, n: int = 1, current: int = 1, start: int = None):
+    def __call__(self, n: int = 1, current: int = 1, start: ty.Optional[int] = None):
         elapsed = self.elapsed(n, start)
         formatted = format_human_time(elapsed) if self.human else format_time(elapsed)
         if n > 1:

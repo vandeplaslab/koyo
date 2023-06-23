@@ -33,7 +33,7 @@ def default(o):
         return int(o)
     elif isinstance(o, (np.float64, np.float32, np.float16)):
         return float(o)
-    raise TypeError("Could not convert %s of type %s" % o, type(o))
+    raise TypeError("Could not convert {} of type {}".format(*o), type(o))
 
 
 def read_json_data(filepath: PathLike):

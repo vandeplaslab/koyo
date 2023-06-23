@@ -1,8 +1,10 @@
 """Visuals."""
+import typing as ty
+
 import numba as nb
 import numpy as np
 from matplotlib.collections import LineCollection
-import typing as ty
+
 
 def fig_to_pil(fig):
     """Convert a Matplotlib figure to a PIL Image and return it."""
@@ -149,8 +151,8 @@ def add_legend(
     x_pad : float
         Padding between the legend and the plot.
     """
-    from natsort import natsorted
     from matplotlib.patches import Patch
+    from natsort import natsorted
 
     def _make_legend(n_col=1, loc="best"):
         return n_col, ax.legend(
