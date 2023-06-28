@@ -70,10 +70,10 @@ def set_loguru_log(
     level: ty.Union[str, int] = 20,
     no_color: bool = False,
     enqueue: bool = True,
-    fmt: str = None,
+    fmt: ty.Optional[str] = None,
     diagnose: bool = False,
     catch: bool = False,
-    colorize: bool = None,
+    colorize: ty.Optional[bool] = None,
     remove: bool = True,
     logger: "Logger" = None,
 ):

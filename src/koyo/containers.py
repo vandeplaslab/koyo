@@ -79,7 +79,7 @@ class MutableSequence(ty.MutableSequence[_T]):
 class MutableMapping(ty.MutableMapping[_K, _T]):
     """Mutable mapping instance."""
 
-    def __init__(self, data: ty.Dict[_K, _T] = None):
+    def __init__(self, data: ty.Optional[ty.Dict[_K, _T]] = None):
         self._dict: ty.Dict[_K, _T] = {}
         if data is not None:
             self.update(data)

@@ -112,7 +112,7 @@ def get_peaklist_window_for_da(peaklist: np.ndarray, da: float) -> ty.List[ty.Tu
     return _peaklist
 
 
-def get_mzs_for_tol(mzs: np.ndarray, tol: float = None, ppm: float = None):
+def get_mzs_for_tol(mzs: np.ndarray, tol: ty.Optional[float] = None, ppm: ty.Optional[float] = None):
     """Get min/max values for specified tolerance or ppm."""
     if tol is None and ppm is None or tol == 0 and ppm == 0:
         raise ValueError("Please specify `tol` or `ppm`.")
