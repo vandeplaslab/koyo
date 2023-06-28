@@ -4,10 +4,11 @@ import typing as ty
 
 import toml
 
+from koyo.typing import PathLike
 from koyo.utilities import _remove_duplicates_from_dict
 
 
-def read_toml_data(filepath: str):
+def read_toml_data(filepath: PathLike):
     """Read TOML data and metadata.
 
     Parameters
@@ -25,12 +26,12 @@ def read_toml_data(filepath: str):
     return data
 
 
-def write_toml_data(filepath: str, obj: ty.Dict, check_existing: bool = False):
+def write_toml_data(filepath: PathLike, obj: ty.Dict, check_existing: bool = False):
     """Write data to TOML file.
 
     Parameters
     ----------
-    filepath : str
+    filepath : PathLike
         path to TOML file
     obj : dict
         object containing data
