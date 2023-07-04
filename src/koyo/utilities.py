@@ -11,6 +11,10 @@ import numpy as np
 from koyo.typing import SimpleArrayLike
 
 
+def is_valid_python_name(name):
+    from keyword import iskeyword
+    return name.isidentifier() and not iskeyword(name)
+
 def is_between(value: float, lower: float, upper: float, inclusive: bool = True) -> bool:
     """Check if value is between lower and upper."""
     if inclusive:
