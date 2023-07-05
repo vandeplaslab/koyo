@@ -1,5 +1,6 @@
 import os
 import sys
+from contextlib import suppress
 
 DEFAULT_HOOK = None
 
@@ -15,8 +16,9 @@ def debugger_hook(type, value, tb):
         import traceback
 
         # we are NOT in interactive mode, print the exception...
-        traceback.print_exception(type, value, tb)
-        pdb.post_mortem(tb)
+        with suppress(Exception):
+            traceback.print_exception(type, value, tb)
+            pdb.post_mortem(tb)
 
 
 def install_debugger_hook():
