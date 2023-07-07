@@ -27,9 +27,11 @@ def ppm_to_delta_mass(mz: ty.Union[float, np.ndarray], ppm: ty.Union[float, np.n
 
 
 @numba.njit(fastmath=True, cache=True)
-def ppm_error(x: ty.Union[float, np.ndarray], y: ty.Union[float, np.ndarray]) -> ty.Union[float, np.ndarray]:
+def ppm_error(
+    measured_mz: ty.Union[float, np.ndarray], theoretical_mz: ty.Union[float, np.ndarray]
+) -> ty.Union[float, np.ndarray]:
     """Calculate ppm error."""
-    return ((x - y) / y) * 1e6
+    return ((measured_mz - theoretical_mz) / theoretical_mz) * 1e6
 
 
 @numba.njit(fastmath=True, cache=True)
