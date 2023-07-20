@@ -62,6 +62,7 @@ class MeasureTimer:
 
         self.start = time.perf_counter_ns() if human else time.perf_counter()
         self.end = None
+        self.last = None
 
     def finish(self):
         """Finish the timer."""
@@ -78,7 +79,16 @@ class MeasureTimer:
         start = start or self.start
         elapsed = end - start
         elapsed = elapsed / n
+        self.last = end
         return elapsed
+
+    def elapsed_since_last(self):
+        """Elapsed since last time."""
+        return self.elapsed(start=self.last)
+
+    def format(self, elapsed: int):
+        """Format time."""
+        return format_human_time(elapsed) if self.human else format_time(elapsed)
 
     def __call__(self, n: int = 1, current: int = 1, start: ty.Optional[int] = None):
         elapsed = self.elapsed(n, start)

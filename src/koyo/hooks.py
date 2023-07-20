@@ -5,7 +5,7 @@ from contextlib import suppress
 DEFAULT_HOOK = None
 
 
-def debugger_hook(type, value, tb):
+def debugger_hook(type, value, tb) -> None:
     """Drop into python debugger on uncaught exception."""
     if hasattr(sys, "ps1") or not sys.stderr.isatty():
         # we are in interactive mode, or we don't have a tty-like
@@ -21,7 +21,7 @@ def debugger_hook(type, value, tb):
             pdb.post_mortem(tb)
 
 
-def install_debugger_hook():
+def install_debugger_hook() -> None:
     """Activate the debugger hook."""
     global DEFAULT_HOOK
     os.environ["KOYO_DEV_MODE"] = "1"
@@ -31,7 +31,7 @@ def install_debugger_hook():
     sys.excepthook = debugger_hook
 
 
-def uninstall_debugger_hook():
+def uninstall_debugger_hook() -> None:
     """Deactivate the debugger hook."""
     global DEFAULT_HOOK
     os.environ["KOYO_DEV_MODE"] = "0"
