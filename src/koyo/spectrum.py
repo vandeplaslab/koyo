@@ -8,6 +8,36 @@ import numpy as np
 from koyo.typing import SimpleArrayLike
 
 
+def _cluster_within_ppm_with_index(array: np.ndarray, ppm: float):
+    """Cluster results within ppm tolerance."""
+    tmp = array.copy()
+    indices = np.arange(tmp.size)
+    groups = []
+    index_groups = []
+    while len(tmp):
+        # select seed
+        seed = tmp.min()
+        mask = np.abs(ppm_error(tmp, seed)) <= ppm
+        groups.append(tmp[mask])
+        index_groups.append(indices[mask])
+        tmp = tmp[~mask]
+        indices = indices[~mask]
+    return groups, index_groups
+
+
+def cluster_within_ppm(array: np.ndarray, ppm: float):
+    """Cluster results within ppm tolerance."""
+    tmp = array.copy()
+    groups = []
+    while len(tmp):
+        # select seed
+        seed = tmp.min()
+        mask = np.abs(ppm_error(tmp, seed)) <= ppm
+        groups.append(tmp[mask])
+        tmp = tmp[~mask]
+    return groups
+
+
 @numba.njit(fastmath=True, cache=True)
 def ppm_to_delta_mass(mz: ty.Union[float, np.ndarray], ppm: ty.Union[float, np.ndarray]) -> ty.Union[float, np.ndarray]:
     """Converts a ppm error range to a delta mass in th (da?).
@@ -27,9 +57,11 @@ def ppm_to_delta_mass(mz: ty.Union[float, np.ndarray], ppm: ty.Union[float, np.n
 
 
 @numba.njit(fastmath=True, cache=True)
-def ppm_error(x: ty.Union[float, np.ndarray], y: ty.Union[float, np.ndarray]) -> ty.Union[float, np.ndarray]:
+def ppm_error(
+    measured_mz: ty.Union[float, np.ndarray], theoretical_mz: ty.Union[float, np.ndarray]
+) -> ty.Union[float, np.ndarray]:
     """Calculate ppm error."""
-    return ((x - y) / y) * 1e6
+    return ((measured_mz - theoretical_mz) / theoretical_mz) * 1e6
 
 
 @numba.njit(fastmath=True, cache=True)
