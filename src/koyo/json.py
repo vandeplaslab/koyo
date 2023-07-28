@@ -1,5 +1,6 @@
 """All utility functions that deal with JSON files."""
 import os
+from pathlib import Path
 
 import numpy as np
 
@@ -33,6 +34,8 @@ def default(o):
         return int(o)
     elif isinstance(o, (np.float64, np.float32, np.float16)):
         return float(o)
+    elif isinstance(o, Path):
+        return str(o)
     raise TypeError("Could not convert {} of type {}".format(*o), type(o))
 
 
