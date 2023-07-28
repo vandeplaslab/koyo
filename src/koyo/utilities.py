@@ -11,6 +11,17 @@ import numpy as np
 from koyo.typing import SimpleArrayLike
 
 
+def pluralize(word: str, n: int, with_e: bool = False) -> str:
+    """Give plural form to a word."""
+    if word in ["is", "are"]:
+        return "is" if n == 1 else "are"
+    if word in ["was", "were"]:
+        return "was" if n == 1 else "were"
+    elif word in ["has", "have"]:
+        return "has" if n == 1 else "have"
+    extra = "s" if not with_e else "es"
+    return word if n == 1 else word + extra
+
 def is_valid_python_name(name):
     from keyword import iskeyword
     return name.isidentifier() and not iskeyword(name)
