@@ -36,6 +36,7 @@ dependencies = [
     "loguru",
     "toml",
     "click<=7.1.2",
+    "mpire",
 ]
 
 # extras

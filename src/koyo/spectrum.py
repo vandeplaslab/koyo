@@ -1,11 +1,14 @@
 """Utilities for spectrum analysis."""
+import math
 import typing as ty
 from bisect import bisect_left, bisect_right
 
 import numba
 import numpy as np
+import scipy.signal
 
 from koyo.typing import SimpleArrayLike
+from koyo.utilities import find_nearest_index_batch
 
 
 def _cluster_within_ppm_with_index(array: np.ndarray, ppm: float):
@@ -179,3 +182,123 @@ def bisect_spectrum(x_spectrum, mz_value, tol: float) -> ty.Tuple[int, int]:
     if x_spectrum[ix_u] > (mz_value + tol):
         ix_u -= 1
     return ix_l, ix_u
+
+
+def parabolic_centroid(
+    mzs: np.ndarray, intensities: np.ndarray, peak_threshold: float = 0
+) -> ty.Tuple[np.ndarray, np.ndarray]:
+    """Calculate centroid position.
+
+    This function was taken from msiwarp package available on GitHub
+    """
+    peak_indices, _ = scipy.signal.find_peaks(intensities, height=peak_threshold)
+    peak_left = peak_indices - 1
+    peak_right = peak_indices + 1
+
+    n = len(peak_indices)
+
+    x = np.zeros((n, 3))
+    y = np.zeros((n, 3))
+
+    x[:, 0] = mzs[peak_left]
+    x[:, 1] = mzs[peak_indices]
+    x[:, 2] = mzs[peak_right]
+
+    y[:, 0] = intensities[peak_left]
+    y[:, 1] = intensities[peak_indices]
+    y[:, 2] = intensities[peak_right]
+
+    a = ((y[:, 2] - y[:, 1]) / (x[:, 2] - x[:, 1]) - (y[:, 1] - y[:, 0]) / (x[:, 1] - x[:, 0])) / (x[:, 2] - x[:, 0])
+
+    b = (
+        (y[:, 2] - y[:, 1]) / (x[:, 2] - x[:, 1]) * (x[:, 1] - x[:, 0])
+        + (y[:, 1] - y[:, 0]) / (x[:, 1] - x[:, 0]) * (x[:, 2] - x[:, 1])
+    ) / (x[:, 2] - x[:, 0])
+
+    mzs_parabolic = (1 / 2) * (-b + 2 * a * x[:, 1]) / a
+    intensities_parabolic = a * (mzs_parabolic - x[:, 1]) ** 2 + b * (mzs_parabolic - x[:, 1]) + y[:, 1]
+    mask = ~np.isnan(mzs_parabolic)
+    return mzs_parabolic[mask], intensities_parabolic[mask]
+
+
+def seq_ppm(mz_start: float, mz_end: float, ppm: float):
+    """Compute sequence of m/z values at a particular ppm."""
+    if mz_start == 0 or mz_end == 0 or ppm == 0:
+        raise ValueError("Input values cannot be equal to 0.")
+    length = (np.log(mz_end) - np.log(mz_start)) / np.log((1 + 1e-6 * ppm) / (1 - 1e-6 * ppm))
+    length = math.floor(length) + 1
+    mz = mz_start * np.power(((1 + 1e-6 * ppm) / (1 - 1e-6 * ppm)), (np.arange(length)))
+    return mz
+
+
+def get_ppm_offsets(mz_x: np.ndarray, ppm: float, min_spacing: float = 1e-5, every_n: int = 100) -> np.ndarray:
+    """Generate correction map of specified ppm."""
+    spacing = min_spacing  # if ppm > 0 else -min_spacing
+    is_subtract = ppm < 0
+    ppm = abs(ppm)
+    _mzx = mz_x[::every_n]
+    result = np.zeros_like(_mzx)
+    mzx = mz_x
+    full_result = np.zeros_like(mzx)
+    if ppm == 0:
+        return full_result
+
+    n = 10
+    index_offset = 0
+    for i, val in enumerate(_mzx):
+        while True:
+            offsets = np.full(n, spacing) * np.arange(index_offset, index_offset + n)
+            errors = ppm_error(val, val - offsets)
+            index = find_nearest_index(errors, ppm)
+            nearest = errors[index]
+            if nearest >= ppm:
+                offset = offsets[index]
+                break
+            index_offset += n
+        result[i] = offset
+        index_offset -= n * 2
+
+    start_idx = 0
+    indices = find_nearest_index_batch(mzx, _mzx)
+    indices[-1] = len(mzx)
+    for i, end_idx in enumerate(indices):
+        full_result[start_idx:end_idx] = result[i]
+        start_idx = end_idx
+    return full_result if not is_subtract else -full_result
+
+
+def get_multi_ppm_offsets(mz_x: np.ndarray, ppm_ranges, min_spacing: float = 1e-5, every_n: int = 100) -> np.ndarray:
+    """Generate correction map of specified ppm."""
+    start_offset = 0
+    _mzx = mz_x[::every_n]
+    offsets = np.zeros_like(_mzx)
+    mzx = mz_x
+    full_offsets = np.zeros_like(mzx)
+    if all(_ppm[2] == 0 for _ppm in ppm_ranges):
+        return full_offsets
+
+    ppm_ = []
+    for x_min, x_max, ppm in ppm_ranges:
+        spacing = min_spacing if ppm > 0 else -min_spacing
+        ppm_.append((x_min, x_max, ppm, spacing))
+
+    for i, val in enumerate(_mzx):
+        offset = start_offset
+        for x_min, x_max, ppm, spacing in ppm_:
+            if x_min <= val <= x_max:
+                if ppm > 0:
+                    while ppm_error(val, val - offset) <= ppm:
+                        offset += spacing
+                else:
+                    while ppm_error(val, val - offset) >= ppm:
+                        offset += spacing
+                break
+        offsets[i] = offset
+
+    start_idx = 0
+    indices = find_nearest_index_batch(mzx, _mzx)
+    indices[-1] = len(mzx)
+    for i, end_idx in enumerate(indices):
+        full_offsets[start_idx:end_idx] = offsets[i]
+        start_idx = end_idx
+    return full_offsets
