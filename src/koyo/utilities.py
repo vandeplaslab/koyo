@@ -10,6 +10,11 @@ import numpy as np
 
 from koyo.typing import SimpleArrayLike
 
+def reraise_exception_if_debug(exc, message: str, env_key: str = "DEV_MODE"):
+    """Reraise exception if debug mode is enabled and jump into the debugger."""
+    if os.environ.get(env_key, "0") == "1":
+        raise exc
+    logger.exception(message)
 
 def pluralize(word: str, n: int, with_e: bool = False) -> str:
     """Give plural form to a word."""
