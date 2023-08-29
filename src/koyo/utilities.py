@@ -3,18 +3,36 @@ import re
 import typing as ty
 import unicodedata
 from collections.abc import Iterable
-from math import ceil
+from difflib import get_close_matches
+from math import ceil, floor
 
 import numba as nb
 import numpy as np
 
 from koyo.typing import SimpleArrayLike
 
+
+def get_module_path(module: str, filename: str) -> str:
+    """Get module path."""
+    import importlib.resources
+
+    if not filename.endswith(".py"):
+        filename += ".py"
+
+    path = str(importlib.resources.files(module).joinpath(filename))
+    return path
+
+
 def reraise_exception_if_debug(exc, message: str, env_key: str = "DEV_MODE"):
     """Reraise exception if debug mode is enabled and jump into the debugger."""
+    import os
+
+    from loguru import logger
+
     if os.environ.get(env_key, "0") == "1":
         raise exc
     logger.exception(message)
+
 
 def pluralize(word: str, n: int, with_e: bool = False) -> str:
     """Give plural form to a word."""
@@ -27,9 +45,12 @@ def pluralize(word: str, n: int, with_e: bool = False) -> str:
     extra = "s" if not with_e else "es"
     return word if n == 1 else word + extra
 
+
 def is_valid_python_name(name):
     from keyword import iskeyword
+
     return name.isidentifier() and not iskeyword(name)
+
 
 def is_between(value: float, lower: float, upper: float, inclusive: bool = True) -> bool:
     """Check if value is between lower and upper."""
@@ -170,17 +191,17 @@ def format_count(value):
 
 def format_size(size: int) -> str:
     """Convert bytes to nicer format."""
-    if size < 2**10:
+    if size < 2 ** 10:
         return "%s" % size
-    elif size < 2**20:
-        return "%.1fK" % (size / float(2**10))
-    elif size < 2**30:
-        return "%.1fM" % (size / float(2**20))
-    elif size < 2**40:
-        return "%.1fG" % (size / float(2**30))
-    elif size < 2**50:
-        return "%.1fT" % (size / float(2**40))
-    return "%.1fP" % (size / float(2**50))
+    elif size < 2 ** 20:
+        return "%.1fK" % (size / float(2 ** 10))
+    elif size < 2 ** 30:
+        return "%.1fM" % (size / float(2 ** 20))
+    elif size < 2 ** 40:
+        return "%.1fG" % (size / float(2 ** 30))
+    elif size < 2 ** 50:
+        return "%.1fT" % (size / float(2 ** 40))
+    return "%.1fP" % (size / float(2 ** 50))
 
 
 def is_number(value):
@@ -464,3 +485,236 @@ def running_as_pyinstaller_app() -> bool:
     import sys
 
     return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
+
+
+def get_close_matches_case(word, possibilities, *args, **kwargs):
+    """Case-insensitive version of difflib.get_close_matches."""
+    lower_word = word.lower()
+    lower_possibilities = {p.lower(): p for p in possibilities}
+    lower_matches = get_close_matches(lower_word, lower_possibilities.keys(), *args, **kwargs)
+    return [lower_possibilities[m] for m in lower_matches]
+
+
+def calculate_array_size(a, as_str: bool = True):
+    """Calculate the size of an array in Mb."""
+    if not hasattr(a, "nbytes"):
+        try:
+            n_bytes = a.data.nbytes + a.indptr_col.nbytes + a.indices_row.nbytes
+        except AttributeError:
+            try:
+                n_bytes = a.col.nbytes + a.row.nbytes + a.data.nbytes
+            except AttributeError:
+                n_bytes = a.data.nbytes + a.indptr.nbytes + a.indices.nbytes
+
+    else:
+        n_bytes = a.nbytes
+    if as_str:
+        return format_size(n_bytes)
+    return n_bytes
+
+
+def calculate_quantile_without_zeros(data, q=0.99):
+    """Calculate quantile value of a heatmap.
+
+    Parameters
+    ----------
+    data : np.array
+        heatmap
+    q : float, optional
+        quantile value, by default 0.99
+
+    Returns
+    -------
+    q_value : float
+        intensity value at qth quantile
+    """
+    data = data.astype(np.float)
+    data[data == 0] = np.nan
+    return np.nanquantile(data, q)
+
+
+def get_distributed_list(
+    total: int,
+    n_frames_or_proportion: ty.Union[int, float],
+    framelist: ty.Optional[np.ndarray] = None,
+    as_index: bool = False,
+) -> np.ndarray:
+    """Get list of frames that span the entire dataset.
+
+    Parameters
+    ----------
+    total: int
+        total number of frames available
+    n_frames_or_proportion : int / float
+        number of frames or proportion of frames
+    framelist : Optional[List, np.ndarray]
+        list of frames to use for sub-sampling
+    as_index : bool, optional
+        if `True`, the distributed framelist will consist of indices rather than actual frame IDs
+
+    Returns
+    -------
+    np.array
+        array with list of frames to extract from the dataset
+    """
+    start = 0 if as_index else 1
+    end = total
+
+    # check whether n_frames is not a fraction
+    if n_frames_or_proportion <= 1.0:
+        n_frames_or_proportion = total * n_frames_or_proportion
+
+    # make sure the number of requested frames does not exceed the maximum available frames
+    if n_frames_or_proportion > end:
+        n_frames_or_proportion = end
+
+    # compute divider
+    divider = floor(end / n_frames_or_proportion)
+
+    # get frame list
+    distributed = np.arange(start, end, divider).astype(np.int32)
+
+    # frame_list above is simply index positions
+    if framelist is not None:
+        framelist = np.asarray(framelist)
+        return framelist[distributed]
+    return distributed
+
+
+def optimize_dtype(int_value=None, float_value=None, allow_unsigned: bool = False, guess_type: bool = True):
+    """Compute the most optimal dtype for integer/float value.
+
+    Parameters
+    ----------
+    int_value : int, optional
+        integer value to test
+    float_value : float, optional
+        float value to test
+    allow_unsigned : bool
+        if 'True' unsigned version of the integer dtype will be used
+    guess_type : bool
+        if 'True', value will be checked to be either integer or float
+
+    Returns
+    -------
+    dtype : np.dtype
+        optimal dtype for particular value
+    """
+
+    def _check_dtype(value):
+        if np.issubdtype(type(value), np.integer):
+            _int_value, _float_value = value, None
+        elif np.issubdtype(type(value), np.floating):
+            _int_value, _float_value = None, value
+        else:
+            raise ValueError(f"Could not determine dtype - {type(value)}")
+        return _int_value, _float_value
+
+    if all(value is not None for value in [int_value, float_value]):
+        raise ValueError("You should either specify 'int_value' or 'float_value' and not both")
+
+    if all(value is None for value in [int_value, float_value]):
+        raise ValueError("You should either specify 'int_value' or 'float_value' and not None")
+
+    # guess data type based on the input
+    if guess_type:
+        int_value, float_value = _check_dtype(int_value if int_value is not None else float_value)
+
+    if int_value is not None:
+        if int_value < 0:
+            allow_unsigned = False
+
+        int8 = np.uint8 if allow_unsigned else np.int8
+        int16 = np.uint16 if allow_unsigned else np.int16
+        int32 = np.uint32 if allow_unsigned else np.int32
+        int64 = np.uint64 if allow_unsigned else np.int64
+        if np.iinfo(int8).min <= int_value <= np.iinfo(int8).max:
+            return int8
+        if np.iinfo(int16).min <= int_value <= np.iinfo(int16).max:
+            return int16
+        if np.iinfo(int32).min <= int_value <= np.iinfo(int32).max:
+            return int32
+        return int64
+    if float_value is not None:
+        if np.finfo(np.float32).min <= float_value <= np.finfo(np.float32).max:
+            return np.float32
+        return np.float64
+
+
+def find_nearest_divisible(
+    value: ty.Union[int, float], divisor: ty.Union[int, float], max_iters: int = 1000
+) -> ty.Union[int, float]:
+    """Find nearest value that can be evenly divided by the divisor.
+
+    Parameters
+    ----------
+    value : Union[int, float]
+        value to be divided by the divisor
+    divisor : Union[int, float]
+        value by which the `value` is divided
+    max_iters : int
+        maximum number of iterations before the algorithm should give up
+
+    Returns
+    -------
+    value : Union[int, float]
+        new value if the algorithm did not fail to find new value or -1 if it did
+    """
+    n_iter = 0
+    while value % divisor != 0 and n_iter < max_iters:
+        value += 1
+        n_iter += 1
+
+    if value % divisor == 0:
+        return value
+    return -1
+
+
+def view_as_blocks(array: np.ndarray, n_rows: int, n_cols: int, auto_pad: bool = True):
+    """Return an array of shape (n, n_rows, n_cols) where n * n_rows * n_cols = array.size.
+
+    If array is a 2D array, the returned array should look like n sub-blocks with
+    each sub-block preserving the "physical" layout of array.
+
+
+    Parameters
+    ----------
+    array : np.ndarray
+        input array
+    n_rows : int
+        number of rows in each sub-block
+    n_cols : int
+        number of columns in each sub-block
+    auto_pad : bool, optional
+        if `True`, the array will be padded with NaNs to ensure the input array is actually divisible by `n_rows` and
+        `n_cols`
+
+    References
+    ----------
+    Inspired by a StackOverflow post [1]
+    [1] https://stackoverflow.com/questions/16856788/slice-2d-array-into-smaller-2d-arrays
+    """
+    array = np.asarray(array)
+
+    h, w = array.shape
+    if auto_pad:
+        # if the shape is incorrect, pad the array with NaNs at the outer edges
+        if h % n_rows != 0 or w % n_cols != 0:
+            new_height = find_nearest_divisible(h, n_rows)
+            new_width = find_nearest_divisible(w, n_cols)
+            _array = array
+            array = np.full((new_height, new_width), fill_value=np.nan)
+            array[:h, :w] = _array
+            h, w = array.shape
+
+    # check shape
+    if h % n_rows != 0:
+        raise ValueError(
+            f"{h} rows is not evenly divisible by {n_rows}. Nearest alternative: {find_nearest_divisor(h, n_rows)}"
+        )
+    if w % n_cols != 0:
+        raise ValueError(
+            f"{w} cols is not evenly divisible by {n_cols}. Nearest alternative: {find_nearest_divisor(w, n_cols)}"
+        )
+    new_shape = (int(h / n_rows), int(w / n_cols))
+    return array.reshape((h // n_rows, n_rows, -1, n_cols)).swapaxes(1, 2).reshape(-1, n_rows, n_cols), new_shape

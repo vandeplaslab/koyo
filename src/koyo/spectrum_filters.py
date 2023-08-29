@@ -14,9 +14,7 @@ FILTER_REGISTER = {}
 
 
 def register(name, *args, **kwargs):
-    """Decorate a class to register a name for
-    it, optionally with a set of associated initialization
-    parameters.
+    """Decorate a class to register a name for it, optionally with a set of associated initialization parameters.
 
     Parameters
     ----------
@@ -45,6 +43,7 @@ def register(name, *args, **kwargs):
 
 class FilterBase:
     """A base type for Filters over raw signal arrays.
+
     All subtypes should provide a :meth:`filter` method
     which takes arguments *mz_array* and *intensity_array*
     which will be NumPy Arrays.
@@ -89,8 +88,7 @@ class MeanBelowMeanFilter(FilterBase):
 @register("savitzky_golay")
 @register("sav_gol")
 class SavitzkyGolayFilter(FilterBase):
-    """Apply `Savitsky-Golay smoothing <https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter>`
-    to the signal.
+    """Apply `Savitsky-Golay smoothing <https://en.wikipedia.org/wiki/Savitzky%E2%80%93Golay_filter>` to the signal.
 
     Attributes
     ----------
@@ -231,7 +229,7 @@ class PpmResampling(FilterBase):
     """Parts-per-million resampling."""
 
     def __init__(self, ppm: float, mz_start: float, mz_end: float):
-        from koyo.spectrum import seq_ppm
+        from koyo.spectrum import get_ppm_axis
 
         if ppm <= 0:
             raise ValueError("Please specify value of ppm that is larger than 0.")
@@ -241,7 +239,7 @@ class PpmResampling(FilterBase):
         self.ppm = ppm
         self.mz_start = float(mz_start)
         self.mz_end = float(mz_end)
-        self.mz_new = seq_ppm(self.mz_start, self.mz_end, self.ppm)
+        self.mz_new = get_ppm_axis(self.mz_start, self.mz_end, self.ppm)
 
     def filter(self, mz_array: np.ndarray, intensity_array: np.ndarray) -> ty.Tuple[np.ndarray, np.ndarray]:
         """Filter."""
@@ -345,8 +343,8 @@ class PpmPeakRecalibrate(FilterBase):
 def transform(
     mz_array: np.ndarray, intensity_array: np.ndarray, filters: ty.Optional[ty.Iterable[str]] = None
 ) -> ty.Tuple[np.ndarray, np.ndarray]:
-    """Apply a series of *filters* to the paired m/z and intensity
-    arrays.
+    """Apply a series of *filters* to the paired m/z and intensity arrays.
+
     The `filters` argument should be an iterable of either strings,
     callables, or instances of :class:`FilterBase`-derived classes.
     If they are strings, they must be registered names, as created by

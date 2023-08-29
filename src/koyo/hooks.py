@@ -25,6 +25,7 @@ def install_debugger_hook() -> None:
     """Activate the debugger hook."""
     global DEFAULT_HOOK
     os.environ["KOYO_DEV_MODE"] = "1"
+    os.environ["DEV_MODE"] = "1"
 
     if DEFAULT_HOOK is None:
         DEFAULT_HOOK = sys.excepthook
@@ -35,6 +36,7 @@ def uninstall_debugger_hook() -> None:
     """Deactivate the debugger hook."""
     global DEFAULT_HOOK
     os.environ["KOYO_DEV_MODE"] = "0"
+    os.environ["DEV_MODE"] = "0"
 
     if DEFAULT_HOOK is not None:
         sys.excepthook = DEFAULT_HOOK

@@ -33,6 +33,11 @@ class JSONCache:
         data = {}
         self.write(data)
 
+    @property
+    def name(self) -> str:
+        """Return basename of the directory."""
+        return self._dir_path.name
+
     def keys(self):
         """Return all keys in cache."""
         return self.read().keys()
@@ -56,7 +61,6 @@ class JSONCache:
         """Get path of flag's data."""
         return self._dir_path / self.FILENAME
 
-    @property
     def exists(self) -> bool:
         """Check whether flags file exists."""
         return self.path.exists()
@@ -64,7 +68,7 @@ class JSONCache:
     @property
     def as_str(self) -> str:
         """Get string representation of the flags."""
-        if self.exists:
+        if self.exists():
             data = read_json_data(self.path)
             ret = ""
             for k, v in data.items():
@@ -85,7 +89,7 @@ class JSONCache:
 
     def read(self) -> ty.Dict:
         """Read data."""
-        if self.exists:
+        if self.exists():
             return read_json_data(self.path)
         return {}
 
@@ -95,19 +99,19 @@ class JSONCache:
 
     def get_key(self, key: str, default=None):
         """Read flag from the flag file."""
-        if not self.exists:
+        if not self.exists():
             self._set_default()
         return self.read().get(key, default)
 
     def read_key(self, key: str):
         """Read flag from the flag file."""
-        if not self.exists:
+        if not self.exists():
             self._set_default()
         return self.read()[key]
 
     def write_key(self, key: str, value: ty.Union[int, float, str, bool]):
         """Write flag to the flag file."""
-        if not self.exists:
+        if not self.exists():
             self._set_default()
         data = self.read()
         data[key] = value

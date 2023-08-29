@@ -1,5 +1,8 @@
 """Override click group to enable ordering."""
+import glob
 import os
+import sys
+import traceback
 import typing as ty
 from ast import literal_eval
 from pathlib import Path
@@ -7,6 +10,155 @@ from pathlib import Path
 import click
 
 from koyo.typing import PathLike
+
+
+class OrderedGroup(click.Group):
+    """Override click group to enable ordering.
+
+    See https://stackoverflow.com/questions/47972638/how-can-i-define-the-order-of-click-sub-commands-in-help
+    """
+
+    def __init__(self, *args, **kwargs):
+        self.priorities = {}
+        self.help_groups = {}
+        self.help_groups_priority = {}
+        super().__init__(*args, **kwargs)
+
+    # noinspection PyAttributeOutsideInit
+    def get_help(self, ctx):
+        """Get help."""
+        self.list_commands = self.list_commands_for_help
+        return super().get_help(ctx)
+
+    def list_commands_for_help(self, ctx):
+        """Reorder the list of commands when listing the help."""
+        commands = super().list_commands(ctx)
+        return (c[1] for c in sorted((self.priorities.get(command, 1), command) for command in commands))
+
+    def sort_commands_with_help(self, commands_with_help: ty.List[ty.Tuple[str, str]]) -> ty.List[ty.Tuple[str, str]]:
+        """Sort commands with help."""
+        return sorted(commands_with_help, key=lambda x: self.priorities[x[0]])
+
+    def add_command(
+        self, cmd, name=None, priority=1, help_group: str = "Commands", help_group_priority: ty.Optional[int] = None
+    ):
+        """Add command."""
+        super().add_command(cmd, name)
+        self.priorities[cmd.name] = priority
+        self.help_groups.setdefault(help_group, []).append(cmd.name)
+        if help_group not in self.help_groups_priority:
+            self.help_groups_priority[help_group] = help_group_priority or 1
+        if help_group_priority is not None:
+            self.help_groups_priority[help_group] = help_group_priority
+
+    def command(
+        self, *args, priority=1, help_group: str = "Commands", help_group_priority: ty.Optional[int] = None, **kwargs
+    ):
+        """Behaves the same as `click.Group.command()` except capture
+        a priority for listing command names in help.
+        """
+        priorities = self.priorities
+        help_groups = self.help_groups
+        help_groups_priority = self.help_groups_priority
+        if help_group not in help_groups_priority:
+            help_groups_priority[help_group] = help_group_priority or 1
+        if help_group_priority is not None:
+            self.help_groups_priority[help_group] = help_group_priority
+
+        def decorator(f):
+            cmd = super(OrderedGroup, self).command(*args, **kwargs)(f)
+            priorities[cmd.name] = priority
+            help_groups.setdefault(help_group, []).append(cmd.name)
+            return cmd
+
+        return decorator
+
+    def format_commands(self, ctx, formatter):
+        """Format commands."""
+        for help_group in sorted(self.help_groups, key=lambda x: self.help_groups_priority[x]):
+            commands = self.help_groups[help_group]
+            # for group, commands in self.help_groups.items():
+            rows = []
+            for subcommand in commands:
+                cmd = self.get_command(ctx, subcommand)
+                if cmd is None:
+                    continue
+                rows.append((subcommand, cmd.get_short_help_str()))
+
+            if rows:
+                rows = self.sort_commands_with_help(rows)
+                with formatter.section(help_group):
+                    formatter.write_dl(rows)
+
+
+def with_plugins(plugins, **kwargs):
+    """
+    A decorator to register external CLI commands to an instance of
+    `click.Group()`.
+
+    Parameters
+    ----------
+    plugins : iter
+        An iterable producing one `pkg_resources.EntryPoint()` per iteration.
+    kwargs : **kwargs, optional
+        Additional keyword arguments for instantiating `click.Group()`.
+
+    Returns
+    -------
+    click.Group()
+    """
+
+    def decorator(group):
+        if not isinstance(group, click.Group):
+            raise TypeError("Plugins can only be attached to an instance of click.Group()")
+
+        for entry_point in plugins or ():
+            try:
+                group.add_command(entry_point.load(), **kwargs)
+            except Exception:
+                # Catch this so a busted plugin doesn't take down the CLI.
+                # Handled by registering a dummy command that does nothing
+                # other than explain the error.
+                group.add_command(BrokenCommand(entry_point.name))
+
+        return group
+
+    return decorator
+
+
+class BrokenCommand(click.Command):
+    """
+    Rather than completely crash the CLI when a broken plugin is loaded, this
+    class provides a modified help message informing the user that the plugin is
+    broken and they should contact the owner.  If the user executes the plugin
+    or specifies `--help` a traceback is reported showing the exception the
+    plugin loader encountered.
+    """
+
+    def __init__(self, name):
+        """Define the special help messages after instantiating a `click.Command()`."""
+        click.Command.__init__(self, name)
+
+        util_name = os.path.basename(sys.argv and sys.argv[0] or __file__)
+
+        if os.environ.get("CLICK_PLUGINS_HONESTLY"):  # pragma no cover
+            icon = "\U0001F4A9"
+        else:
+            icon = "\u2020"
+
+        self.help = (
+            "\nWarning: entry point could not be loaded. Contact "
+            "its author for help.\n\n\b\n" + traceback.format_exc()
+        )
+        self.short_help = icon + f" Warning: could not load plugin. See `{util_name} {self.name} --help`."
+
+    def invoke(self, ctx):
+        """Print the traceback instead of doing nothing."""
+        click.echo(self.help, color=ctx.color)
+        ctx.exit(1)
+
+    def parse_args(self, ctx, args):
+        return args
 
 
 _verbosity_options = [
@@ -25,7 +177,7 @@ _verbosity_options = [
 
 
 def verbosity_options(func):
-    """Verbosity options"""
+    """Verbosity options."""
     for option in reversed(_verbosity_options):
         func = option(func)
     return func
@@ -85,14 +237,29 @@ def format_value(description: str, args: str, value: ty.Any) -> ty.List[ty.Tuple
     return res
 
 
+def get_args_from_option(option: ty.Callable):
+    """Return argument information from option."""
+    if not hasattr(option, "__closure__"):
+        raise ValueError(f"Option {option} does not have closure.")
+    closure = option.__closure__
+    for cell in closure:
+        if isinstance(cell.cell_contents, tuple):
+            break
+    ret = ""
+    for value in cell.cell_contents:
+        if isinstance(value, str) and value.startswith("-"):
+            ret += value
+    return ret
+
+
 class Parameter:
     """Parameter object."""
 
     __slots__ = ["description", "args", "value"]
 
-    def __init__(self, description: str, args: str, value: ty.Optional[ty.Any] = None):
+    def __init__(self, description: str, args: ty.Union[str, ty.Callable], value: ty.Optional[ty.Any] = None):
         self.description = description
-        self.args = args
+        self.args = args if isinstance(args, str) else get_args_from_option(args)
         self.value = value
 
     def with_value(
@@ -106,42 +273,6 @@ class Parameter:
         if self.value:
             return format_value(self.description, self.args, self.value)
         return [(self.description, self.args, "")]
-
-
-class OrderedGroup(click.Group):
-    """Override click group to enable ordering.
-
-    See https://stackoverflow.com/questions/47972638/how-can-i-define-the-order-of-click-sub-commands-in-help
-    """
-
-    def __init__(self, *args, **kwargs):
-        self.priorities = {}
-        super().__init__(*args, **kwargs)
-
-    # noinspection PyAttributeOutsideInit
-    def get_help(self, ctx):
-        """Get help."""
-        self.list_commands = self.list_commands_for_help
-        return super().get_help(ctx)
-
-    def list_commands_for_help(self, ctx):
-        """Reorder the list of commands when listing the help."""
-        commands = super().list_commands(ctx)
-        return (c[1] for c in sorted((self.priorities.get(command, 1), command) for command in commands))
-
-    def command(self, *args, **kwargs):
-        """Behaves the same as `click.Group.command()` except capture
-        a priority for listing command names in help.
-        """
-        priority = kwargs.pop("priority", 1)
-        priorities = self.priorities
-
-        def decorator(f):
-            cmd = super(OrderedGroup, self).command(*args, **kwargs)(f)
-            priorities[cmd.name] = priority
-            return cmd
-
-        return decorator
 
 
 def print_parameters(*parameters: Parameter):
@@ -173,8 +304,9 @@ def success_msg(msg):
     """Display success message."""
     click.echo(f"SUCCESS: {msg}")
 
+
 def expand_dirs(input_dir: str) -> ty.Sequence[str]:
-    """Expand data directory"""
+    """Expand data directory."""
     if "*" in str(input_dir):
         return glob.glob(input_dir)
     elif isinstance(input_dir, (str, Path)):
@@ -189,7 +321,7 @@ def arg_parse_path(ctx, param, value) -> ty.List[Path]:
     """Split arguments."""
     if value is None:
         return []
-    res: ty.List[Path] = []
+    res: ty.List[str] = []
     if isinstance(value, (str, Path)):
         value = [value]
     for path in value:
@@ -198,6 +330,7 @@ def arg_parse_path(ctx, param, value) -> ty.List[Path]:
             path = path[:-1]
         res.extend(expand_dirs(path))
     return [Path(path).absolute() for path in res]
+
 
 # noinspection PyUnusedLocal
 def arg_split_str(ctx, param, value):
@@ -357,3 +490,34 @@ def set_env_args(**kwargs):
     for name, value in kwargs.items():
         os.environ[name] = str(value)
         logger.trace(f"Set environment variable: {name}={value}")
+
+
+def exit_with_error(skip_error: bool = False):
+    """Skip error or exit with error."""
+    import sys
+
+    if skip_error:
+        return
+    return sys.exit(1)
+
+
+def select_from_list(
+    item_list: ty.List[ty.Any],
+    text: str = "Please select one of the options from the list",
+    auto_select: str = "off",
+    default: int = -1,
+) -> int:
+    """Select file from the list. The list is assumed to be sorted in descending order of creation time meaning that
+    oldest files should be first and newest should be last.
+    """
+    if item_list:
+        if len(item_list) == 1:
+            return 0
+        elif auto_select.lower() == "off":
+            choice = click.prompt(text, type=click.INT, default=default)
+            return choice
+        elif auto_select.lower() == "newest":
+            return len(item_list) - 1
+        elif auto_select.lower() == "oldest":
+            return 0
+    return default

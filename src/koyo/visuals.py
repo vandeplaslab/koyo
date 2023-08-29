@@ -1,10 +1,33 @@
 """Visuals."""
 import typing as ty
 
+import math
 import numba as nb
 import numpy as np
 from matplotlib.collections import LineCollection
 
+def set_tick_fmt(ax, use_offset=False, axis="both"):
+    """Set tick format to control whether scientific notation is shown"""
+    ax.ticklabel_format(axis=axis, style="scientific" if use_offset else "plain", useOffset=use_offset)
+    return ax
+
+
+def despine(ax, orientation):
+    """Remove spines from 1D plots"""
+
+    plt.setp(ax.xaxis.get_majorticklines(), visible=False)
+    plt.setp(ax.xaxis.get_minorticklines(), visible=False)
+    plt.setp(ax.yaxis.get_majorticklines(), visible=False)
+    plt.setp(ax.yaxis.get_minorticklines(), visible=False)
+    plt.setp(ax.get_xticklabels(), visible=False)
+    plt.setp(ax.get_yticklabels(), visible=False)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    if orientation in ["horizontal", "horz", "h"]:
+        ax.spines["left"].set_visible(False)
+    else:
+        ax.spines["bottom"].set_visible(False)
+    return ax
 
 def fig_to_pil(fig):
     """Convert a Matplotlib figure to a PIL Image and return it."""
@@ -190,3 +213,100 @@ def add_legend(
             y_offset = 1 - bb.height
         _, leg = _make_legend(n_col, (x_offset, y_offset))
         ax.add_artist(leg)
+
+
+def find_text_color(base_color, dark_color="black", light_color="white", coef_choice=0):
+    """
+    Takes a background color and returns the appropriate light or dark text color.
+    Users can specify the dark and light text color, or accept the defaults of 'black' and 'white'
+    base_color: The color of the background. This must be
+        specified in RGBA with values between 0 and 1 (note, this is the default
+        return value format of a call to base_color = cmap(number) to get the
+        color corresponding to a desired number). Note, the value of `A` in RGBA
+        is not considered in determining light/dark.
+    dark_color: Any valid matplotlib color value.
+        Function will return this value if the text should be colored dark
+    light_color: Any valid matplotlib color value.
+        Function will return this value if thet text should be colored light.
+    coef_choice: slightly different approaches to calculating brightness. Currently two options in
+        a list, user can enter 0 or 1 as list index. 0 is default.
+    """
+
+    # Coefficients:
+    # option 0: http://www.nbdtech.com/Blog/archive/2008/04/27/Calculating-the-Perceived-Brightness-of-a-Color.aspx
+    # option 1: http://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color
+    coef_options = [
+        np.array((0.241, 0.691, 0.068, 0)),
+        np.array((0.299, 0.587, 0.114, 0)),
+    ]
+
+    coefs = coef_options[coef_choice]
+    rgb = np.array(base_color) * 255
+    brightness = np.sqrt(np.dot(coefs, rgb ** 2))
+
+    # Threshold from option 0 link; determined by trial and error.
+    # base is light
+    if brightness > 130:
+        return dark_color
+    return light_color
+def stitch_mosaic(filename: str, filelist, n_cols: int):
+    """Merge images of the same size and shape."""
+    from PIL import Image
+    import math
+
+    shape = []
+    for _filename in filelist:
+        with Image.open(_filename) as file:
+            shape.append((file.height, file.width))
+    shape = np.array(shape)
+    height, width = np.max(shape, axis=0)
+
+    n_rows = math.ceil(len(filelist) / n_cols)
+
+    dst = Image.new("RGB", (width * n_cols, height * n_rows))
+    k = 0  # image counter
+    for i in range(n_rows):
+        y = height * i
+        for j in range(n_cols):
+            try:
+                with Image.open(filelist[k]) as im:
+                    x = width * j
+                    dst.paste(im, (x, y))
+                k += 1
+            except IndexError:
+                break
+    dst.save(filename)
+    del dst
+
+
+def make_image_plot(heatmap, outfname: str = None, close: bool = False):
+    """Generate simple heatmap"""
+    from koyo.utilities import calculate_quantile_without_zeros
+    fig, ax = plt.subplots(figsize=(12, 12))
+    ax.imshow(heatmap, aspect="equal", vmax=calculate_quantile_without_zeros(heatmap, 0.995))
+    ax.axis("off")
+
+    if outfname is not None:
+        fig.savefig(outfname, bbox_inches="tight", pad_inches=0.1, dpi=150)
+
+    if close:
+        plt.close(fig)
+
+
+def get_row_col(count, n_rows: int) -> ty.Tuple[int, int]:
+    """Get number of rows and columns"""
+    n_cols = math.ceil(count / n_rows)
+    return n_rows, n_cols
+
+def add_label(ax, label: str, x: float = 0.9, y: float = 0.98, label_color="w", font_size=14, font_weight="normal"):
+    """Add label to the image"""
+    ax.text(
+        x,
+        y,
+        label,
+        transform=ax.transAxes,
+        fontsize=font_size,
+        fontweight=font_weight,
+        verticalalignment="top",
+        color=label_color,
+    )

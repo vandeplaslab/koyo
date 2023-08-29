@@ -47,6 +47,8 @@ def download_file(
     link: str,
     filename: ty.Optional[PathLike] = None,
     output_dir: ty.Optional[PathLike] = None,
+    unzip: bool = True,
+    remove_archive: bool = False,
 ):
     """Download a file.
 
@@ -60,6 +62,10 @@ def download_file(
         Name of the file to be saved in case of url.
     output_dir : PathLike
         Download file to the path specified.
+    unzip : bool | False
+        Unzip archive if needed.
+    remove_archive : bool | False
+        Remove archive after unzip.
 
     Returns
     -------
@@ -103,5 +109,10 @@ def download_file(
             temp_file.rename(path_to_file)
         else:
             logger.info(f"File already downloaded ({path_to_file}). Skipping")
+    if unzip:
+        from koyo.compression import unzip_directory
+
+        path_to_file = unzip_directory(path_to_file, output_dir, remove_archive)
+
     logger.info(f"Downloaded '{path_to_file}' in {timer()}.")
     return path_to_file

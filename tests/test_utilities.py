@@ -14,7 +14,39 @@ from koyo.utilities import (
     is_between,
     is_number,
     rescale,
+    view_as_blocks,
 )
+from numpy.testing import assert_equal
+
+
+class TestViewAsBlocks:
+    @staticmethod
+    def test_wrong_block_dimension():
+        A = np.arange(10)
+        with pytest.raises(ValueError):
+            view_as_blocks(A, 2, 2)
+
+    @staticmethod
+    def test_2d_array():
+        array_a = np.arange(4 * 4).reshape(4, 4)
+        array_b, _ = view_as_blocks(array_a, 2, 2)
+        assert_equal(array_b[0], np.array([[0, 1], [4, 5]]))
+        assert len(array_b) == 4
+
+    @staticmethod
+    @pytest.mark.parametrize("n_rows, n_cols", ((2, 3), (3, 2), (3, 3)))
+    def test_2d_array_with_pad(n_rows, n_cols):
+        array_a = np.arange(4 * 4).reshape(4, 4)
+        array_b, _ = view_as_blocks(array_a, n_rows, n_cols)
+        assert len(array_b) == 4
+
+    @staticmethod
+    @pytest.mark.parametrize("n_rows, n_cols", ((2, 3), (3, 2), (3, 3)))
+    def test_2d_array_wrong_dimensions(n_rows, n_cols):
+        array = np.arange(4 * 4).reshape(4, 4)
+
+        with pytest.raises(ValueError):
+            view_as_blocks(array, n_rows, n_cols, False)
 
 
 def test_chunks():
@@ -124,8 +156,8 @@ def test_check_image_orientation(shape):
 
 def test_format_size():
     assert "100" == format_size(100)
-    assert "1.0K" == format_size(2**10)
-    assert "1.0M" == format_size(2**20)
-    assert "1.0G" == format_size(2**30)
-    assert "1.0T" == format_size(2**40)
-    assert "1.0P" == format_size(2**50)
+    assert "1.0K" == format_size(2 ** 10)
+    assert "1.0M" == format_size(2 ** 20)
+    assert "1.0G" == format_size(2 ** 30)
+    assert "1.0T" == format_size(2 ** 40)
+    assert "1.0P" == format_size(2 ** 50)

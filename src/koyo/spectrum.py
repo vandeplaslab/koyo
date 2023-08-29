@@ -1,5 +1,4 @@
 """Utilities for spectrum analysis."""
-import math
 import typing as ty
 from bisect import bisect_left, bisect_right
 
@@ -8,7 +7,7 @@ import numpy as np
 import scipy.signal
 
 from koyo.typing import SimpleArrayLike
-from koyo.utilities import find_nearest_index_batch
+from koyo.utilities import find_nearest_index, find_nearest_index_batch
 
 
 def _cluster_within_ppm_with_index(array: np.ndarray, ppm: float):
@@ -221,14 +220,32 @@ def parabolic_centroid(
     return mzs_parabolic[mask], intensities_parabolic[mask]
 
 
-def seq_ppm(mz_start: float, mz_end: float, ppm: float):
+def get_ppm_axis(mz_start: float, mz_end: float, ppm: float):
     """Compute sequence of m/z values at a particular ppm."""
+    import math
+
     if mz_start == 0 or mz_end == 0 or ppm == 0:
         raise ValueError("Input values cannot be equal to 0.")
     length = (np.log(mz_end) - np.log(mz_start)) / np.log((1 + 1e-6 * ppm) / (1 - 1e-6 * ppm))
     length = math.floor(length) + 1
     mz = mz_start * np.power(((1 + 1e-6 * ppm) / (1 - 1e-6 * ppm)), (np.arange(length)))
     return mz
+
+
+@numba.njit()
+def trim_axis(x: np.ndarray, y: np.ndarray, min_val: float, max_val: float):
+    """Trim axis to prevent accumulation of edges."""
+    mask = np.where((x >= min_val) & (x <= max_val))
+    return x[mask], y[mask]
+
+
+@numba.njit()
+def set_ppm_axis(mz_x: np.ndarray, mz_y: np.ndarray, x: np.ndarray, y: np.ndarray):
+    """Set values for axis."""
+    mz_idx = np.digitize(x, mz_x, True)
+    for i, idx in enumerate(mz_idx):
+        mz_y[idx] += y[i]
+    return mz_y
 
 
 def get_ppm_offsets(mz_x: np.ndarray, ppm: float, min_spacing: float = 1e-5, every_n: int = 100) -> np.ndarray:
