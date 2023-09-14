@@ -1,6 +1,6 @@
 import os
 import sys
-from contextlib import suppress
+from contextlib import suppress, contextmanager
 
 DEFAULT_HOOK = None
 
@@ -41,3 +41,15 @@ def uninstall_debugger_hook() -> None:
     if DEFAULT_HOOK is not None:
         sys.excepthook = DEFAULT_HOOK
         DEFAULT_HOOK = None
+
+
+@contextmanager
+def catch_if_debug():
+    """Catch exception if debugging."""
+    if os.environ.get("DEV_MODE", "0") == "0":
+        try:
+            yield
+        except Exception as err:
+            pass
+    else:
+        yield

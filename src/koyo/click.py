@@ -12,85 +12,6 @@ import click
 from koyo.typing import PathLike
 
 
-class OrderedGroup(click.Group):
-    """Override click group to enable ordering.
-
-    See https://stackoverflow.com/questions/47972638/how-can-i-define-the-order-of-click-sub-commands-in-help
-    """
-
-    def __init__(self, *args, **kwargs):
-        self.priorities = {}
-        self.help_groups = {}
-        self.help_groups_priority = {}
-        super().__init__(*args, **kwargs)
-
-    # noinspection PyAttributeOutsideInit
-    def get_help(self, ctx):
-        """Get help."""
-        self.list_commands = self.list_commands_for_help
-        return super().get_help(ctx)
-
-    def list_commands_for_help(self, ctx):
-        """Reorder the list of commands when listing the help."""
-        commands = super().list_commands(ctx)
-        return (c[1] for c in sorted((self.priorities.get(command, 1), command) for command in commands))
-
-    def sort_commands_with_help(self, commands_with_help: ty.List[ty.Tuple[str, str]]) -> ty.List[ty.Tuple[str, str]]:
-        """Sort commands with help."""
-        return sorted(commands_with_help, key=lambda x: self.priorities[x[0]])
-
-    def add_command(
-        self, cmd, name=None, priority=1, help_group: str = "Commands", help_group_priority: ty.Optional[int] = None
-    ):
-        """Add command."""
-        super().add_command(cmd, name)
-        self.priorities[cmd.name] = priority
-        self.help_groups.setdefault(help_group, []).append(cmd.name)
-        if help_group not in self.help_groups_priority:
-            self.help_groups_priority[help_group] = help_group_priority or 1
-        if help_group_priority is not None:
-            self.help_groups_priority[help_group] = help_group_priority
-
-    def command(
-        self, *args, priority=1, help_group: str = "Commands", help_group_priority: ty.Optional[int] = None, **kwargs
-    ):
-        """Behaves the same as `click.Group.command()` except capture
-        a priority for listing command names in help.
-        """
-        priorities = self.priorities
-        help_groups = self.help_groups
-        help_groups_priority = self.help_groups_priority
-        if help_group not in help_groups_priority:
-            help_groups_priority[help_group] = help_group_priority or 1
-        if help_group_priority is not None:
-            self.help_groups_priority[help_group] = help_group_priority
-
-        def decorator(f):
-            cmd = super(OrderedGroup, self).command(*args, **kwargs)(f)
-            priorities[cmd.name] = priority
-            help_groups.setdefault(help_group, []).append(cmd.name)
-            return cmd
-
-        return decorator
-
-    def format_commands(self, ctx, formatter):
-        """Format commands."""
-        for help_group in sorted(self.help_groups, key=lambda x: self.help_groups_priority[x]):
-            commands = self.help_groups[help_group]
-            # for group, commands in self.help_groups.items():
-            rows = []
-            for subcommand in commands:
-                cmd = self.get_command(ctx, subcommand)
-                if cmd is None:
-                    continue
-                rows.append((subcommand, cmd.get_short_help_str()))
-
-            if rows:
-                rows = self.sort_commands_with_help(rows)
-                with formatter.section(help_group):
-                    formatter.write_dl(rows)
-
-
 def with_plugins(plugins, **kwargs):
     """
     A decorator to register external CLI commands to an instance of
@@ -215,7 +136,7 @@ def format_value(description: str, args: str, value: ty.Any) -> ty.List[ty.Tuple
     """Format value."""
     res = []
     # lists should be printed as multiple rows
-    if isinstance(value, ty.List):
+    if isinstance(value, (ty.List, ty.Tuple)):
         if len(value) > 0:
             append(res, description, args, value[0])
             for v in value[1::]:
@@ -359,11 +280,31 @@ def arg_split_int(ctx, param, value):
     return args
 
 
+def parse_str_framelist(framelist: str) -> ty.List[int]:
+    """Parse list provided in string format."""
+    if framelist is None:
+        return []
+    framelist = framelist.replace(" ", "")
+    _framelist = framelist.split(",")
+
+    out_framelist = []
+    for frame in _framelist:
+        _frame = frame.split(":")
+        if len(_frame) == 1:
+            out_framelist.append(int(_frame[0]))
+        elif len(_frame) in [2, 3]:
+            start, end, step = int(_frame[0]), int(_frame[1]), 1
+            if len(_frame) == 3:
+                step = int(_frame[2])
+            out_framelist.extend(list(range(start, end, step)))
+        else:
+            print(f"Skipped {frame} - could not parse it")
+    return out_framelist
+
+
 # noinspection PyUnusedLocal
 def arg_parse_framelist(ctx, param, value: str):
     """Parse framelist."""
-    from imimspy.utils.utilities import parse_str_framelist
-
     if value is None:
         return None
     return parse_str_framelist(value)
@@ -389,8 +330,9 @@ def timed_iterator(
     """Timed iterable that yields value and prints amount of time spent on said iterable."""
     from koyo.timer import format_human_time_s, measure_time
 
-    n_tasks = len(list(iterable))
     total = 0
+    iterable = list(iterable)
+    n_tasks = len(iterable)
     for i, item in enumerate(iterable, start=1):
         with measure_time() as timer:
             yield item
@@ -401,11 +343,10 @@ def timed_iterator(
             avg = total / i
             remaining = avg * (n_tasks - i)
             _text = text if not is_filename else text + f" ({os.path.basename(item)})"
-            func(
-                f"[{i}/{n_tasks}] {_text} {format_human_time_s(execution_time)}"
-                f" [avg={format_human_time_s(avg)}; rem={format_human_time_s(remaining)};"
-                f" tot={format_human_time_s(total)}]"
-            )
+            avg = f"avg={format_human_time_s(avg)}; "
+            rem = f"rem={format_human_time_s(remaining)}; " if remaining > 0 else ""
+            tot = f"tot={format_human_time_s(total)}"
+            func(f"[{i}/{n_tasks}] {_text} {format_human_time_s(execution_time)} [{avg}{rem}{tot}]")
 
 
 def parse_arg(arg: str, key: str):

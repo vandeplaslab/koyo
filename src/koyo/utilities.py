@@ -6,10 +6,26 @@ from collections.abc import Iterable
 from difflib import get_close_matches
 from math import ceil, floor
 
+from natsort import natsorted
 import numba as nb
 import numpy as np
 
 from koyo.typing import SimpleArrayLike
+
+def order_parameters(**kwargs):
+    """Order parameters."""
+    kwargs_ = {}
+    for key in natsorted(kwargs):
+        kwargs_[key] = kwargs[key]
+    return kwargs_
+
+def exclude_parameters(exclude: ty.List[str], **kwargs):
+    """Exclude parameters."""
+    kwargs_ = {}
+    for key in natsorted(kwargs):
+        if key not in exclude:
+            kwargs_[key] = kwargs[key]
+    return kwargs_
 
 
 def get_module_path(module: str, filename: str) -> str:
@@ -252,7 +268,7 @@ def get_value(new_value, current_value):
     return new_value
 
 
-def rescale(values: ty.Union[np.ndarray, ty.List], new_min: float, new_max: float, dtype=None) -> np.ndarray:
+def rescale(values: ty.Union[np.ndarray, ty.List], new_min: float, new_max: float, dtype=None, min_val: float = None, max_val: float = None) -> np.ndarray:
     """Rescale values from one range to another.
 
     Parameters
@@ -265,6 +281,10 @@ def rescale(values: ty.Union[np.ndarray, ty.List], new_min: float, new_max: floa
         new maximum value
     dtype :
         data type
+    min_val: float
+        minimum value of the original range
+    max_val: float
+        maximum value of the original range
 
     Returns
     -------
@@ -275,6 +295,14 @@ def rescale(values: ty.Union[np.ndarray, ty.List], new_min: float, new_max: floa
     if dtype is None:
         dtype = values.dtype
     old_min, old_max = get_min_max(values)
+    if min_val is not None:
+        old_min = min([min_val, old_min])
+    if max_val is not None:
+        old_max = max([max_val, old_max])
+    # check if dtype is integer and new dtype is float, in this case, you can cast it
+    if np.issubdtype(dtype, np.integer) and np.issubdtype(values.dtype, np.floating):
+        values = values.astype(dtype)
+    # actually rescale
     new_values = ((values - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
     return new_values.astype(dtype)
 

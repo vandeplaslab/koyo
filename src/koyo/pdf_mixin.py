@@ -52,7 +52,7 @@ class PDFMixin:
             self._pdf = None
 
     def _export_title(self, title: str):
-        from imimspy.utils.pdf import export_title
+        from koyo.pdf import export_title
 
         export_title(self.pdf, title)
 
@@ -77,7 +77,7 @@ class PDFMixin:
         **kwargs,
     ):
         """Export figure to file."""
-        from imimspy.utils.pdf import export_figure
+        from koyo.pdf import export_figure
 
         if fig is None:
             self._inform_on_empty(if_empty)

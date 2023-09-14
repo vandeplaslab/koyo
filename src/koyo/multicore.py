@@ -207,7 +207,9 @@ class MultiCoreDispatcher:
             self.n_cores = len(args_list)
         if args_list:
             logger.info(f"{len(args_list)} tasks in the queue...")
-            if self.backend == "joblib":
+            if self.n_cores == 1:
+                self._single_executor(func, args_list)
+            elif self.backend == "joblib":
                 self._joblib_executor(func, args_list)
             else:
                 self._mpire_executor(func, args_list)
@@ -220,7 +222,11 @@ class MultiCoreDispatcher:
             self.post_process()
         logger.info(f"*** COMPLETED ACTION IN {report_time(t_start)} ***")
 
+    def _single_executor(self, func, args_list):
+        """Single-core executor."""
+
     def _joblib_executor(self, func, args_list):
+        """Joblib executor."""
         from imimspy.utils.utilities import Parallel
         from joblib import delayed
 
@@ -235,6 +241,7 @@ class MultiCoreDispatcher:
         )(_args_list)
 
     def _multiprocessing_executor(self, func, args_list):
+        """Multiprocessing executor."""
         import multiprocessing
 
         if args_list:
@@ -247,6 +254,7 @@ class MultiCoreDispatcher:
             pool.join()
 
     def _mpire_executor(self, func, args_list):
+        """MPIRE executor."""
         import mpire
 
         if args_list:

@@ -9,7 +9,8 @@ class MutableSequence(ty.MutableSequence[_T]):
 
     def __init__(self, data: ty.Iterable[_T] = ()):
         self._list: ty.List[_T] = []
-        self.extend(data)
+        if data:
+            self.extend(data)
 
     def insert(self, index: int, value: _T) -> None:
         """Insert formula."""
@@ -69,7 +70,7 @@ class MutableSequence(ty.MutableSequence[_T]):
 
     def _check(self, value: _T) -> _T:
         """Check whether duplicate items exist in the list."""
-        raise NotImplementedError("Must implement method")
+        return value
 
     def iter(self):
         """Iterator."""
