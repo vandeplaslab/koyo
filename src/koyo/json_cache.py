@@ -18,7 +18,7 @@ class JSONCache:
         return self[item]
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}<{self.as_str}>"
+        return f"{self.__class__.__name__}<{self.as_str()}>"
 
     def __getitem__(self, key: str) -> ty.Any:
         return self.read_key(key)
@@ -65,15 +65,17 @@ class JSONCache:
         """Check whether flags file exists."""
         return self.path.exists()
 
-    @property
-    def as_str(self) -> str:
+    def as_str(self, sep="; ") -> str:
         """Get string representation of the flags."""
         if self.exists():
             data = read_json_data(self.path)
             ret = ""
-            for k, v in data.items():
-                ret += f"{k}: {v}; "
-            return ret[:-2]
+            n_stop = len(data) - 1
+            for i, (k, v) in enumerate(data.items()):
+                ret += f"{k}: {v}"
+                if i != n_stop:
+                    ret += sep
+            return ret
         return ""
 
     def print_summary(self, name: str = "", pre: str = "\t", sep: str = "\n"):

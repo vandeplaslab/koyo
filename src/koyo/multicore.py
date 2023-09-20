@@ -61,7 +61,7 @@ def estimate_cpu_count_from_size(max_obj_size_in_bytes, keep_free_in_bytes=4_000
     return n_cores
 
 
-def get_cpu_count(keep_free: int = 2, max_cpu: int = 24):
+def get_cpu_count(keep_free: int = 2, max_cpu: int = 24, n_tasks: int = 0):
     """Get number of cores available on the machine.
 
     Parameters
@@ -70,6 +70,8 @@ def get_cpu_count(keep_free: int = 2, max_cpu: int = 24):
         using all cores can significantly slow the system down, so we allow for some to remain free, by default 2
     max_cpu : int
         maximum number of cores
+    n_tasks : int
+        number of tasks to be executed
 
     Returns
     -------
@@ -84,6 +86,8 @@ def get_cpu_count(keep_free: int = 2, max_cpu: int = 24):
     n_cores = cpu_count() - keep_free
     if n_cores > max_cpu:
         n_cores = max_cpu
+    if n_tasks > 0 and n_cores > n_tasks:
+        n_cores = n_tasks
     if n_cores < 1:
         warnings.warn(
             f"Tried to reserve `{keep_free}` cores free ut failed be cores. Action will use all cores.", RuntimeWarning
@@ -273,8 +277,10 @@ class MultiCoreDispatcher:
 
     def post_process(self):
         """Post-process."""
+
+
 class Parallel(_Parallel):
-    """Parallel"""
+    """Parallel."""
 
     def __init__(self, *args, **kwargs):
         if "backend" in kwargs and kwargs["backed"] == "loky" and running_as_pyinstaller_app():
@@ -299,7 +305,7 @@ class ProgressParallel(Parallel):
             return Parallel.__call__(self, *args, **kwargs)
 
     def print_progress(self):
-        """Print progress"""
+        """Print progress."""
         if self._total is None:
             self.progress_bar.total = self.n_dispatched_tasks
         self.progress_bar.n = self.n_completed_tasks
