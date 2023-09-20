@@ -8,6 +8,7 @@ from ast import literal_eval
 from pathlib import Path
 
 import click
+from loguru import logger
 
 from koyo.typing import PathLike
 
@@ -208,22 +209,22 @@ def print_parameters(*parameters: Parameter):
 
 def error_msg(msg):
     """Display error message."""
-    click.echo(f"ERROR: {msg}")
+    logger.error(f"ERROR: {msg}")
 
 
 def warning_msg(msg):
     """Display warning message."""
-    click.echo(f"WARNING: {msg}")
+    logger.warning(f"WARNING: {msg}")
 
 
 def info_msg(msg):
     """Display info message."""
-    click.echo(f"INFO: {msg}")
+    logger.info(f"INFO: {msg}")
 
 
 def success_msg(msg):
     """Display success message."""
-    click.echo(f"SUCCESS: {msg}")
+    logger.info(f"SUCCESS: {msg}")
 
 
 def expand_dirs(input_dir: str) -> ty.Sequence[str]:
