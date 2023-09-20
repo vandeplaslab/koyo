@@ -19,7 +19,7 @@ def order_parameters(**kwargs):
         kwargs_[key] = kwargs[key]
     return kwargs_
 
-def exclude_parameters(exclude: ty.List[str], **kwargs):
+def exclude_parameters(exclude: ty.Iterable[str], **kwargs):
     """Exclude parameters."""
     kwargs_ = {}
     for key in natsorted(kwargs):
