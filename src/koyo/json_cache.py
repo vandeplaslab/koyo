@@ -33,6 +33,10 @@ class JSONCache:
         data = {}
         self.write(data)
 
+    def clear(self):
+        """Remove existing tags."""
+        self.write({})
+
     @property
     def name(self) -> str:
         """Return basename of the directory."""
@@ -65,13 +69,17 @@ class JSONCache:
         """Check whether flags file exists."""
         return self.path.exists()
 
-    def as_str(self, sep="; ") -> str:
+    def as_str(self, sep="; ", exclude: ty.Optional[ty.Tuple[str, ...]] = None) -> str:
         """Get string representation of the flags."""
+        if exclude is None:
+            exclude = ()
         if self.exists():
             data = read_json_data(self.path)
             ret = ""
             n_stop = len(data) - 1
             for i, (k, v) in enumerate(data.items()):
+                if k in exclude:
+                    continue
                 ret += f"{k}: {v}"
                 if i != n_stop:
                     ret += sep

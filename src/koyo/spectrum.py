@@ -86,7 +86,7 @@ def ppm_diff(a: np.ndarray, axis=-1) -> np.ndarray:
 
     This function is inspired by `np.diff` which very efficiently computes the difference between adjacent points.
     """
-    a = np.asarray(a, dtype=np.float)
+    a = np.asarray(a, dtype=np.float32)
     nd = a.ndim
     axis = np.core.multiarray.normalize_axis_index(axis, nd)
     slice1 = [slice(None)] * nd

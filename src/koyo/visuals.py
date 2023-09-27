@@ -215,6 +215,7 @@ def add_legend(
         ax.add_artist(leg)
 
 
+
 def find_text_color(base_color, dark_color="black", light_color="white", coef_choice=0):
     """
     Takes a background color and returns the appropriate light or dark text color.
