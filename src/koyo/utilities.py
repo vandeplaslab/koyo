@@ -6,11 +6,17 @@ from collections.abc import Iterable
 from difflib import get_close_matches
 from math import ceil, floor
 
-from natsort import natsorted
 import numba as nb
 import numpy as np
+from natsort import natsorted
 
 from koyo.typing import SimpleArrayLike
+
+
+def slugify(value: str):
+    """Slugify filename."""
+    return value.replace(" ", "_").replace("/", "_").replace("\\", "_").replace(":", "-")
+
 
 def order_parameters(**kwargs):
     """Order parameters."""
@@ -18,6 +24,7 @@ def order_parameters(**kwargs):
     for key in natsorted(kwargs):
         kwargs_[key] = kwargs[key]
     return kwargs_
+
 
 def exclude_parameters(exclude: ty.Iterable[str], **kwargs):
     """Exclude parameters."""
@@ -207,17 +214,17 @@ def format_count(value):
 
 def format_size(size: int) -> str:
     """Convert bytes to nicer format."""
-    if size < 2 ** 10:
+    if size < 2**10:
         return "%s" % size
-    elif size < 2 ** 20:
-        return "%.1fK" % (size / float(2 ** 10))
-    elif size < 2 ** 30:
-        return "%.1fM" % (size / float(2 ** 20))
-    elif size < 2 ** 40:
-        return "%.1fG" % (size / float(2 ** 30))
-    elif size < 2 ** 50:
-        return "%.1fT" % (size / float(2 ** 40))
-    return "%.1fP" % (size / float(2 ** 50))
+    elif size < 2**20:
+        return "%.1fK" % (size / float(2**10))
+    elif size < 2**30:
+        return "%.1fM" % (size / float(2**20))
+    elif size < 2**40:
+        return "%.1fG" % (size / float(2**30))
+    elif size < 2**50:
+        return "%.1fT" % (size / float(2**40))
+    return "%.1fP" % (size / float(2**50))
 
 
 def is_number(value):
@@ -268,7 +275,14 @@ def get_value(new_value, current_value):
     return new_value
 
 
-def rescale(values: ty.Union[np.ndarray, ty.List], new_min: float, new_max: float, dtype=None, min_val: float = None, max_val: float = None) -> np.ndarray:
+def rescale(
+    values: ty.Union[np.ndarray, ty.List],
+    new_min: float,
+    new_max: float,
+    dtype=None,
+    min_val: ty.Optional[float] = None,
+    max_val: ty.Optional[float] = None,
+) -> np.ndarray:
     """Rescale values from one range to another.
 
     Parameters
@@ -556,7 +570,7 @@ def calculate_quantile_without_zeros(data, q=0.99):
     q_value : float
         intensity value at qth quantile
     """
-    data = data.astype(np.float)
+    data = data.astype(np.float32)
     data[data == 0] = np.nan
     return np.nanquantile(data, q)
 
