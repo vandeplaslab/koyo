@@ -7,7 +7,7 @@ import warnings
 from joblib import Parallel as _Parallel
 from loguru import logger
 from psutil import cpu_count, virtual_memory
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 from koyo.timer import report_time
 from koyo.utilities import running_as_pyinstaller_app
@@ -228,10 +228,11 @@ class MultiCoreDispatcher:
 
     def _single_executor(self, func, args_list):
         """Single-core executor."""
+        for args in tqdm(args_list, disable=self.quiet):
+            func(*args)
 
     def _joblib_executor(self, func, args_list):
         """Joblib executor."""
-        from imimspy.utils.utilities import Parallel
         from joblib import delayed
 
         _args_list = []
