@@ -207,24 +207,24 @@ def print_parameters(*parameters: Parameter):
     print(tabulate(table, headers=["Name", "Parameter", "Value"], tablefmt="github"))
 
 
-def error_msg(msg):
+def error_msg(msg: str):
     """Display error message."""
-    logger.error(f"ERROR: {msg}")
+    logger.error(msg)
 
 
-def warning_msg(msg):
+def warning_msg(msg: str):
     """Display warning message."""
-    logger.warning(f"WARNING: {msg}")
+    logger.warning(msg)
 
 
-def info_msg(msg):
+def info_msg(msg: str):
     """Display info message."""
-    logger.info(f"INFO: {msg}")
+    logger.info(msg)
 
 
-def success_msg(msg):
+def success_msg(msg: str):
     """Display success message."""
-    logger.info(f"SUCCESS: {msg}")
+    logger.info(msg)
 
 
 def expand_dirs(input_dir: str) -> ty.Sequence[str]:
