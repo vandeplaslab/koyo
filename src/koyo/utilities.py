@@ -13,7 +13,45 @@ from natsort import natsorted
 from koyo.typing import SimpleArrayLike
 
 
-def slugify(value: str):
+def find_nearest_divisor(
+    value: ty.Union[int, float],
+    divisor: ty.Union[int, float] = 1,
+    increment: ty.Union[int, float] = 1,
+    max_iters: int = 1000,
+) -> ty.Union[int, float]:
+    """Find nearest divisor.
+
+    Parameters
+    ----------
+    value : Union[int, float]
+        value to be divided by the divisor
+    divisor : Union[int, float]
+        value by which the `value` is divided by
+    increment : Union[int, float]
+        increment by which to change the `divisor`
+    max_iters : int
+        maximum number of iterations before the algorithm should give up
+
+    Returns
+    -------
+    divisor : Union[int, float]
+        divisor value or -1 if the algorithm did not find appropriate value
+
+    """
+    if divisor > value:
+        raise ValueError("Initial guess cannot be larger than value")
+
+    n_iter = 0
+    while value % divisor != 0 and n_iter < max_iters:
+        divisor += increment
+        n_iter += 1
+
+    if value % divisor == 0:
+        return divisor
+    return -1
+
+
+def slugify_name(value: str):
     """Slugify filename."""
     return value.replace(" ", "_").replace("/", "_").replace("\\", "_").replace(":", "-")
 
@@ -69,7 +107,8 @@ def pluralize(word: str, n: int, with_e: bool = False) -> str:
     return word if n == 1 else word + extra
 
 
-def is_valid_python_name(name):
+def is_valid_python_name(name: str) -> bool:
+    """Check whether name is valid."""
     from keyword import iskeyword
 
     return name.isidentifier() and not iskeyword(name)
@@ -389,9 +428,9 @@ def sequential_chunks(item_list, n_items: int):
     yield from pots
 
 
-def get_min_max(values):
+def get_min_max(values) -> ty.Tuple[ty.Union[int, float], ty.Union[int, float]]:
     """Get the minimum and maximum value of an array."""
-    return [np.min(values), np.max(values)]
+    return np.min(values), np.max(values)
 
 
 def check_image_orientation(array):

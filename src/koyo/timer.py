@@ -2,6 +2,7 @@
 import time
 import typing as ty
 from contextlib import contextmanager
+from datetime import datetime, timedelta
 
 PERIODS = [
     ("year", 60 * 60 * 24 * 365 * 1e9),
@@ -14,6 +15,55 @@ PERIODS = [
     ("μs", 1 * 1e3),
     ("ns", 1),
 ]
+
+
+def format_datetime_ago(datetime_str: str) -> str:
+    """
+    Format a datetime string into a human-readable 'time ago' format.
+
+    Parameters
+    ----------
+    datetime_str : str
+        Datetime string in the format 'YYYY-MM-DDTHH:MM:SSZ'.
+
+    Returns
+    -------
+    str
+        Human-readable 'time ago' format.
+    """
+    if not datetime_str:
+        return ""
+
+    try:
+        # Parse the input datetime string
+        datetime_obj = datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%SZ")
+
+        # Calculate the time difference from the current time
+        now = datetime.utcnow()
+        time_difference = now - datetime_obj
+
+        # Define time units
+        units = [
+            ("year", timedelta(days=365)),
+            ("month", timedelta(days=30)),
+            ("day", timedelta(days=1)),
+            ("hour", timedelta(hours=1)),
+            ("minute", timedelta(minutes=1)),
+        ]
+
+        # Find the largest time unit that fits
+        for unit, delta in units:
+            if time_difference >= delta:
+                time_ago = time_difference // delta
+                if time_ago > 1:
+                    unit += "s"
+                return f"{time_ago} {unit} ago"
+
+        # If less than a minute, show 'just now'
+        return "just now"
+
+    except ValueError:
+        return "Invalid datetime format"
 
 
 def format_human_time_s(seconds: float, n_max: int = 2) -> str:

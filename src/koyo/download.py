@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib import request
 
 from loguru import logger
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 from koyo.timer import report_measure_time
 from koyo.typing import PathLike
