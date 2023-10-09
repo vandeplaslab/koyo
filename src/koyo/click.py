@@ -126,8 +126,8 @@ def append(table: ty.List[ty.Tuple[str, str, str]], name="", param="", value="")
     """Append to table."""
     if isinstance(value, Path):
         value = str(value)
-    # if isinstance(value, str) and len(value) > 80:
-    #     value = "..." + str(value)[-80:]
+    if isinstance(value, str) and len(value) > 120:
+        value = "..." + str(value)[-120:]
     elif isinstance(value, (list, tuple)):
         value = repr_iterable(value)
     table.append((name, param, value))
@@ -195,6 +195,15 @@ class Parameter:
         if self.value:
             return format_value(self.description, self.args, self.value)
         return [(self.description, self.args, "")]
+
+
+class Parameters:
+    """Parameters class."""
+
+    @classmethod
+    def p(cls, description: str, args: str, value: ty.Any):
+        """Return Parameter instance."""
+        return Parameter(description, args, value)
 
 
 def print_parameters(*parameters: Parameter):
