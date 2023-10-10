@@ -130,6 +130,7 @@ class MultiCoreExecutor:
                         iterable_len=len(args),
                         worker_lifespan=1,
                         progress_bar=not self.silent,
+                        progress_bar_options={"desc": self.desc, "mininterval": 5},
                     )
             return res
 
