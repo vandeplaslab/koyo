@@ -441,6 +441,11 @@ def need_rotation(array: np.ndarray) -> bool:
     return shape[0] > shape[1]
 
 
+def rotate(array: np.ndarray, auto_rotate: bool):
+    """Rotate but only if user requested rotation."""
+    return array if not auto_rotate else check_image_orientation(array)
+
+
 def check_image_orientation(array):
     """Transpose image if the primary size is larger than the secondary size in order to improve images.
 
