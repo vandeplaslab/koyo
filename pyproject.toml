@@ -37,7 +37,8 @@ dependencies = [
     "toml",
     "click",
     "mpire",
-    "scikit-learn"
+    "scikit-learn",
+    "requests",
 ]
 
 # extras

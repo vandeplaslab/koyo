@@ -433,6 +433,14 @@ def get_min_max(values) -> ty.Tuple[ty.Union[int, float], ty.Union[int, float]]:
     return np.min(values), np.max(values)
 
 
+def need_rotation(array: np.ndarray) -> bool:
+    """Check whether image needs to be rotated."""
+    shape = array.shape
+    if len(shape) == 3:
+        return shape[1] > shape[2]
+    return shape[0] > shape[1]
+
+
 def check_image_orientation(array):
     """Transpose image if the primary size is larger than the secondary size in order to improve images.
 
