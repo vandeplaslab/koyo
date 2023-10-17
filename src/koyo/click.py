@@ -256,7 +256,7 @@ def arg_parse_path(ctx, param, value) -> ty.List[Path]:
     if isinstance(value, (str, Path)):
         value = [value]
     for path in value:
-        path = str(path)
+        path = str(path).replace("'", "").replace('"', "")
         if path.endswith("/"):
             path = path[:-1]
         res.extend(expand_dirs(path))

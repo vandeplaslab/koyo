@@ -5,9 +5,16 @@ from bisect import bisect_left, bisect_right
 import numba
 import numpy as np
 import scipy.signal
+import scipy.ndimage
 
 from koyo.typing import SimpleArrayLike
 from koyo.utilities import find_nearest_index, find_nearest_index_batch
+
+
+def running_average(x: np.ndarray, size: int) -> np.ndarray:
+    """Running average."""
+    return scipy.ndimage.uniform_filter1d(x, size, mode="nearest")
+    # return np.convolve(x, np.ones(size), "valid") / size
 
 
 def _cluster_within_ppm_with_index(array: np.ndarray, ppm: float):

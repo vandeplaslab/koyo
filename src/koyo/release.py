@@ -1,4 +1,6 @@
 """Check for latest release."""
+from __future__ import annotations
+
 import typing as ty
 
 import requests
@@ -36,22 +38,23 @@ def format_version(data: ty.Dict) -> str:
 
 
 def is_new_version_available(
-    current_version: str, user: str = "vandeplaslab", package: str = "koyo"
+    current_version: str, user: str = "vandeplaslab", package: str = "koyo", data: ty.Dict[str, ty.Any] | None = None
 ) -> ty.Tuple[bool, str]:
     """Check whether there is a new version available."""
     import requests.exceptions
     from packaging import version
 
     # get latest version from GitHub
-    data = {}
-    try:
-        data = get_latest_git(user, package)
-    except requests.exceptions.ConnectionError:
-        logger.trace("There was a connection error - could not retrieve information.")
-    except requests.exceptions.RequestException:
-        logger.trace("There was some problem in retrieving information.")
-    except Exception:
-        logger.trace("Another exception occur - not sure how to handle this!")
+    if data is None:
+        data = {}
+        try:
+            data = get_latest_git(user, package)
+        except requests.exceptions.ConnectionError:
+            logger.trace("There was a connection error - could not retrieve information.")
+        except requests.exceptions.RequestException:
+            logger.trace("There was some problem in retrieving information.")
+        except Exception:
+            logger.trace("Another exception occur - not sure how to handle this!")
 
     git_version = data.get("tag_name", "")
     if not git_version:

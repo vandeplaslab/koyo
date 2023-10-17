@@ -9,7 +9,7 @@ from koyo.typing import PathLike
 DECOMPRESSION_FORMATS = ["gz", ".gz", "*.gz"]
 
 
-def unzip_directory(path_to_zip: PathLike, output_dir: str, remove_archive: bool = True):
+def unzip_directory(path_to_zip: PathLike, output_dir: PathLike, remove_archive: bool = True) -> PathLike:
     """Unzip directory."""
     logger.debug("Unzipping directory...")
     # unzip archive
