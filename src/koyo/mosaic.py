@@ -107,17 +107,22 @@ def _merge_mosaic(
     return dst
 
 
-def _get_mosaic_dims_for_list(items: ty.Dict[str, io.BytesIO], n_cols: int = 0):
+def _get_mosaic_dims_for_list(items: ty.Dict[str, io.BytesIO], n_cols: int = 0, check_size_of_all: bool = True):
     from PIL import Image
 
     widths, heights = [], []
-    for buf in items.values():
+    if check_size_of_all:
+        for buf in items.values():
+            with Image.open(buf) as im:
+                widths.append(im.width)
+                heights.append(im.height)
+        widths = np.unique(widths)
+        heights = np.unique(heights)
+        width, height = np.max(widths), np.max(heights)
+    else:
+        buf = next(iter(items.values()))
         with Image.open(buf) as im:
-            widths.append(im.width)
-            heights.append(im.height)
-    widths = np.unique(widths)
-    heights = np.unique(heights)
-    width, height = np.max(widths), np.max(heights)
+            width, height = im.width, im.height
     return _get_mosaic_dims(len(items), width, height, n_cols=n_cols)
 
 

@@ -111,28 +111,37 @@ class MultiCoreExecutor:
         self.silent = silent
         self.desc = desc
 
-    def run(self, func: ty.Callable, args: ty.Iterable):
+    def run(self, func: ty.Callable, args: ty.Iterable, auto_expand: bool = True):
         """Execute."""
         import mpire
 
-        if args:
-            args = list(args)
-
-            if len(args) == 1 or self.n_cores == 1:
-                res = []
-                for arg in tqdm(args, disable=False, desc=self.desc):
-                    res.append(func(*arg))
-            else:
-                with mpire.WorkerPool(n_jobs=self.n_cores, keep_alive=False) as pool:
-                    res = pool.map(
-                        func,
-                        args,
-                        iterable_len=len(args),
-                        worker_lifespan=1,
-                        progress_bar=not self.silent,
-                        progress_bar_options={"desc": self.desc, "mininterval": 5},
-                    )
-            return res
+        res = []
+        if auto_expand:
+            if args:
+                args = list(args)
+                if len(args) == 1 or self.n_cores == 1:
+                    for arg in tqdm(args, disable=False, desc=self.desc):
+                        res.append(func(*arg))
+                else:
+                    with mpire.WorkerPool(n_jobs=self.n_cores, keep_alive=False) as pool:
+                        res = pool.map(
+                            func,
+                            args,
+                            iterable_len=len(args),
+                            worker_lifespan=1,
+                            progress_bar=not self.silent,
+                            progress_bar_options={"desc": self.desc, "mininterval": 5},
+                        )
+        else:
+            with mpire.WorkerPool(n_jobs=self.n_cores, keep_alive=False) as pool:
+                res = pool.map(
+                    func,
+                    args,
+                    worker_lifespan=1,
+                    progress_bar=not self.silent,
+                    progress_bar_options={"desc": self.desc, "mininterval": 5},
+                )
+        return res
 
 
 class MultiCoreDispatcher:
