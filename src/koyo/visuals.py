@@ -1,21 +1,23 @@
 """Visuals."""
-import typing as ty
+from __future__ import annotations
 
 import math
+import typing as ty
+
+import matplotlib.pyplot as plt
 import numba as nb
 import numpy as np
 from matplotlib.collections import LineCollection
-import matplotlib.pyplot as plt
+
 
 def set_tick_fmt(ax, use_offset=False, axis="both"):
-    """Set tick format to control whether scientific notation is shown"""
+    """Set tick format to control whether scientific notation is shown."""
     ax.ticklabel_format(axis=axis, style="scientific" if use_offset else "plain", useOffset=use_offset)
     return ax
 
 
 def despine(ax, orientation):
-    """Remove spines from 1D plots"""
-
+    """Remove spines from 1D plots."""
     plt.setp(ax.xaxis.get_majorticklines(), visible=False)
     plt.setp(ax.xaxis.get_minorticklines(), visible=False)
     plt.setp(ax.yaxis.get_majorticklines(), visible=False)
@@ -29,6 +31,7 @@ def despine(ax, orientation):
     else:
         ax.spines["bottom"].set_visible(False)
     return ax
+
 
 def fig_to_pil(fig):
     """Convert a Matplotlib figure to a PIL Image and return it."""
@@ -114,6 +117,7 @@ def convert_divider_to_str(value, exp_value):
     elif exp_value in [9, 10, 11, 12]:
         return f"{value / 1000000000:.1f}B"
 
+
 def y_tick_fmt(x, pos=None):
     """Y-tick formatter."""
     return convert_divider_to_str(x, compute_divider(x))
@@ -129,8 +133,6 @@ def get_intensity_formatter():
 def set_intensity_formatter(ax):
     """Set intensity formatter on axes."""
     ax.yaxis.set_major_formatter(get_intensity_formatter())
-
-
 
 
 def add_ax_colorbar(mappable):
@@ -151,7 +153,7 @@ def add_ax_colorbar(mappable):
 def add_legend(
     fig,
     ax,
-    legend_palettes: ty.Dict[str, ty.Dict[str, str]],
+    legend_palettes: dict[str, dict[str, str]],
     fontsize: float = 14,
     labelsize: float = 16,
     x_pad: float = 0.01,
@@ -215,7 +217,6 @@ def add_legend(
         ax.add_artist(leg)
 
 
-
 def find_text_color(base_color, dark_color="black", light_color="white", coef_choice=0):
     """
     Takes a background color and returns the appropriate light or dark text color.
@@ -232,7 +233,6 @@ def find_text_color(base_color, dark_color="black", light_color="white", coef_ch
     coef_choice: slightly different approaches to calculating brightness. Currently two options in
         a list, user can enter 0 or 1 as list index. 0 is default.
     """
-
     # Coefficients:
     # option 0: http://www.nbdtech.com/Blog/archive/2008/04/27/Calculating-the-Perceived-Brightness-of-a-Color.aspx
     # option 1: http://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color
@@ -243,17 +243,20 @@ def find_text_color(base_color, dark_color="black", light_color="white", coef_ch
 
     coefs = coef_options[coef_choice]
     rgb = np.array(base_color) * 255
-    brightness = np.sqrt(np.dot(coefs, rgb ** 2))
+    brightness = np.sqrt(np.dot(coefs, rgb**2))
 
     # Threshold from option 0 link; determined by trial and error.
     # base is light
     if brightness > 130:
         return dark_color
     return light_color
+
+
 def stitch_mosaic(filename: str, filelist, n_cols: int):
     """Merge images of the same size and shape."""
-    from PIL import Image
     import math
+
+    from PIL import Image
 
     shape = []
     for _filename in filelist:
@@ -280,9 +283,10 @@ def stitch_mosaic(filename: str, filelist, n_cols: int):
     del dst
 
 
-def make_image_plot(heatmap, outfname: str = None, close: bool = False):
-    """Generate simple heatmap"""
+def make_image_plot(heatmap, outfname: str | None = None, close: bool = False):
+    """Generate simple heatmap."""
     from koyo.utilities import calculate_quantile_without_zeros
+
     fig, ax = plt.subplots(figsize=(12, 12))
     ax.imshow(heatmap, aspect="equal", vmax=calculate_quantile_without_zeros(heatmap, 0.995))
     ax.axis("off")
@@ -294,13 +298,25 @@ def make_image_plot(heatmap, outfname: str = None, close: bool = False):
         plt.close(fig)
 
 
-def get_row_col(count, n_rows: int) -> ty.Tuple[int, int]:
-    """Get number of rows and columns"""
+def get_row_col(count, n_rows: int) -> tuple[int, int]:
+    """Get number of rows and columns."""
     n_cols = math.ceil(count / n_rows)
     return n_rows, n_cols
 
-def add_label(ax, label: str, x: float = 0.9, y: float = 0.98, label_color="w", font_size=14, font_weight="normal"):
-    """Add label to the image"""
+
+def add_label(
+    ax,
+    label: str,
+    x: float = 0.9,
+    y: float = 0.98,
+    label_color="w",
+    font_size=14,
+    font_weight="normal",
+    va: str = "top",
+    ha: str = "left",
+    bbox: dict[str, ty.Any] | None = None,
+):
+    """Add label to the image."""
     ax.text(
         x,
         y,
@@ -308,6 +324,38 @@ def add_label(ax, label: str, x: float = 0.9, y: float = 0.98, label_color="w", 
         transform=ax.transAxes,
         fontsize=font_size,
         fontweight=font_weight,
-        verticalalignment="top",
+        verticalalignment=va,
+        horizontalalignment=ha,
         color=label_color,
+        bbox=bbox,
     )
+
+
+def inset_colorbar(
+    ax: plt.Axes,
+    im,
+    ticks: ty.Sequence[float] | None = None,
+    ticklabels: ty.Sequence[str] | None = None,
+    xpos: float = 0.03,
+    ypos: float = 0.05,
+    labelcolor: str = "white",
+    edgecolor: str = "white",
+    **kwargs: ty.Any,
+):
+    """Add colorbar to axes."""
+
+    def _parse_perc(value):
+        if "%" in value:
+            return float(value.replace("%", "")) / 100
+        return float(value)
+
+    width = _parse_perc(kwargs.get("width", "30%"))
+    height = _parse_perc(kwargs.get("height", "2%"))
+    cax = ax.inset_axes([xpos, ypos, width, height])
+    cax.tick_params(labelcolor=labelcolor, labelsize=16)
+    cbar = plt.colorbar(im, cax=cax, orientation=kwargs.get("orientation", "horizontal"), pad=0.1, ticks=ticks)
+    if ticklabels:
+        cax.set_xticklabels(ticklabels)
+    cbar.outline.set_edgecolor(edgecolor)
+    cbar.outline.set_linewidth(1)
+    return ax, cax, cbar
