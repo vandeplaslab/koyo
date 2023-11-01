@@ -168,7 +168,7 @@ def estimate_dense_size(array) -> str:
     """Calculate approximate size of the array if it was dense."""
     from koyo.utilities import format_size
 
-    total_val = float(np.product(array.shape))
+    total_val = float(np.prod(array.shape))
     n_bytes = total_val * array.dtype.itemsize
     return format_size(n_bytes)
 
@@ -181,7 +181,7 @@ def calculate_array_sparsity(array):
     else:
         non_zero = np.count_nonzero(array)
         fmt = "dense"
-    total_val = np.product(array.shape)
+    total_val = np.prod(array.shape)
     sparsity = (total_val - non_zero) / total_val
     density = non_zero / total_val
     return f"Sparsity: {sparsity * 100:.4f}% | Density {density * 100:.4f}% | NNZ: {non_zero} | FMT: {fmt}"
