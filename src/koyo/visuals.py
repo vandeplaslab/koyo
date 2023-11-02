@@ -331,6 +331,14 @@ def add_label(
     )
 
 
+def get_ticks_with_unit(min_val: float, max_val: float, unit: str | None = None) -> tuple[list[float], list[str]]:
+    """Get ticks for specified min/max range."""
+    if not unit:
+        return [min_val, max_val], [y_tick_fmt(min_val), y_tick_fmt(max_val)]
+    between = np.linspace(min_val, max_val, 3)
+    return between.tolist(), [y_tick_fmt(min_val), unit, y_tick_fmt(max_val)]
+
+
 def inset_colorbar(
     ax: plt.Axes,
     im,
