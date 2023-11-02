@@ -152,4 +152,4 @@ cython_debug/
 #.idea/
 
 _version.py
-.idea/koyo.iml
+.idea/
