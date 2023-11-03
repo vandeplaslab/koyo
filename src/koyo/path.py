@@ -2,12 +2,15 @@
 import os
 import shutil
 from pathlib import Path
-from koyo.typing import PathLike
 
+from koyo.typing import PathLike
 
 
 def empty_directory(path: str) -> None:
     """Recursively clear directory."""
+    path = Path(path)
+    if not path.exists():
+        return
     for filename in os.listdir(path):
         file_path = os.path.join(path, filename)
         try:
@@ -42,8 +45,9 @@ def open_directory_alt(path: PathLike):
     else:
         subprocess.Popen(["xdg-open", path])
 
+
 def create_directory(*path: str) -> Path:
-    """Create directory
+    """Create directory.
 
     Parameters
     ----------
