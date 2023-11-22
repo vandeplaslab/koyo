@@ -358,7 +358,7 @@ def inset_colorbar(
         return float(value)
 
     width = _parse_perc(kwargs.get("width", "30%"))
-    height = _parse_perc(kwargs.get("height", "2%"))
+    height = _parse_perc(kwargs.get("height", "4%"))
     cax = ax.inset_axes([xpos, ypos, width, height])
     cax.tick_params(labelcolor=labelcolor, labelsize=16)
     cbar = plt.colorbar(im, cax=cax, orientation=kwargs.get("orientation", "horizontal"), pad=0.1, ticks=ticks)
