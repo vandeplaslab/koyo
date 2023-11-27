@@ -76,6 +76,8 @@ def _merge_mosaic(
     title_buf: ty.Optional[io.BytesIO] = None,
     silent: bool = True,
     color=(0, 0, 0, 0),
+    allow_placeholder: bool = False,
+    placeholder_color=(128, 0, 0, 255),
 ):
     from PIL import Image
 
@@ -97,9 +99,14 @@ def _merge_mosaic(
             for j in range(n_cols):  # iterate over columns
                 # load image
                 try:
-                    with Image.open(filelist[k]) as im:
+                    filename = filelist[k]
+                    if filename:
+                        with Image.open(filename) as im:
+                            x = width * j
+                            dst.paste(im, (x, y))
+                    elif filename is None and allow_placeholder:
                         x = width * j
-                        dst.paste(im, (x, y))
+                        dst.paste(Image.new("RGB", (width, height), color=placeholder_color), (x, y))
                     k += 1  # increment image counter
                     pbar.update(1)
                 except IndexError:
@@ -113,6 +120,8 @@ def _get_mosaic_dims_for_list(items: ty.Dict[str, io.BytesIO], n_cols: int = 0, 
     widths, heights = [], []
     if check_size_of_all:
         for buf in items.values():
+            if buf is None:
+                continue
             with Image.open(buf) as im:
                 widths.append(im.width)
                 heights.append(im.height)
