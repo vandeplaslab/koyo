@@ -9,6 +9,29 @@ from loguru import logger
 from koyo.timer import format_datetime_ago
 
 
+class DownloadDict(ty.TypedDict):
+    """Download dict."""
+
+    filename: str
+    version: str
+    download_url: str
+
+
+LatestVersion = dict[str, DownloadDict]
+
+
+def get_target() -> str | None:
+    """Get target based on the platform."""
+    import platform
+
+    if platform.system() == "Windows":
+        return "win_amd64"
+    elif platform.system() == "Darwin":
+        if platform.processor() == "arm":
+            return "macosx_arm64"
+        return "macosx_x86_64"
+    return None
+
 def get_latest_release(user: str = "vandeplaslab", package: str = "koyo") -> str:
     """Get latest release from GitHub."""
     data = get_latest_git(user, package)
