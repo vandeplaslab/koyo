@@ -373,8 +373,13 @@ def fix_style(style: str) -> str:
     """Fix style so that it is compatible with matplotlib > v.3.6.0."""
     from matplotlib.style import available
 
+    if style == "seaborn-grid":
+        style = "seaborn-ticks"
+    if style == "default" and "default" not in available:
+        style = "seaborn-ticks"
     if style.startswith("seaborn"):
         if "v0_8" not in style and "seaborn-v0_8" in available:
             style = style.replace("seaborn", "seaborn-v0_8")
-    assert style in available, f"Style '{style}' not available. Available styles: {available}"
+    if style != "default":
+        assert style in available, f"Style '{style}' not available. Available styles: {available}"
     return style

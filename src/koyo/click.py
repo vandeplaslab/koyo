@@ -235,14 +235,19 @@ class Parameters:
         return Parameter(description, args, value)
 
 
-def print_parameters(*parameters: Parameter):
+def print_parameters(*parameters: Parameter, log: bool = True):
     """Print parameters as table."""
     from tabulate import tabulate
 
     table = []
     for param in parameters:
         table.extend(param.to_list())
-    print(tabulate(table, headers=["Name", "Parameter", "Value"], tablefmt="github"))
+    table = tabulate(table, headers=["Name", "Parameter", "Value"], tablefmt="github")
+    if not log:
+        print(table)
+    else:
+        for line in table.split("\n"):
+            logger.info(line)
 
 
 def error_msg(msg: str):
