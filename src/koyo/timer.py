@@ -1,4 +1,6 @@
 """Timer utilities."""
+from __future__ import annotations
+
 import time
 import typing as ty
 from contextlib import contextmanager
@@ -101,7 +103,7 @@ def format_time(seconds: float) -> str:
 class MeasureTimer:
     """Timer class."""
 
-    def __init__(self, func: ty.Optional[ty.Callable] = None, msg: ty.Optional[str] = None, human: bool = True):
+    def __init__(self, func: ty.Callable | None = None, msg: str | None = None, human: bool = True):
         self.func = func
         self.msg = msg
         self.human = human
@@ -110,20 +112,20 @@ class MeasureTimer:
         if self.msg and "{}" not in self.msg:
             self.msg += " in {}"
 
-        self.start = time.perf_counter_ns() if human else time.perf_counter()
-        self.end = None
-        self.last = None
+        self.start: float = float(time.perf_counter_ns() if human else time.perf_counter())
+        self.end: float | None = None
+        self.last: float | None = None
 
-    def finish(self):
+    def finish(self) -> MeasureTimer:
         """Finish the timer."""
         self.end = self.current()
         return self
 
-    def current(self):
+    def current(self) -> float:
         """Return current time."""
         return time.perf_counter_ns() if self.human else time.perf_counter()
 
-    def elapsed(self, n: int = 1, start: ty.Optional[int] = None) -> float:
+    def elapsed(self, n: int = 1, start: float | None = None) -> float:
         """Return amount of time that elapsed."""
         end = self.end or self.current()
         start = start or self.start
@@ -132,26 +134,28 @@ class MeasureTimer:
         self.last = end
         return elapsed
 
-    def elapsed_since_last(self):
+    def elapsed_since_last(self) -> float:
         """Elapsed since last time."""
         return self.elapsed(start=self.last)
 
-    def format(self, elapsed: int):
+    def format(self, elapsed: int) -> str:
         """Format time."""
         return format_human_time(elapsed) if self.human else format_time(elapsed)
 
-    def __call__(self, n: int = 1, current: int = 1, start: ty.Optional[int] = None):
+    def __call__(self, n: int = 1, current: int = 1, start: float | None = None, since_last: bool = False) -> str:
+        if since_last:
+            start = self.last
         elapsed = self.elapsed(n, start)
         formatted = format_human_time(elapsed) if self.human else format_time(elapsed)
         if n > 1:
             formatted = f"{formatted} [{current}/{n}]"
         return formatted
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Return nicely formatted execution time."""
         return f"{self.__class__.__name__}<total={self()}"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return nicely formatted execution time."""
         return self()
 

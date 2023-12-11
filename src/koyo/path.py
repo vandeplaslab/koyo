@@ -3,6 +3,8 @@ import os
 import shutil
 from pathlib import Path
 
+from loguru import logger
+
 from koyo.typing import PathLike
 
 
@@ -16,8 +18,10 @@ def empty_directory(path: str) -> None:
         try:
             if os.path.isfile(file_path) or os.path.islink(file_path):
                 os.unlink(file_path)
+                logger.trace(f"Deleted '{file_path}'")
             elif os.path.isdir(file_path):
                 shutil.rmtree(file_path)
+                logger.trace(f"Deleted '{file_path}'")
         except Exception as e:
             print(f"Failed to delete {file_path}. Reason: {e}")
     shutil.rmtree(path, ignore_errors=True)

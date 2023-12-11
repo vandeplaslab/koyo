@@ -13,6 +13,33 @@ from loguru import logger
 from koyo.typing import PathLike
 
 
+def expand_data_dirs(input_dir: str) -> ty.List[str]:
+    """Expand data directory."""
+    if "*" in input_dir:
+        return glob.glob(input_dir)
+    return [input_dir]
+
+
+def parse_paths(input_dirs, absolute: bool = False) -> ty.List[str]:
+    """Parse list/tuple of paths and check whether any of them have glob-like pattern."""
+    result = []
+    for path in input_dirs:
+        # clean-up paths
+        if path.endswith("/"):
+            path = path[0:-1]
+        path = expand_data_dirs(path)
+        if isinstance(path, list):
+            result.extend(path)
+    if absolute:
+        result = [os.path.abspath(path) for path in result]
+    return result
+
+
+def cli_parse_paths(ctx, param, value) -> ty.List[str]:
+    """Parse paths."""
+    return parse_paths(value)
+
+
 def with_plugins(plugins, **kwargs):
     """
     A decorator to register external CLI commands to an instance of
@@ -122,7 +149,7 @@ def repr_iterable(iterable: ty.Sequence[ty.Any]):
         return iterable
 
 
-def append(table: ty.List[ty.Tuple[str, str, str]], name="", param="", value=""):
+def append(table: ty.List[ty.Tuple[str, str, str]], name="", param="", value="") -> None:
     """Append to table."""
     if isinstance(value, Path):
         value = str(value)
@@ -130,6 +157,8 @@ def append(table: ty.List[ty.Tuple[str, str, str]], name="", param="", value="")
         value = "..." + str(value)[-120:]
     elif isinstance(value, (list, tuple)):
         value = repr_iterable(value)
+    elif value is None:
+        value = "<no value>"
     table.append((name, param, value))
 
 
@@ -159,7 +188,7 @@ def format_value(description: str, args: str, value: ty.Any) -> ty.List[ty.Tuple
     return res
 
 
-def get_args_from_option(option: ty.Callable):
+def get_args_from_option(option: ty.Callable) -> str:
     """Return argument information from option."""
     if not hasattr(option, "__closure__"):
         raise ValueError(f"Option {option} does not have closure.")
@@ -194,7 +223,7 @@ class Parameter:
         """Return formatted version of the value."""
         if self.value:
             return format_value(self.description, self.args, self.value)
-        return [(self.description, self.args, "")]
+        return [(self.description, self.args, "<no value>")]
 
 
 class Parameters:

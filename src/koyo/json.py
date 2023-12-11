@@ -30,10 +30,12 @@ def default(o):
     ------
     TypeError
     """
-    if isinstance(o, (np.int64, np.int32, np.int16)):
+    if isinstance(o, (np.int64, np.int32, np.int16, np.integer)):
         return int(o)
-    elif isinstance(o, (np.float64, np.float32, np.float16)):
+    elif isinstance(o, (np.float64, np.float32, np.float16, np.floating)):
         return float(o)
+    elif isinstance(o, np.ndarray):
+        return o.tolist()
     elif isinstance(o, Path):
         return str(o)
     raise TypeError("Could not convert {} of type {}".format(*o), type(o))

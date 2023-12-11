@@ -1,12 +1,19 @@
 """Module with color functions."""
+from __future__ import annotations
+
 import random
-import typing as ty
 from ast import literal_eval
 
 import numpy as np
 
 
-def rgb_255_to_1(color: ty.Union[ty.Tuple, ty.List], decimals: int = 3):
+def rgb_1_to_hex(color: tuple | list):
+    """Convert RGB to Hex."""
+    color = list(color)[0:3]
+    return "#" + "".join([f"{int(c * 255):02x}" for c in color])
+
+
+def rgb_255_to_1(color: tuple | list, decimals: int = 3):
     """Convert color that is in RGB (255-scale) to RGB (1-scale).
 
     Parameters

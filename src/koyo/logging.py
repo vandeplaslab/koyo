@@ -1,7 +1,11 @@
 """Logging utilities."""
+from __future__ import annotations
+
 import os
 import sys
 import typing as ty
+
+from koyo.utilities import find_nearest_value
 
 if ty.TYPE_CHECKING:
     from loguru import Logger
@@ -29,11 +33,11 @@ def set_loguru_env(fmt: str, level: str, enqueue: bool, colorize: bool):
     os.environ["LOGURU_COLORIZE"] = str(colorize)
 
 
-def get_loguru_level(level: ty.Union[int, str]):
+def get_loguru_level(level: int | str) -> str:
     """Get loguru level."""
     if isinstance(level, str):
         return level.upper()
-    level = {
+    levels = {
         0: "trace",
         5: "trace",
         10: "debug",
@@ -42,11 +46,14 @@ def get_loguru_level(level: ty.Union[int, str]):
         30: "warning",
         40: "error",
         50: "critical",
-    }[level]
+    }
+    if level not in levels:
+        level = find_nearest_value(list(levels.keys()), level)
+    level = levels[level]
     return level.upper()
 
 
-def get_loguru_env():
+def get_loguru_env() -> tuple[str, str, bool, bool]:
     """Get logoru environment variables."""
     colorize = bool(os.environ.get("LOGURU_COLORIZE", "True"))
     level = os.environ.get("LOGURU_LEVEL", "info")
@@ -56,8 +63,12 @@ def get_loguru_env():
 
 
 def get_loguru_config(
-    level: ty.Union[str, int], no_color: bool, enqueue: bool = True, fmt: str = LOG_FMT, color_fmt: str = COLOR_LOG_FMT
-) -> ty.Tuple[str, str, bool, bool]:
+    level: str | int | float,
+    no_color: bool,
+    enqueue: bool = True,
+    fmt: str = LOG_FMT,
+    color_fmt: str = COLOR_LOG_FMT,
+) -> tuple[str, str, bool, bool]:
     """Return level."""
     level = get_loguru_level(level)
     colorize = not no_color
@@ -67,15 +78,15 @@ def get_loguru_config(
 
 def set_loguru_log(
     sink=sys.stderr,
-    level: ty.Union[str, int] = 20,
+    level: str | int = 20,
     no_color: bool = False,
     enqueue: bool = True,
-    fmt: ty.Optional[str] = None,
+    fmt: str | None = None,
     diagnose: bool = False,
     catch: bool = False,
-    colorize: ty.Optional[bool] = None,
+    colorize: bool | None = None,
     remove: bool = True,
-    logger: "Logger" = None,
+    logger: Logger = None,
 ):
     """Set loguru formatting."""
     if logger is None:

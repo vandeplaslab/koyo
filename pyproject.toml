@@ -39,6 +39,7 @@ dependencies = [
     "mpire",
     "scikit-learn",
     "requests",
+    "tabulate",
 ]
 
 # extras
