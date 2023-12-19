@@ -9,6 +9,7 @@ from pathlib import Path
 
 import click
 from loguru import logger
+from natsort import natsorted
 
 from koyo.typing import PathLike
 
@@ -20,7 +21,7 @@ def expand_data_dirs(input_dir: str) -> ty.List[str]:
     return [input_dir]
 
 
-def parse_paths(input_dirs, absolute: bool = False) -> ty.List[str]:
+def parse_paths(input_dirs, absolute: bool = False, sort: bool = False) -> ty.List[str]:
     """Parse list/tuple of paths and check whether any of them have glob-like pattern."""
     result = []
     for path in input_dirs:
@@ -32,12 +33,19 @@ def parse_paths(input_dirs, absolute: bool = False) -> ty.List[str]:
             result.extend(path)
     if absolute:
         result = [os.path.abspath(path) for path in result]
+    if result and sort:
+        return natsorted(result)
     return result
 
 
 def cli_parse_paths(ctx, param, value) -> ty.List[str]:
     """Parse paths."""
     return parse_paths(value)
+
+
+def cli_parse_paths_sort(ctx, param, value) -> ty.List[str]:
+    """Parse paths."""
+    return parse_paths(value, sort=True)
 
 
 def with_plugins(plugins, **kwargs):
@@ -149,7 +157,7 @@ def repr_iterable(iterable: ty.Sequence[ty.Any]):
         return iterable
 
 
-def append(table: ty.List[ty.Tuple[str, str, str]], name="", param="", value="") -> None:
+def append(table: ty.List[ty.Tuple[str, str, str]], name: str = "", param: str = "", value: ty.Any = "") -> None:
     """Append to table."""
     if isinstance(value, Path):
         value = str(value)
@@ -157,6 +165,8 @@ def append(table: ty.List[ty.Tuple[str, str, str]], name="", param="", value="")
         value = "..." + str(value)[-120:]
     elif isinstance(value, (list, tuple)):
         value = repr_iterable(value)
+    elif isinstance(value, bool):
+        value = str(value)
     elif value is None:
         value = "<no value>"
     table.append((name, param, value))
@@ -166,7 +176,7 @@ def format_value(description: str, args: str, value: ty.Any) -> ty.List[ty.Tuple
     """Format value."""
     res = []
     # lists should be printed as multiple rows
-    if isinstance(value, (ty.List, ty.Tuple)):
+    if isinstance(value, (tuple, list)):
         if len(value) > 0:
             append(res, description, args, value[0])
             for v in value[1::]:
@@ -174,7 +184,7 @@ def format_value(description: str, args: str, value: ty.Any) -> ty.List[ty.Tuple
         else:
             append(res, description, args, "<no value>")
     # dicts should be printed as multiple rows
-    elif isinstance(value, ty.Dict):
+    elif isinstance(value, dict):
         if len(value) > 0:
             for i, (k, v) in enumerate(value.items()):
                 if i == 0:
@@ -221,7 +231,7 @@ class Parameter:
 
     def to_list(self) -> ty.List[ty.Tuple[str, str, str]]:
         """Return formatted version of the value."""
-        if self.value:
+        if self.value is not None:
             return format_value(self.description, self.args, self.value)
         return [(self.description, self.args, "<no value>")]
 
