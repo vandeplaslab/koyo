@@ -364,6 +364,13 @@ def arg_parse_framelist(ctx, param, value: str):
     return parse_str_framelist(value)
 
 
+def arg_parse_framelist_multi(ctx, param, value: ty.Tuple[str]):
+    """Parse framelist."""
+    if value is None:
+        return None
+    return [parse_str_framelist(v) for v in value]
+
+
 # noinspection PyUnusedLocal
 def parse_values(ctx, param, value: str):
     """Parse values and return them as list of potential options."""
