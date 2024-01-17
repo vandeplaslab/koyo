@@ -13,7 +13,7 @@ from koyo.utilities import find_nearest_index
 FILTER_REGISTER = {}
 
 
-def register(name, *args, **kwargs):
+def register(name: str, *args: ty.Any, **kwargs: ty.Any) -> ty.Callable[[ty.Type], ty.Type]:
     """Decorate a class to register a name for it, optionally with a set of associated initialization parameters.
 
     Parameters
