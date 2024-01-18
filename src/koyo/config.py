@@ -39,6 +39,8 @@ class BaseConfig(BaseModel):
                             setattr(self, key, value)
                         except Exception as e:
                             logger.warning(f"Failed to set {key}={value}: {e}")
+                    else:
+                        logger.warning(f"Unknown key {key}={value} - perhaps it was deprecated?")
                 logger.info(f"Loaded configuration from {self.output_path}")
             except Exception as e:
                 logger.warning(f"Failed to load configuration from {self.output_path}: {e}")
