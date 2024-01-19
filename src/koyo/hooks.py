@@ -1,6 +1,8 @@
 import os
 import sys
-from contextlib import suppress, contextmanager
+from contextlib import contextmanager, suppress
+
+from loguru import logger
 
 DEFAULT_HOOK = None
 
@@ -43,13 +45,45 @@ def uninstall_debugger_hook() -> None:
         DEFAULT_HOOK = None
 
 
+def logger_hook(type, value, tb) -> None:
+    """Logger hook."""
+    import traceback
+
+    # we are NOT in interactive mode, print the exception...
+    with suppress(Exception):
+        traceback.print_exception(type, value, tb)
+        logger.exception(value)
+
+
+def install_logger_hook() -> None:
+    """Activate the debugger hook."""
+    global DEFAULT_HOOK
+    os.environ["KOYO_LOG_MODE"] = "1"
+    os.environ["LOG_MODE"] = "1"
+
+    if DEFAULT_HOOK is None:
+        DEFAULT_HOOK = sys.excepthook
+    sys.excepthook = logger_hook
+
+
+def uninstall_logger_hook() -> None:
+    """Deactivate the debugger hook."""
+    global DEFAULT_HOOK
+    os.environ["KOYO_LOG_MODE"] = "0"
+    os.environ["LOG_MODE"] = "0"
+
+    if DEFAULT_HOOK is not None:
+        sys.excepthook = DEFAULT_HOOK
+        DEFAULT_HOOK = None
+
+
 @contextmanager
 def catch_if_debug():
     """Catch exception if debugging."""
     if os.environ.get("DEV_MODE", "0") == "0":
         try:
             yield
-        except Exception as err:
+        except Exception:
             pass
     else:
         yield
