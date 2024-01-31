@@ -21,10 +21,11 @@ def expand_data_dirs(input_dir: str) -> ty.List[str]:
     return [input_dir]
 
 
-def parse_paths(input_dirs, absolute: bool = False, sort: bool = False) -> ty.List[str]:
+def parse_paths(input_dirs: list[PathLike], absolute: bool = False, sort: bool = False) -> ty.List[str]:
     """Parse list/tuple of paths and check whether any of them have glob-like pattern."""
     result = []
     for path in input_dirs:
+        path = str(path)
         # clean-up paths
         if path.endswith("/"):
             path = path[0:-1]
