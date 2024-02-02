@@ -2,7 +2,6 @@
 import typing as ty
 
 import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
 
 
 def clip_hotspots(img: np.ndarray, quantile: float = 0.99) -> np.ndarray:
@@ -148,6 +147,7 @@ def colocalization(img_a: np.ndarray, img_b: np.ndarray) -> float:
         similarity score between two images
     """
     from scipy.ndimage import median_filter
+    from sklearn.metrics.pairwise import cosine_similarity
 
     img_a = np.nan_to_num(img_a)
     img_b = np.nan_to_num(img_b)
