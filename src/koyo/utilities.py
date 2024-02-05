@@ -13,6 +13,14 @@ from natsort import natsorted
 from koyo.typing import SimpleArrayLike
 
 
+def is_installed(module: str) -> bool:
+    """Try to import module."""
+    import importlib.util
+
+    loader = importlib.util.find_spec(module)
+    return loader is not None
+
+
 def find_nearest_divisor(
     value: ty.Union[int, float],
     divisor: ty.Union[int, float] = 1,

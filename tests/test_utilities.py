@@ -12,11 +12,18 @@ from koyo.utilities import (
     get_kws,
     get_min_max,
     is_between,
+    is_installed,
     is_number,
     rescale,
     view_as_blocks,
 )
 from numpy.testing import assert_equal
+
+
+def test_is_installed():
+    assert is_installed("numpy")
+    assert is_installed("numpy.linalg")
+    assert not is_installed("not_installed_package")
 
 
 class TestViewAsBlocks:
@@ -156,8 +163,8 @@ def test_check_image_orientation(shape):
 
 def test_format_size():
     assert "100" == format_size(100)
-    assert "1.0K" == format_size(2 ** 10)
-    assert "1.0M" == format_size(2 ** 20)
-    assert "1.0G" == format_size(2 ** 30)
-    assert "1.0T" == format_size(2 ** 40)
-    assert "1.0P" == format_size(2 ** 50)
+    assert "1.0K" == format_size(2**10)
+    assert "1.0M" == format_size(2**20)
+    assert "1.0G" == format_size(2**30)
+    assert "1.0T" == format_size(2**40)
+    assert "1.0P" == format_size(2**50)
