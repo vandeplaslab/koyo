@@ -150,6 +150,38 @@ def add_ax_colorbar(mappable):
     return cbar
 
 
+def make_legend_handles(
+    names: list[str],
+    colors: list[str],
+    kind: list[str] = "line",
+    width: list[float] = 3,
+    extra_kws: dict = None,
+):
+    """Create custom legend."""
+    from matplotlib.lines import Line2D
+    from matplotlib.patches import Patch
+
+    extra_kws = extra_kws or {}
+    if isinstance(colors, (str, np.ndarray)):
+        colors = [colors] * len(names)
+    if isinstance(kind, str):
+        kind = [kind] * len(names)
+    if isinstance(width, (float, int)):
+        width = [width] * len(names)
+    handles = []
+    for name, color, kind_, width_ in zip(names, colors, kind, width):
+        kws = extra_kws.get(name, {})
+        if kind_ == "line":
+            handles.append(Line2D([0], [0], color=color, lw=width_, label=name, **kws))
+        elif kind_ == "patch":
+            handles.append(Patch(facecolor=color, edgecolor=color, label=name, **kws))
+        elif kind_ == "patch":
+            handles.append(Patch(facecolor=color, edgecolor=color, label=name, **kws))
+        else:
+            raise ValueError(f"Unknown kind {kind_}")
+    return handles
+
+
 def add_legend(
     fig,
     ax,
@@ -383,3 +415,23 @@ def fix_style(style: str) -> str:
     if style != "default":
         assert style in available, f"Style '{style}' not available. Available styles: {available}"
     return style
+
+
+def _annotate_heatmap(g, ax, mesh):
+    from seaborn.utils import relative_luminance
+
+    mesh.update_scalarmappable()
+    height, width = g.annot_data.shape
+    xpos, ypos = np.meshgrid(np.arange(width) + 0.5, np.arange(height) + 0.5)
+    for x, y, m, color, val in zip(xpos.flat, ypos.flat, mesh.get_array(), mesh.get_facecolors(), g.annot_data.flat):
+        if m is not np.ma.masked:
+            lum = relative_luminance(color)
+            text_color = ".15" if lum > 0.408 else "w"
+            annotation = f"{val:.2f}"
+            if val > 0:
+                annotation = "1" if annotation in "1.00" else annotation.replace("0.", ".")
+            else:
+                annotation = "-1" if annotation in "-1.00" else annotation.replace("0.", ".")
+            text_kwargs = dict(color=text_color, ha="center", va="center")
+            text_kwargs.update(g.annot_kws)
+            ax.text(x, y, annotation, **text_kwargs)

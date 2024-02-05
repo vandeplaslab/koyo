@@ -21,6 +21,11 @@ def is_installed(module: str) -> bool:
     return loader is not None
 
 
+def get_format(fmt: str) -> str:
+    """Parse format."""
+    return fmt if fmt.startswith(".") else f".{fmt}"
+
+
 def find_nearest_divisor(
     value: ty.Union[int, float],
     divisor: ty.Union[int, float] = 1,
