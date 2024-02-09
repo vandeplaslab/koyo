@@ -1,4 +1,5 @@
 """Generic utilities."""
+
 import re
 import typing as ty
 import unicodedata
@@ -17,7 +18,10 @@ def is_installed(module: str) -> bool:
     """Try to import module."""
     import importlib.util
 
-    loader = importlib.util.find_spec(module)
+    try:
+        loader = importlib.util.find_spec(module)
+    except ModuleNotFoundError:
+        return False
     return loader is not None
 
 

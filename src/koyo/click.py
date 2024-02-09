@@ -1,4 +1,5 @@
 """Override click group to enable ordering."""
+
 import glob
 import os
 import sys
@@ -211,6 +212,10 @@ def get_args_from_option(option: ty.Callable) -> str:
     for value in cell.cell_contents:
         if isinstance(value, str) and value.startswith("-"):
             ret += value
+    # check if we can split the arguments
+    if "--" in ret:
+        rets = ret.split("--")
+        ret = "/".join(rets)
     return ret
 
 

@@ -1,11 +1,12 @@
 """Utilities for spectrum analysis."""
+
 import typing as ty
 from bisect import bisect_left, bisect_right
 
 import numba
 import numpy as np
-import scipy.signal
 import scipy.ndimage
+import scipy.signal
 
 from koyo.typing import SimpleArrayLike
 from koyo.utilities import find_nearest_index, find_nearest_index_batch
