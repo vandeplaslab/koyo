@@ -104,6 +104,10 @@ def compute_divider(value: float) -> float:
 def convert_divider_to_str(value, exp_value):
     value = float(value)
     if exp_value in [0, 1, 2]:
+        if abs(value) < 0.0001:
+            return f"{value:.6G}"
+        if abs(value) < 0.01:
+            return f"{value:.4G}"
         if abs(value) <= 1:
             return f"{value:.2G}"
         elif abs(value) <= 1000:

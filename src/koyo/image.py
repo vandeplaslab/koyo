@@ -107,8 +107,12 @@ def reshape_array_batch_from_coordinates(
     n = array.shape[1]
     dtype = np.float32 if np.isnan(fill_value) else array.dtype
     im = np.full((n, *image_shape), fill_value=fill_value, dtype=dtype)
-    for i in range(n):
-        im[i, coordinates[:, 1] - 1, coordinates[:, 0] - 1] = array[:, i]
+    try:
+        for i in range(n):
+            im[i, coordinates[:, 1] - 1, coordinates[:, 0] - 1] = array[:, i]
+    except IndexError:
+        for i in range(n):
+            im[i, coordinates[:, 0] - 1, coordinates[:, 1] - 1] = array[:, i]
     return im
 
 
