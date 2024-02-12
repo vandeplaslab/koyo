@@ -479,7 +479,7 @@ def check_image_orientation(array):
     shape = array.shape
     if len(shape) == 3:
         return np.swapaxes(array, 1, 2) if shape[1] > shape[2] else array
-    return array.T if shape[0] > shape[1] else array
+    return np.rot90(array) if shape[0] > shape[1] else array
 
 
 def slugify(value, allow_unicode=False):
