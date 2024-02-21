@@ -1,4 +1,5 @@
 """Check for latest release."""
+
 from __future__ import annotations
 
 import typing as ty
@@ -31,6 +32,7 @@ def get_target() -> str | None:
             return "macosx_arm64"
         return "macosx_x86_64"
     return None
+
 
 def get_latest_release(user: str = "vandeplaslab", package: str = "koyo") -> str:
     """Get latest release from GitHub."""
