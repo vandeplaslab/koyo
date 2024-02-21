@@ -76,6 +76,15 @@ def get_loguru_config(
     return level.upper(), fmt, colorize, enqueue
 
 
+def get_stderr() -> ty.TextIO:
+    """Get stderr."""
+    if sys.stderr is None:
+        sys.stderr = sys.stdout
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")
+    return sys.stderr
+
+
 def set_loguru_log(
     sink=sys.stderr,
     level: str | int = 20,
@@ -91,6 +100,12 @@ def set_loguru_log(
     """Set loguru formatting."""
     if logger is None:
         from loguru import logger
+    if logger is None:
+        raise ValueError("Logger is None - cannot set loguru log.")
+    if sink is None:
+        sink = get_stderr()
+    if sink is None:
+        raise ValueError("Sink is None - cannot set loguru log.")
 
     # automatically get format
     fmt = fmt if fmt is not None else (LOG_FMT if no_color else COLOR_LOG_FMT)
