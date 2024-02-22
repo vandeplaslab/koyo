@@ -215,6 +215,7 @@ def get_args_from_option(option: ty.Callable) -> str:
     # check if we can split the arguments
     if "--" in ret:
         rets = ret.split("--")
+        rets = [r if r.startswith("-") else f"--{r}" for r in rets]
         ret = "/".join(rets)
     return ret
 
