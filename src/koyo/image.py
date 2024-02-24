@@ -126,8 +126,8 @@ def get_coordinates_from_index(index: np.ndarray, shape: ty.Tuple[int, int]) -> 
     if shape[1] != index_im.shape[1]:
         raise ValueError("Image dimension 1 does not match that of the dataset")
 
-    _y, _x = np.indices(index_im.shape)
-    yx_coordinates = np.c_[np.ravel(_y), np.ravel(_x)][index]
+    y_coordinates, x_coordinates = np.indices(index_im.shape)
+    yx_coordinates = np.c_[np.ravel(y_coordinates), np.ravel(x_coordinates)][index]
     return yx_coordinates
 
 
