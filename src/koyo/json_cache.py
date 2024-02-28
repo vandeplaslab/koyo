@@ -29,6 +29,27 @@ class JSONCache:
     def __contains__(self, item):
         return item in self.read()
 
+    def __delitem__(self, key: str) -> None:
+        data = self.read()
+        if key in data:
+            del data[key]
+            self.write(data)
+
+    def remove(self, key: str) -> None:
+        """Remove key from cache."""
+        data = self.read()
+        if key in data:
+            del data[key]
+            self.write(data)
+
+    def remove_multiple(self, *keys: str) -> None:
+        """Remove multiple keys from cache."""
+        data = self.read()
+        for key in keys:
+            if key in data:
+                del data[key]
+        self.write(data)
+
     def _set_default(self):
         data = {}
         self.write(data)

@@ -650,6 +650,7 @@ def get_distributed_list(
     n_frames_or_proportion: ty.Union[int, float],
     framelist: ty.Optional[np.ndarray] = None,
     as_index: bool = False,
+    trim: bool = False,
 ) -> np.ndarray:
     """Get list of frames that span the entire dataset.
 
@@ -663,6 +664,8 @@ def get_distributed_list(
         list of frames to use for sub-sampling
     as_index : bool, optional
         if `True`, the distributed framelist will consist of indices rather than actual frame IDs
+    trim : bool, optional
+        if `True`, the distributed framelist will be trimmed to the maximum available frame
 
     Returns
     -------
@@ -689,7 +692,9 @@ def get_distributed_list(
     # frame_list above is simply index positions
     if framelist is not None:
         framelist = np.asarray(framelist)
-        return framelist[distributed]
+        distributed = framelist[distributed]
+    if trim and len(distributed) > n_frames_or_proportion:
+        distributed = distributed[:n_frames_or_proportion]
     return distributed
 
 
