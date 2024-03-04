@@ -146,6 +146,11 @@ class ProjectBase:
         if not self.project_config or self.project_config is None:
             raise ValueError("Project configuration file is not setup.")
 
+        # create backup of the project file
+        backup_filename = self.filename.with_suffix(".bak")
+        backup_filename.write_text(self.filename.read_text())
+
+        # validate config
         self._validate_config()
         project_config = self._cleanup_config()
         with open(self.filename, "w") as f_ptr:

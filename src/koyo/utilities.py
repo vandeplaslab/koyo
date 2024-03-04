@@ -774,9 +774,7 @@ def optimize_dtype(int_value=None, float_value=None, allow_unsigned: bool = Fals
         return np.float64
 
 
-def find_nearest_divisible(
-    value: int | float, divisor: int | float, max_iters: int = 1000
-) -> int | float:
+def find_nearest_divisible(value: int | float, divisor: int | float, max_iters: int = 1000) -> int | float:
     """Find nearest value that can be evenly divided by the divisor.
 
     Parameters
@@ -851,6 +849,8 @@ def view_as_blocks(array: np.ndarray, n_rows: int, n_cols: int, auto_pad: bool =
         )
     new_shape = (int(h / n_rows), int(w / n_cols))
     return array.reshape((h // n_rows, n_rows, -1, n_cols)).swapaxes(1, 2).reshape(-1, n_rows, n_cols), new_shape
+
+
 def prettify_name(mz_min: float, mz_max: float, prefix: str = "", suffix: str = "", n_decimals: int = 0) -> str:
     """Prettify ion name."""
     mz_window = (mz_max - mz_min) / 2
