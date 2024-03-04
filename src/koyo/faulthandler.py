@@ -1,7 +1,9 @@
 """Fault handler."""
-from koyo.typing import PathLike
 from pathlib import Path
+
 from loguru import logger
+
+from koyo.typing import PathLike
 
 
 def submit_sentry_attachment(message: str, path: PathLike):

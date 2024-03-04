@@ -52,12 +52,12 @@ class ProjectBase:
         return self.project_dir.stem
 
     @property
-    def filename(self):
+    def filename(self) -> Path:
         """Get path to the project configuration file."""
         return self.project_dir / self.BASE_FILENAME
 
     @classmethod
-    def new(cls, output_dir: PathLike, name: str = "Project", open_if_exists: bool = True):
+    def new(cls, output_dir: PathLike, name: str = "Project", open_if_exists: bool = True) -> ProjectBase:
         """Create new project."""
         project_dir = (Path(output_dir) / name).with_suffix(".annotine")
         if project_dir.exists():
@@ -76,7 +76,7 @@ class ProjectBase:
         return self._cache_dir
 
     @cache_dir.setter
-    def cache_dir(self, value: PathLike):
+    def cache_dir(self, value: PathLike) -> None:
         self._cache_dir = Path(value)
 
     @property
@@ -121,7 +121,7 @@ class ProjectBase:
         self._validate_config()
         return self._config
 
-    def validate_inputs(self):
+    def validate_inputs(self) -> None:
         """Validate input paths."""
         raise NotImplementedError("Must implement method")
 
@@ -134,12 +134,12 @@ class ProjectBase:
         raise NotImplementedError("Must implement method")
 
     @contextmanager
-    def autosave(self):
+    def autosave(self) -> None:
         """Context manager to automatically save project configuration."""
         yield
         self._export()
 
-    def _export(self):
+    def _export(self) -> None:
         """Export configuration file."""
         from json import dump
 
@@ -153,19 +153,19 @@ class ProjectBase:
 
     @property
     def datasets(self) -> list[str]:
-        """List set of available datasets that have been registered to the project"""
+        """List set of available datasets that have been registered to the project."""
         return list(self.project_config.get(self.DATASETS_KEY, {}).keys())
 
     @property
     def paths(self) -> list[Path]:
-        """List set of available datasets that have been registered to the project"""
+        """List set of available datasets that have been registered to the project."""
         return list(map(Path, self.project_config.get(self.DATASETS_KEY, {}).values()))
 
     def dataset_iter(self) -> ty.Iterable[str]:
         """Iterate dataset name and path."""
         yield from self.project_config.get(self.DATASETS_KEY, {}).keys()
 
-    def dataset_path_iter(self) -> ty.Iterator[ty.Tuple[str, Path]]:
+    def dataset_path_iter(self) -> ty.Iterator[tuple[str, Path]]:
         """Iterator of dataset:path values."""
         for name, path in self.project_config.get(self.DATASETS_KEY, {}).items():
             yield name, Path(path)

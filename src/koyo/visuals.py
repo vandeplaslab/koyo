@@ -159,7 +159,7 @@ def make_legend_handles(
     colors: list[str],
     kind: list[str] = "line",
     width: list[float] = 3,
-    extra_kws: dict = None,
+    extra_kws: dict | None = None,
 ):
     """Create custom legend."""
     from matplotlib.lines import Line2D
@@ -436,6 +436,6 @@ def _annotate_heatmap(g, ax, mesh):
                 annotation = "1" if annotation in "1.00" else annotation.replace("0.", ".")
             else:
                 annotation = "-1" if annotation in "-1.00" else annotation.replace("0.", ".")
-            text_kwargs = dict(color=text_color, ha="center", va="center")
+            text_kwargs = {"color": text_color, "ha": "center", "va": "center"}
             text_kwargs.update(g.annot_kws)
             ax.text(x, y, annotation, **text_kwargs)

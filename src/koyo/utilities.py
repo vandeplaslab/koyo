@@ -1,4 +1,5 @@
 """Generic utilities."""
+from __future__ import annotations
 
 import re
 import typing as ty
@@ -31,11 +32,11 @@ def get_format(fmt: str) -> str:
 
 
 def find_nearest_divisor(
-    value: ty.Union[int, float],
-    divisor: ty.Union[int, float] = 1,
-    increment: ty.Union[int, float] = 1,
+    value: int | float,
+    divisor: int | float = 1,
+    increment: int | float = 1,
     max_iters: int = 1000,
-) -> ty.Union[int, float]:
+) -> int | float:
     """Find nearest divisor.
 
     Parameters
@@ -138,19 +139,19 @@ def is_between(value: float, lower: float, upper: float, inclusive: bool = True)
     return lower < value < upper
 
 
-def flatten_nested_list(list_of_lists: ty.List[ty.List]) -> ty.List:
+def flatten_nested_list(list_of_lists: list[list]) -> list:
     """Flatten nested list of lists."""
     return [item for sublist in list_of_lists for item in sublist]
 
 
-def get_list_difference(li1: ty.List, li2: ty.List):
+def get_list_difference(li1: list, li2: list):
     """Get difference between two lists."""
     # get difference between two lists while keeping the order
     li_dif = [i for i in li1 + li2 if i not in li1 or i not in li2]
     return li_dif
 
 
-def find_nearest_index(data: SimpleArrayLike, value: ty.Union[int, float, np.ndarray, Iterable]):
+def find_nearest_index(data: SimpleArrayLike, value: int | (float | (np.ndarray | Iterable))):
     """Find nearest index of asked value.
 
     Parameters
@@ -172,7 +173,7 @@ def find_nearest_index(data: SimpleArrayLike, value: ty.Union[int, float, np.nda
 
 
 @nb.njit()
-def find_nearest_index_array(data: SimpleArrayLike, value: ty.Union[np.ndarray, ty.Iterable]) -> np.ndarray:
+def find_nearest_index_array(data: SimpleArrayLike, value: np.ndarray | ty.Iterable) -> np.ndarray:
     """Find nearest index of asked value.
 
     Parameters
@@ -192,7 +193,7 @@ def find_nearest_index_array(data: SimpleArrayLike, value: ty.Union[np.ndarray, 
 
 
 @nb.njit()
-def find_nearest_index_single(data: SimpleArrayLike, value: ty.Union[int, float]):
+def find_nearest_index_single(data: SimpleArrayLike, value: int | float):
     """Find nearest index of asked value.
 
     Parameters
@@ -210,7 +211,7 @@ def find_nearest_index_single(data: SimpleArrayLike, value: ty.Union[int, float]
     return np.argmin(np.abs(data - value))
 
 
-def find_nearest_value_single(data: SimpleArrayLike, value: ty.Union[int, float]) -> ty.Union[int, float]:
+def find_nearest_value_single(data: SimpleArrayLike, value: int | float) -> int | float:
     """Find nearest value."""
     data = np.asarray(data)
     idx = find_nearest_index_single(data, value)
@@ -237,14 +238,14 @@ def find_nearest_index_batch(array: SimpleArrayLike, values: SimpleArrayLike) ->
     return indices
 
 
-def find_nearest_value(data: ty.Iterable, value: ty.Union[int, float, np.ndarray, Iterable]):
+def find_nearest_value(data: ty.Iterable, value: int | (float | (np.ndarray | Iterable))):
     """Find nearest value."""
     data = np.asarray(data)
     idx = find_nearest_index(data, value)
     return data[idx]
 
 
-def get_kws(func: ty.Callable, **kwargs) -> ty.Dict:
+def get_kws(func: ty.Callable, **kwargs) -> dict:
     """Get kwargs."""
     import inspect
 
@@ -332,12 +333,12 @@ def get_value(new_value, current_value):
 
 
 def rescale(
-    values: ty.Union[np.ndarray, ty.List],
+    values: np.ndarray | list,
     new_min: float,
     new_max: float,
     dtype=None,
-    min_val: ty.Optional[float] = None,
-    max_val: ty.Optional[float] = None,
+    min_val: float | None = None,
+    max_val: float | None = None,
 ) -> np.ndarray:
     """Rescale values from one range to another.
 
@@ -411,7 +412,22 @@ def rescale_value(
 
 
 def chunks(item_list, n_items: int = 0, n_tasks: int = 0):
-    """Yield successive n-sized chunks from `item_list`."""
+    """Yield successive n-sized chunks from `item_list`.
+
+    Parameters
+    ----------
+    item_list : list
+        list of items
+    n_items : int
+        number of items in each chunk
+    n_tasks : int
+        number of tasks to be performed
+
+    Returns
+    -------
+    chunk : list
+        list of items
+    """
     if n_items == 0 and n_tasks == 0:
         raise ValueError("You must specified either 'n_items' or 'n_tasks'.")
     if n_tasks:
@@ -445,7 +461,7 @@ def sequential_chunks(item_list, n_items: int):
     yield from pots
 
 
-def get_min_max(values) -> ty.Tuple[ty.Union[int, float], ty.Union[int, float]]:
+def get_min_max(values: np.ndarray | ty.Iterable | list) -> tuple[int | float, int | float]:
     """Get the minimum and maximum value of an array."""
     return np.min(values), np.max(values)
 
@@ -647,8 +663,8 @@ def calculate_quantile_without_zeros(data, q=0.99):
 
 def get_distributed_list(
     total: int,
-    n_frames_or_proportion: ty.Union[int, float],
-    framelist: ty.Optional[np.ndarray] = None,
+    n_frames_or_proportion: int | float,
+    framelist: np.ndarray | None = None,
     as_index: bool = False,
 ) -> np.ndarray:
     """Get list of frames that span the entire dataset.
@@ -754,8 +770,8 @@ def optimize_dtype(int_value=None, float_value=None, allow_unsigned: bool = Fals
 
 
 def find_nearest_divisible(
-    value: ty.Union[int, float], divisor: ty.Union[int, float], max_iters: int = 1000
-) -> ty.Union[int, float]:
+    value: int | float, divisor: int | float, max_iters: int = 1000
+) -> int | float:
     """Find nearest value that can be evenly divided by the divisor.
 
     Parameters
@@ -830,3 +846,13 @@ def view_as_blocks(array: np.ndarray, n_rows: int, n_cols: int, auto_pad: bool =
         )
     new_shape = (int(h / n_rows), int(w / n_cols))
     return array.reshape((h // n_rows, n_rows, -1, n_cols)).swapaxes(1, 2).reshape(-1, n_rows, n_cols), new_shape
+def prettify_name(mz_min: float, mz_max: float, prefix: str = "", suffix: str = "", n_decimals: int = 0) -> str:
+    """Prettify ion name."""
+    mz_window = (mz_max - mz_min) / 2
+    mz_val = mz_min + mz_window  # estimated value
+    return f"{prefix}{mz_val:.3f} ± {round(mz_window, n_decimals)}{suffix}"
+
+
+def prettify_ion_name(mz_min: float, mz_max: float):
+    """Prettify name."""
+    return prettify_name(mz_min, mz_max, suffix=" Da", n_decimals=3)

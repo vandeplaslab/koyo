@@ -1,8 +1,8 @@
 import hashlib
 import typing as ty
 import uuid
-
 from pathlib import Path
+
 from natsort import natsorted
 
 
@@ -33,6 +33,7 @@ def hash_obj(data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, Path, str, 
     hash_id.update(repr(data).encode("utf-8"))
     return hash_id.hexdigest()
 
+
 def uuid_iterable(iterable) -> str:
     """Hash iterable object."""
     return str(uuid.UUID(hash_iterable(iterable)))
@@ -43,10 +44,11 @@ def hash_iterable(iterable, n_in_hash: int = 0) -> str:
     hash_id = hash_obj(natsorted(iterable))
     return hash_id[0:n_in_hash] if n_in_hash else hash_id
 
+
 def uuid_parameters(**kwargs) -> str:
     """Hash iterable object."""
-    p = hash_parameters(**kwargs)
     return str(uuid.UUID(hash_parameters(**kwargs)))
+
 
 def hash_parameters(n_in_hash: int = 0, **kwargs) -> str:
     """Hash parameters."""

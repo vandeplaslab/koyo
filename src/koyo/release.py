@@ -42,7 +42,7 @@ def get_latest_release(user: str = "vandeplaslab", package: str = "koyo") -> str
     return ""
 
 
-def get_latest_git(user: str = "vandeplaslab", package: str = "koyo") -> ty.Dict[str, ty.Any]:
+def get_latest_git(user: str = "vandeplaslab", package: str = "koyo") -> dict[str, ty.Any]:
     """Get latest release from GitHub."""
     response = requests.get(f"https://api.github.com/repos/{user}/{package}/releases/latest")
     if response.status_code == 200:
@@ -51,7 +51,7 @@ def get_latest_git(user: str = "vandeplaslab", package: str = "koyo") -> ty.Dict
     return {}
 
 
-def format_version(data: ty.Dict) -> str:
+def format_version(data: dict) -> str:
     """Format version."""
     git_version = data.get("tag_name", "")
     if not git_version:
@@ -63,8 +63,8 @@ def format_version(data: ty.Dict) -> str:
 
 
 def is_new_version_available(
-    current_version: str, user: str = "vandeplaslab", package: str = "koyo", data: ty.Dict[str, ty.Any] | None = None
-) -> ty.Tuple[bool, str]:
+    current_version: str, user: str = "vandeplaslab", package: str = "koyo", data: dict[str, ty.Any] | None = None
+) -> tuple[bool, str]:
     """Check whether there is a new version available."""
     import requests.exceptions
     from packaging import version

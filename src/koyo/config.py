@@ -44,3 +44,4 @@ class BaseConfig(BaseModel):
                 logger.info(f"Loaded configuration from {self.output_path}")
             except Exception as e:
                 logger.warning(f"Failed to load configuration from {self.output_path}: {e}")
+                logger.exception(e)

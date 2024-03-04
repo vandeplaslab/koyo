@@ -1,5 +1,7 @@
 """Override click group to enable ordering."""
 
+from __future__ import annotations
+
 import glob
 import os
 import sys
@@ -225,14 +227,14 @@ class Parameter:
 
     __slots__ = ["description", "args", "value"]
 
-    def __init__(self, description: str, args: ty.Union[str, ty.Callable], value: ty.Optional[ty.Any] = None):
+    def __init__(self, description: str, args: ty.Union[str, ty.Callable] | None, value: ty.Optional[ty.Any] = None):
         self.description = description
-        self.args = args if isinstance(args, str) else get_args_from_option(args)
+        self.args = get_args_from_option(args) if callable(args) else args
         self.value = value
 
     def with_value(
         self, value: ty.Any, description: ty.Optional[str] = None, args: ty.Optional[str] = None
-    ) -> "Parameter":
+    ) -> Parameter:
         """Set the value of the parameter and return self."""
         return Parameter(description or self.description, args or self.args, value)
 
