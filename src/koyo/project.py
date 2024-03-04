@@ -113,7 +113,7 @@ class ProjectBase:
                 try:
                     with open(self.filename) as f_ptr:
                         data = load(f_ptr)
-                    self._config = data
+                    self._config = self._parse_config(data)
                 except JSONDecodeError:
                     self._config = {}
             else:
@@ -124,6 +124,10 @@ class ProjectBase:
     def validate_inputs(self) -> None:
         """Validate input paths."""
         raise NotImplementedError("Must implement method")
+
+    def _parse_config(self, config: dict) -> dict:
+        """Parse configuration."""
+        return config
 
     def _validate_config(self) -> None:
         """Validate config."""
