@@ -151,8 +151,9 @@ class ProjectBase:
             raise ValueError("Project configuration file is not setup.")
 
         # create backup of the project file
-        backup_filename = self.filename.with_suffix(".bak")
-        backup_filename.write_text(self.filename.read_text())
+        if self.filename.exists():
+            backup_filename = self.filename.with_suffix(".bak")
+            backup_filename.write_text(self.filename.read_text())
 
         # validate config
         self._validate_config()
@@ -176,8 +177,8 @@ class ProjectBase:
 
     def dataset_path_iter(self) -> ty.Iterator[tuple[str, Path]]:
         """Iterator of dataset:path values."""
-        for name, path in self.project_config.get(self.DATASETS_KEY, {}).items():
-            yield name, Path(path)
+        for name, path in zip(self.datasets, self.paths):
+            yield name, path
 
     @property
     def n_datasets(self) -> int:

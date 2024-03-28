@@ -1,5 +1,7 @@
 import typing as ty
 
+from koyo.utilities import is_valid_python_name
+
 _T = ty.TypeVar("_T")
 _K = ty.TypeVar("_K")
 
@@ -84,6 +86,16 @@ class MutableMapping(ty.MutableMapping[_K, _T]):
         self._dict: ty.Dict[_K, _T] = {}
         if data is not None:
             self.update(data)
+
+    def __dir__(self) -> list[str]:
+        # noinspection PyUnresolvedReferences
+        base = super().__dir__()
+        keys = sorted(set(base + list(self) + list(self._dict.keys())))  # type: ignore[operator]
+        keys = [k for k in keys if is_valid_python_name(k)]
+        return keys
+
+    def _ipython_key_completions_(self) -> list[str]:
+        return sorted(self)
 
     def __setitem__(self, k: _K, v: _T) -> None:
         self._dict[k] = v
