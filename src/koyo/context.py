@@ -1,8 +1,16 @@
 """Various context managers."""
+
 import gc
 import os
 import sys
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stdout
+
+
+@contextmanager
+def hide_stdout():
+    """Hide stdout."""
+    with redirect_stdout(open(os.devnull, "w")):
+        yield
 
 
 @contextmanager

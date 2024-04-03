@@ -66,3 +66,50 @@ def create_directory(*path: str) -> Path:
             logger.warning("Failed to create directory")
         finally:
             return path
+
+
+def is_network_path(path: PathLike) -> bool:
+    """Check if the path is a network path."""
+    if os.name == "nt":
+        return is_network_path_win(path)
+    return is_network_path_unix(path)
+
+
+def is_network_path_win(path: PathLike) -> bool:
+    """Check if the path is a network path."""
+    import os
+
+    import win32file
+
+    # Get the root path (e.g., "C:\\" from "C:\\path\\to\\file")
+    root_path = os.path.splitdrive(path)[0] + "\\"
+
+    # Get the drive type
+    drive_type = win32file.GetDriveType(root_path)
+
+    # Check if the drive type is network
+    return bool(drive_type == win32file.DRIVE_REMOTE)
+
+
+def get_mount_point(path: PathLike) -> str:
+    """Finds the mount point for a given path."""
+    path = os.path.abspath(path)
+    while not os.path.ismount(path):
+        path = os.path.dirname(path)
+    return path
+
+
+def is_network_path_unix(path: PathLike) -> bool:
+    """Checks if the path is on a network-mounted filesystem."""
+    import subprocess
+
+    mount_point = get_mount_point(path)
+    # On Linux, you might directly parse /proc/mounts for more detailed info
+    # For simplicity, we use df
+    df_output = subprocess.check_output(["df", mount_point], universal_newlines=True)
+    filesystem_type = df_output.split("\n")[1].split()[0]
+
+    # This is a simple heuristic, you may need to adjust the types based on your needs
+    network_filesystems = ["nfs", "smbfs", "cifs", "fuse.sshfs"]
+
+    return any(fs_type in filesystem_type for fs_type in network_filesystems)
