@@ -1,5 +1,6 @@
 """Configuration module."""
 import typing as ty
+from contextlib import contextmanager
 from pathlib import Path
 
 from loguru import logger
@@ -45,3 +46,13 @@ class BaseConfig(BaseModel):
             except Exception as e:
                 logger.warning(f"Failed to load configuration from {self.output_path}: {e}")
                 logger.exception(e)
+
+    @contextmanager
+    def temporary_overwrite(self, **kwargs):
+        """Temporarily overwrite configuration and then revert back."""
+        original = {key: getattr(self, key) for key in kwargs}
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        yield
+        for key, value in original.items():
+            setattr(self, key, value)
