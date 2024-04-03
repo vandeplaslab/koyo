@@ -254,9 +254,12 @@ class Parameters:
         return Parameter(description, args, value)
 
 
-def print_parameters(*parameters: Parameter, log: bool = True):
+def print_parameters(*parameters: Parameter, log: bool = True, silent: bool = False):
     """Print parameters as table."""
     from tabulate import tabulate
+
+    if silent:
+        return
 
     table = []
     for param in parameters:
