@@ -1,4 +1,5 @@
 """Test that click produces the expected output."""
+
 import pytest
 from koyo.click import parse_arg
 
