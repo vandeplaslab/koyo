@@ -1,4 +1,5 @@
 """Json source."""
+
 import typing as ty
 from pathlib import Path
 
@@ -147,3 +148,7 @@ class JSONCache:
         data = self.read()
         data[key] = value
         self.write(data)
+
+    def get_for_keys(self, keys: list[str], default: ty.Any = None) -> dict[str, ty.Any]:
+        """Get values for specified keys."""
+        return {k: self.get_key(k, default) for k in keys}
