@@ -1,5 +1,5 @@
 import pytest
-from koyo.containers import MutableMapping, MutableSequence
+from koyo.containers import MutableMapping, MutableSequence, SizedDict, SizedList
 
 
 def test_mapping():
@@ -31,3 +31,19 @@ def test_sequence():
     del t[0]
     assert len(t) == 0
     t.append(1)
+
+
+def test_sized_dict():
+    d = SizedDict(maxsize=2)
+    d["a"] = 1
+    d["b"] = 2
+    d["c"] = 3
+    assert len(d) == 2
+
+
+def test_sized_list():
+    l = SizedList(maxsize=2)
+    l.append(1)
+    l.append(2)
+    l.append(3)
+    assert len(l) == 2

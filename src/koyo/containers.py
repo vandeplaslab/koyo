@@ -26,7 +26,7 @@ class MutableSequence(ty.MutableSequence[_T]):
     def __getitem__(self, s: slice) -> ty.MutableSequence[_T]:
         ...
 
-    def __getitem__(self, i):
+    def __getitem__(self, i: int) -> _T:
         return self._list[i]
 
     @ty.overload
@@ -111,3 +111,42 @@ class MutableMapping(ty.MutableMapping[_K, _T]):
 
     def __iter__(self) -> ty.Iterator[_K]:
         yield from self._dict.keys()
+
+
+class SizedDict(ty.OrderedDict):
+    """Sized dictionary."""
+
+    def __init__(self, *args: dict[_K, _T], **kwargs: ty.Any):
+        self._maxsize = kwargs.pop("maxsize", -1)
+        super().__init__(*args, **kwargs)
+
+    def _check_size(self) -> None:
+        if self._maxsize > 0:
+            while len(self) > self._maxsize:
+                self.popitem(last=False)
+
+    def __setitem__(self, key: _K, value: _T) -> None:
+        super().__setitem__(key, value)
+        self._check_size()
+
+    def update(self, m: dict[_K, _T], **kwargs: ty.Any) -> None:
+        """Override update."""
+        super().update(m, **kwargs)
+        self._check_size()
+
+
+class SizedList(MutableSequence[_T]):
+    """Sized list."""
+
+    def __init__(self, *args: ty.Iterable[_T], **kwargs: ty.Any):
+        self._maxsize = kwargs.pop("maxsize", -1)
+        super().__init__(*args, **kwargs)
+
+    def _check_size(self) -> None:
+        if self._maxsize > 0:
+            while len(self) > self._maxsize:
+                self.pop(0)
+
+    def __setitem__(self, key: int, value: _T) -> None:
+        super().__setitem__(key, value)
+        self._check_size()

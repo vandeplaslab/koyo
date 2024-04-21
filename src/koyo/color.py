@@ -64,6 +64,6 @@ def hex_to_rgb_255(hex_str):
     return rgb
 
 
-def get_random_hex_color():
+def get_random_hex_color() -> str:
     """Return random hex color."""
     return "#%06x" % random.randint(0, 0xFFFFFF)
