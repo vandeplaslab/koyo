@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import typing as ty
+from abc import abstractmethod
+from typing import overload
 
 from koyo.utilities import is_valid_python_name
 
@@ -13,7 +15,7 @@ class MutableSequence(ty.MutableSequence[_T]):
     """List object that holds objects with optional check if it exists."""
 
     def __init__(self, data: ty.Iterable[_T] = ()):
-        self._list: ty.List[_T] = []
+        self._list: list[_T] = []
         if data:
             self.extend(data)
 
@@ -85,8 +87,8 @@ class MutableSequence(ty.MutableSequence[_T]):
 class MutableMapping(ty.MutableMapping[_K, _T]):
     """Mutable mapping instance."""
 
-    def __init__(self, data: ty.Optional[ty.Dict[_K, _T]] = None):
-        self._dict: ty.Dict[_K, _T] = {}
+    def __init__(self, data: dict[_K, _T] | None = None):
+        self._dict: dict[_K, _T] = {}
         if data is not None:
             self.update(data)
 
@@ -119,8 +121,8 @@ class MutableMapping(ty.MutableMapping[_K, _T]):
 class SizedDict(ty.OrderedDict):
     """Sized dictionary."""
 
-    def __init__(self, *args: dict[_K, _T], **kwargs: ty.Any):
-        self._maxsize = kwargs.pop("maxsize", -1)
+    def __init__(self, *args: dict[_K, _T], maxsize: int = -1, **kwargs: ty.Any):
+        self._maxsize = maxsize
         super().__init__(*args, **kwargs)
 
     def _check_size(self) -> None:
@@ -138,12 +140,42 @@ class SizedDict(ty.OrderedDict):
         self._check_size()
 
 
-class SizedList(MutableSequence[_T]):
+class SizedList(ty.MutableSequence[_T]):
     """Sized list."""
 
-    def __init__(self, *args: ty.Iterable[_T], **kwargs: ty.Any):
-        self._maxsize = kwargs.pop("maxsize", -1)
+    def __init__(self, *args: ty.Iterable[_T], maxsize: int = -1, **kwargs: ty.Any):
+        self._maxsize = maxsize
+        self._list: list[_T] = []
         super().__init__(*args, **kwargs)
+
+    @overload
+    @abstractmethod
+    def __getitem__(self, index: int) -> _T:
+        ...
+
+    @overload
+    @abstractmethod
+    def __getitem__(self, index: slice) -> MutableSequence[_T]:
+        ...
+
+    def __getitem__(self, index: int | slice) -> _T | MutableSequence[_T]:
+        return self._list[index]
+
+    @overload
+    @abstractmethod
+    def __delitem__(self, index: int) -> None:
+        ...
+
+    @overload
+    @abstractmethod
+    def __delitem__(self, index: slice) -> None:
+        ...
+
+    def __delitem__(self, index: int | slice):
+        del self._list[index]
+
+    def __len__(self):
+        return len(self._list)
 
     def _check_size(self) -> None:
         if self._maxsize > 0:
@@ -152,4 +184,9 @@ class SizedList(MutableSequence[_T]):
 
     def __setitem__(self, key: int, value: _T) -> None:
         super().__setitem__(key, value)
+        self._check_size()
+
+    def insert(self, index: int, value: _T):
+        """Insert items."""
+        self._list.insert(index, value)
         self._check_size()

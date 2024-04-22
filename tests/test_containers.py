@@ -34,16 +34,16 @@ def test_sequence():
 
 
 def test_sized_dict():
-    d = SizedDict(maxsize=2)
-    d["a"] = 1
-    d["b"] = 2
-    d["c"] = 3
-    assert len(d) == 2
+    data = SizedDict(maxsize=2)
+    data["a"] = 1
+    data["b"] = 2
+    data["c"] = 3
+    assert len(data) == 2
 
 
 def test_sized_list():
-    l = SizedList(maxsize=2)
-    l.append(1)
-    l.append(2)
-    l.append(3)
-    assert len(l) == 2
+    data = SizedList(maxsize=2)
+    data.append(1)
+    data.append(2)
+    data.append(3)
+    assert len(data) == 2
