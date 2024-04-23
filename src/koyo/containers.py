@@ -1,4 +1,5 @@
 """Container classes."""
+
 from __future__ import annotations
 
 import typing as ty
@@ -24,23 +25,19 @@ class MutableSequence(ty.MutableSequence[_T]):
         self._list.insert(index, self._check(value))
 
     @ty.overload
-    def __getitem__(self, i: int) -> _T:
-        ...
+    def __getitem__(self, i: int) -> _T: ...
 
     @ty.overload
-    def __getitem__(self, s: slice) -> ty.MutableSequence[_T]:
-        ...
+    def __getitem__(self, s: slice) -> ty.MutableSequence[_T]: ...
 
     def __getitem__(self, i: int) -> _T:
         return self._list[i]
 
     @ty.overload
-    def __setitem__(self, i: int, o: _T) -> None:
-        ...
+    def __setitem__(self, i: int, o: _T) -> None: ...
 
     @ty.overload
-    def __setitem__(self, s: slice, o: ty.Iterable[_T]) -> None:
-        ...
+    def __setitem__(self, s: slice, o: ty.Iterable[_T]) -> None: ...
 
     def __setitem__(self, key, value) -> None:
         if isinstance(key, slice):
@@ -51,12 +48,10 @@ class MutableSequence(ty.MutableSequence[_T]):
             self._list[key] = self._check(value)
 
     @ty.overload
-    def __delitem__(self, i: int) -> None:
-        ...
+    def __delitem__(self, i: int) -> None: ...
 
     @ty.overload
-    def __delitem__(self, i: slice) -> None:
-        ...
+    def __delitem__(self, i: slice) -> None: ...
 
     def __delitem__(self, i) -> None:
         del self._list[i]
@@ -150,26 +145,22 @@ class SizedList(ty.MutableSequence[_T]):
 
     @overload
     @abstractmethod
-    def __getitem__(self, index: int) -> _T:
-        ...
+    def __getitem__(self, index: int) -> _T: ...
 
     @overload
     @abstractmethod
-    def __getitem__(self, index: slice) -> MutableSequence[_T]:
-        ...
+    def __getitem__(self, index: slice) -> MutableSequence[_T]: ...
 
     def __getitem__(self, index: int | slice) -> _T | MutableSequence[_T]:
         return self._list[index]
 
     @overload
     @abstractmethod
-    def __delitem__(self, index: int) -> None:
-        ...
+    def __delitem__(self, index: int) -> None: ...
 
     @overload
     @abstractmethod
-    def __delitem__(self, index: slice) -> None:
-        ...
+    def __delitem__(self, index: slice) -> None: ...
 
     def __delitem__(self, index: int | slice):
         del self._list[index]
