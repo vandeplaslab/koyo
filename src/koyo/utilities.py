@@ -300,7 +300,7 @@ def is_number(value):
     return isinstance(value, (int, float, complex))
 
 
-def check_value_order(value_min, value_max):
+def check_value_order(value_min: float, value_max: float) -> tuple[float, float]:
     """Check whether the value order is correct (min -> max).
 
     Parameters

@@ -61,7 +61,7 @@ def estimate_cpu_count_from_size(max_obj_size_in_bytes, keep_free_in_bytes=4_000
     return n_cores
 
 
-def get_cpu_count(keep_free: int = 2, max_cpu: int = 24, n_tasks: int = 0):
+def get_cpu_count(keep_free: int = 2, max_cpu: int = 24, n_tasks: int = 0) -> int:
     """Get number of cores available on the machine.
 
     Parameters

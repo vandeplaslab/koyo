@@ -8,6 +8,20 @@ from loguru import logger
 from koyo.typing import PathLike
 
 
+def get_copy_path(path: PathLike) -> Path:
+    """Get copy path."""
+    path = Path(path)
+    if not path.exists():
+        return path
+    i = 1
+    while True:
+        new_path = path.parent / f"{path.stem}_copy{i}{path.suffix}"
+        if not new_path.exists():
+            break
+        i += 1
+    return new_path
+
+
 def empty_directory(path: str) -> None:
     """Recursively clear directory."""
     path = Path(path)
@@ -27,7 +41,7 @@ def empty_directory(path: str) -> None:
     shutil.rmtree(path, ignore_errors=True)
 
 
-def open_directory(path: PathLike):
+def open_directory(path: PathLike) -> None:
     """Open directory."""
     import webbrowser
 
@@ -36,14 +50,17 @@ def open_directory(path: PathLike):
     webbrowser.open(str(path))
 
 
-def open_directory_alt(path: PathLike):
+def open_directory_alt(path: PathLike) -> None:
     """Open directory."""
     import platform
     import subprocess
 
     path = str(path)
     if platform.system() == "Windows":
-        os.startfile(path)
+        if os.path.exists(path):
+            subprocess.call(["explorer", "/select,", path])
+        else:
+            subprocess.call(["explorer", os.path.dirname(path)])
     elif platform.system() == "Darwin":
         subprocess.Popen(["open", path])
     else:

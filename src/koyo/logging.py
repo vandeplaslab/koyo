@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import sys
 import typing as ty
+from functools import partial
 
 from koyo.utilities import find_nearest_value
 
@@ -17,11 +18,34 @@ LOG_FMT = "[LEVEL_FORMAT][TIME_FORMAT][{process}] {message}".replace("TIME_FORMA
     "LEVEL_FORMAT", LEVEL_FORMAT
 )
 COLOR_LOG_FMT = (
-    "<green>[LEVEL_FORMAT]</green>"
-    "<cyan>[TIME_FORMAT]</cyan>"
-    "<red>[{process}]</red>"
-    " {message}".replace("TIME_FORMAT", TIME_FORMAT).replace("LEVEL_FORMAT", LEVEL_FORMAT)
+    "<green>[LEVEL_FORMAT]</green>" "<cyan>[TIME_FORMAT]</cyan>" "<red>[{process}]</red>" " {message}".replace(
+        "TIME_FORMAT", TIME_FORMAT
+    ).replace("LEVEL_FORMAT", LEVEL_FORMAT)
 )
+
+
+def timed_call(log_func: ty.Callable, message: str, *args: ty.Any, **kwargs: ty.Any) -> ty.Any:
+    """Time a function call."""
+    from koyo.timer import MeasureTimer
+
+    with MeasureTimer() as timer:
+        yield
+    log_func(message + f" in {timer()}", *args, **kwargs)
+
+
+def get_logger() -> Logger:
+    """Get logger with extra functions."""
+    from loguru import logger
+
+    logger.timed_trace = partial(timed_call, logger.trace)
+    logger.timed_debug = partial(timed_call, logger.debug)
+    logger.timed_info = partial(timed_call, logger.info)
+    logger.timed_success = partial(timed_call, logger.success)
+    logger.timed_warning = partial(timed_call, logger.warning)
+    logger.timed_error = partial(timed_call, logger.error)
+    logger.timed_critical = partial(timed_call, logger.critical)
+    logger.timed_exception = partial(timed_call, logger.exception)
+    return logger
 
 
 def set_loguru_env(fmt: str, level: str, enqueue: bool, colorize: bool):
