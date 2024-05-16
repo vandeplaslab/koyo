@@ -72,8 +72,8 @@ class ProjectBase:
         """Return path to cache directory."""
         if self._cache_dir is None:
             self._cache_dir = self.project_dir / "Cache"
-        self._cache_dir.mkdir(parents=True, exist_ok=True)
-        return self._cache_dir
+        self._cache_dir.mkdir(parents=True, exist_ok=True)  # type: ignore[union-attr]
+        return self._cache_dir  # type: ignore[return-value]
 
     @cache_dir.setter
     def cache_dir(self, value: PathLike) -> None:
@@ -138,7 +138,7 @@ class ProjectBase:
         raise NotImplementedError("Must implement method")
 
     @contextmanager
-    def autosave(self) -> None:
+    def autosave(self) -> ty.Generator[None, None, None]:
         """Context manager to automatically save project configuration."""
         yield
         self._export()
