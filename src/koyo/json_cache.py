@@ -127,6 +127,7 @@ class JSONCache:
 
     def write(self, data: ty.Dict):
         """Write data to disk."""
+        self._dir_path.mkdir(parents=True, exist_ok=True)
         write_json_data(self.path, data)
 
     def get_key(self, key: str, default=None):

@@ -41,6 +41,7 @@ dependencies = [
     "requests",
     "tabulate",
     "matplotlib",
+    "psutil"
 ]
 
 # extras
