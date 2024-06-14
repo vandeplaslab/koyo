@@ -1,4 +1,5 @@
 """Generic utilities."""
+
 from __future__ import annotations
 
 import re
@@ -102,7 +103,7 @@ def get_module_path(module: str, filename: str) -> str:
     return path
 
 
-def reraise_exception_if_debug(exc, message: str, env_key: str = "DEV_MODE"):
+def reraise_exception_if_debug(exc, message: str = "Exception occurred", env_key: str = "DEV_MODE"):
     """Reraise exception if debug mode is enabled and jump into the debugger."""
     import os
 
