@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import re
 import typing as ty
-import unicodedata
 from collections.abc import Iterable
 from difflib import get_close_matches
 from math import ceil, floor
@@ -505,6 +504,8 @@ def slugify(value, allow_unicode=False):
     Convert spaces or repeated dashes to single dashes. Remove characters that aren't alphanumerics, underscores,
     or hyphens. Convert to lowercase. Also strip leading and trailing whitespace, dashes, and underscores.
     """
+    import unicodedata
+
     value = str(value)
     if allow_unicode:
         value = unicodedata.normalize("NFKC", value)

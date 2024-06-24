@@ -442,9 +442,9 @@ def parse_arg(arg: str, key: str):
         raise ValueError(f"Could not parse argument {arg}")
 
 
-def parse_extra_args(extra_args: ty.Optional[ty.Tuple[str]]):
+def parse_extra_args(extra_args: tuple[str, ...] | None) -> dict[str, ty.Any]:
     """Arguments"""
-    kwargs = {}
+    kwargs: dict[str, ty.Any] = {}
     if extra_args is None:
         return kwargs
     for arg in extra_args:
