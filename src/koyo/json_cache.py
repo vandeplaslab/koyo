@@ -2,9 +2,11 @@
 
 import typing as ty
 from pathlib import Path
+import warnings
 
 from koyo.json import read_json_data, write_json_data
 from koyo.typing import PathLike
+from json import JSONDecodeError
 
 
 class JSONCache:
@@ -96,7 +98,7 @@ class JSONCache:
         if exclude is None:
             exclude = ()
         if self.exists():
-            data = read_json_data(self.path)
+            data = self.read()
             ret = ""
             n_stop = len(data) - 1
             for i, (k, v) in enumerate(data.items()):
@@ -122,7 +124,10 @@ class JSONCache:
     def read(self) -> ty.Dict:
         """Read data."""
         if self.exists():
-            return read_json_data(self.path)
+            try:
+                return read_json_data(self.path)
+            except JSONDecodeError:
+                warnings.warn(f"Failed to read JSON file: {self.path}")
         return {}
 
     def write(self, data: ty.Dict):

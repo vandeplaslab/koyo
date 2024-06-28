@@ -36,6 +36,8 @@ def default(o):
         return float(o)
     elif isinstance(o, np.ndarray):
         return o.tolist()
+    elif isinstance(o, np.bool_):
+        return bool(o)
     elif isinstance(o, Path):
         return str(o)
     raise TypeError("Could not convert {} of type {}".format(*o), type(o))
