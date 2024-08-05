@@ -7,12 +7,20 @@ import typing as ty
 from collections.abc import Iterable
 from difflib import get_close_matches
 from math import ceil, floor
+from pathlib import Path
 
 import numba as nb
 import numpy as np
 from natsort import natsorted
 
 from koyo.typing import SimpleArrayLike
+
+
+def clean_path(path: str) -> Path:
+    """Clean path that might have been stored in a wrong way."""
+    path = str(path)
+    path = path.replace("\\", "/")
+    return Path(path)
 
 
 def is_installed(module: str) -> bool:

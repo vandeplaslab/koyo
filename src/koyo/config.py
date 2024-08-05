@@ -13,6 +13,11 @@ class BaseConfig(BaseModel):
     USER_CONFIG_DIR: ty.ClassVar[Path]
     USER_CONFIG_FILENAME: ty.ClassVar[str] = "config.json"
 
+    def __init__(self, _auto_load: bool = False, **kwargs):
+        super().__init__(**kwargs)
+        if _auto_load:
+            self.load()
+
     @property
     def output_path(self) -> Path:
         """Get default output path."""
