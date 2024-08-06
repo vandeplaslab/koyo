@@ -41,6 +41,7 @@ def uuid_iterable(iterable) -> str:
 
 def hash_iterable(iterable, n_in_hash: int = 0) -> str:
     """Hash iterable object."""
+    iterable = list(iterable)
     hash_id = hash_obj(natsorted(iterable))
     return hash_id[0:n_in_hash] if n_in_hash else hash_id
 
