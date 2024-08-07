@@ -56,10 +56,13 @@ def open_directory_alt(path: PathLike) -> None:
     import platform
     import subprocess
 
-    path = str(path)
+    path = Path(path)
     if platform.system() == "Windows":
-        if os.path.exists(path):
-            subprocess.call(["explorer", "/select,", path])
+        if path.exists():
+            if path.is_file():
+                subprocess.call(["explorer", "/select,", str(path)])
+            else:
+                subprocess.call(["explorer", str(path)])
         else:
             subprocess.call(["explorer", os.path.dirname(path)])
     elif platform.system() == "Darwin":
