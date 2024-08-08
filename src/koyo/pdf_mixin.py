@@ -1,4 +1,5 @@
 """PDF export mixin class."""
+
 from __future__ import annotations
 
 import typing as ty
@@ -78,10 +79,11 @@ class PDFMixin:
         filename: Path,
         fig: plt.Figure,
         face_color: str | np.ndarray | None = None,
-        bbox_inches: str = "tight",
+        bbox_inches: str | None = "tight",
         dpi: int = 150,
         override: bool = False,
         if_empty: str = "warn",
+        close: bool = False,
         **kwargs: ty.Any,
     ) -> None:
         """Export figure to file."""
@@ -91,7 +93,16 @@ class PDFMixin:
             self._inform_on_empty(if_empty)
             return
 
-        export_figure(self.pdf, filename, fig, face_color, bbox_inches, dpi, override, **kwargs)
+        export_figure(self.pdf, filename, fig, face_color, bbox_inches, dpi, override, close=close, **kwargs)
+
+    def _insert_title(self, text: str) -> None:
+        """Insert title page to PDF document."""
+        if text and self.pdf:
+            fig = plt.figure(figsize=(11.69, 8.27))
+            fig.clf()
+            fig.text(0.5, 0.5, text, transform=fig.transFigure, size=24, ha="center")
+            self.pdf.savefig()
+            plt.close(fig)
 
     @staticmethod
     def _inform_on_empty(if_empty: str = "warn") -> None:

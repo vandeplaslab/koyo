@@ -103,7 +103,7 @@ class BrokenCommand(click.Command):
         util_name = os.path.basename(sys.argv and sys.argv[0] or __file__)
 
         if os.environ.get("CLICK_PLUGINS_HONESTLY"):  # pragma no cover
-            icon = "\U0001F4A9"
+            icon = "\U0001f4a9"
         else:
             icon = "\u2020"
 
