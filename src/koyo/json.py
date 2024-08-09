@@ -1,4 +1,5 @@
 """All utility functions that deal with JSON files."""
+
 import os
 from pathlib import Path
 

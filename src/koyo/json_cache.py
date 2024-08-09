@@ -1,12 +1,12 @@
 """Json source."""
 
 import typing as ty
-from pathlib import Path
 import warnings
+from json import JSONDecodeError
+from pathlib import Path
 
 from koyo.json import read_json_data, write_json_data
 from koyo.typing import PathLike
-from json import JSONDecodeError
 
 
 class JSONCache:
