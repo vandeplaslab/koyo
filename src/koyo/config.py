@@ -1,7 +1,7 @@
 """Configuration module."""
 
 import typing as ty
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from pathlib import Path
 
 from loguru import logger
@@ -24,6 +24,20 @@ class BaseConfig(BaseModel):
         """Get default output path."""
         self.USER_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         return self.USER_CONFIG_DIR / self.USER_CONFIG_FILENAME
+
+    def update(self, save: bool = True, **kwargs: ty.Any) -> None:
+        """Update configuration and save to file."""
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                try:
+                    setattr(self, key, value)
+                except Exception as e:
+                    logger.warning(f"Failed to set {key}={value}: {e}")
+            else:
+                logger.warning(f"Unknown key {key}={value} - perhaps it was deprecated?")
+        if save:
+            with suppress(OSError, PermissionError):
+                self.save()
 
     def save(self) -> None:
         """Export configuration to file."""
