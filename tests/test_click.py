@@ -10,6 +10,7 @@ from koyo.click import parse_arg
         ("n=5", ("n", 5)),
         ("n=5.0", ("n", 5.0)),
         ("n=[10,20,30]", ("n", [10, 20, 30])),
+        ("n=value=with=equal=sign", ("n", "value=with=equal=sign")),
     ],
 )
 def test_parse_arg(arg, expected):

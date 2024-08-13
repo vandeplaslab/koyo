@@ -422,12 +422,12 @@ def timed_iterator(
             func(f"[{i}/{n_tasks}] {_text} {format_human_time_s(execution_time)} [{avg}{rem}{tot}]")
 
 
-def parse_arg(arg: str, key: str):
+def parse_arg(arg: str, key: str) -> tuple[str, ty.Any]:
     """Parse argument."""
     try:
         if key:
             arg = arg.split(key)[1]
-        name, value = arg.split("=")
+        name, value = arg.split("=", maxsplit=1)
         # try parsing value - it will fail if string value was provided
         try:
             value = literal_eval(value)
