@@ -27,15 +27,19 @@ class BaseConfig(BaseModel):
 
     def update(self, save: bool = True, **kwargs: ty.Any) -> None:
         """Update configuration and save to file."""
+        changed = False
         for key, value in kwargs.items():
             if hasattr(self, key):
+                old_value = getattr(self, key)
                 try:
                     setattr(self, key, value)
+                    if old_value != getattr(self, key):
+                        changed = True
                 except Exception as e:
                     logger.warning(f"Failed to set {key}={value}: {e}")
             else:
                 logger.warning(f"Unknown key {key}={value} - perhaps it was deprecated?")
-        if save:
+        if save and changed:
             with suppress(OSError, PermissionError):
                 self.save()
 
