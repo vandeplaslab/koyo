@@ -13,3 +13,8 @@ IS_PYINSTALLER = getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 def is_envvar(key: str, value: str) -> bool:
     """Check if an environment variable is set."""
     return key in os.environ and os.environ[key] == str(value)
+
+
+def is_envvar_set(key: str) -> bool:
+    """Check if an environment variable is set."""
+    return key in os.environ and os.environ[key]

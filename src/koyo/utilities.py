@@ -19,7 +19,10 @@ from koyo.typing import SimpleArrayLike
 def clean_path(path: str) -> Path:
     """Clean path that might have been stored in a wrong way."""
     path = str(path)
+    # replace Windows backslashes with forward slashes
     path = path.replace("\\", "/")
+    # replace MacOS network path with local path and resolve the network drive if it exists
+    path = path.replace("/Volumes/", "/")
     return Path(path)
 
 
