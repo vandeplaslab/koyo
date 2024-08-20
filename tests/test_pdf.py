@@ -1,4 +1,5 @@
 """Test PDF utilities."""
+
 import numpy as np
 
 from koyo.pdf_mixin import PDFMixin

@@ -232,9 +232,7 @@ class Parameter:
         self.args = get_args_from_option(args) if callable(args) else args
         self.value = value
 
-    def with_value(
-        self, value: ty.Any, description: str | None = None, args: str | None = None
-    ) -> Parameter:
+    def with_value(self, value: ty.Any, description: str | None = None, args: str | None = None) -> Parameter:
         """Set the value of the parameter and return self."""
         return Parameter(description or self.description, args or self.args, value)
 
