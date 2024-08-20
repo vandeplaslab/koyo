@@ -17,14 +17,14 @@ from natsort import natsorted
 from koyo.typing import PathLike
 
 
-def expand_data_dirs(input_dir: str) -> ty.List[str]:
+def expand_data_dirs(input_dir: str) -> list[str]:
     """Expand data directory."""
     if "*" in input_dir:
         return glob.glob(input_dir)
     return [input_dir]
 
 
-def parse_paths(input_dirs: list[PathLike], absolute: bool = False, sort: bool = False) -> ty.List[str]:
+def parse_paths(input_dirs: list[PathLike], absolute: bool = False, sort: bool = False) -> list[str]:
     """Parse list/tuple of paths and check whether any of them have glob-like pattern."""
     result = []
     for path in input_dirs:
@@ -42,12 +42,12 @@ def parse_paths(input_dirs: list[PathLike], absolute: bool = False, sort: bool =
     return result
 
 
-def cli_parse_paths(ctx, param, value) -> ty.List[str]:
+def cli_parse_paths(ctx, param, value) -> list[str]:
     """Parse paths."""
     return parse_paths(value)
 
 
-def cli_parse_paths_sort(ctx, param, value) -> ty.List[str]:
+def cli_parse_paths_sort(ctx, param, value) -> list[str]:
     """Parse paths."""
     return parse_paths(value, sort=True)
 
@@ -161,7 +161,7 @@ def repr_iterable(iterable: ty.Sequence[ty.Any]):
         return iterable
 
 
-def append(table: ty.List[ty.Tuple[str, str, str]], name: str = "", param: str = "", value: ty.Any = "") -> None:
+def append(table: list[tuple[str, str, str]], name: str = "", param: str = "", value: ty.Any = "") -> None:
     """Append to table."""
     if isinstance(value, Path):
         value = str(value)
@@ -176,7 +176,7 @@ def append(table: ty.List[ty.Tuple[str, str, str]], name: str = "", param: str =
     table.append((name, param, value))
 
 
-def format_value(description: str, args: str, value: ty.Any) -> ty.List[ty.Tuple[str, str, str]]:
+def format_value(description: str, args: str, value: ty.Any) -> list[tuple[str, str, str]]:
     """Format value."""
     res = []
     # lists should be printed as multiple rows
@@ -227,18 +227,18 @@ class Parameter:
 
     __slots__ = ["description", "args", "value"]
 
-    def __init__(self, description: str, args: ty.Union[str, ty.Callable] | None, value: ty.Optional[ty.Any] = None):
+    def __init__(self, description: str, args: str | ty.Callable | None, value: ty.Any | None = None):
         self.description = description
         self.args = get_args_from_option(args) if callable(args) else args
         self.value = value
 
     def with_value(
-        self, value: ty.Any, description: ty.Optional[str] = None, args: ty.Optional[str] = None
+        self, value: ty.Any, description: str | None = None, args: str | None = None
     ) -> Parameter:
         """Set the value of the parameter and return self."""
         return Parameter(description or self.description, args or self.args, value)
 
-    def to_list(self) -> ty.List[ty.Tuple[str, str, str]]:
+    def to_list(self) -> list[tuple[str, str, str]]:
         """Return formatted version of the value."""
         if self.value is not None:
             return format_value(self.description, self.args, self.value)
@@ -304,11 +304,11 @@ def expand_dirs(input_dir: str) -> ty.Sequence[str]:
 
 
 # noinspection PyUnusedLocal
-def arg_parse_path(ctx, param, value) -> ty.List[Path]:
+def arg_parse_path(ctx, param, value) -> list[Path]:
     """Split arguments."""
     if value is None:
         return []
-    res: ty.List[str] = []
+    res: list[str] = []
     if isinstance(value, (str, Path)):
         value = [value]
     for path in value:
@@ -346,7 +346,7 @@ def arg_split_int(ctx, param, value):
     return args
 
 
-def parse_str_framelist(framelist: str) -> ty.List[int]:
+def parse_str_framelist(framelist: str) -> list[int]:
     """Parse list provided in string format."""
     if framelist is None:
         return []
@@ -376,7 +376,7 @@ def arg_parse_framelist(ctx, param, value: str):
     return parse_str_framelist(value)
 
 
-def arg_parse_framelist_multi(ctx, param, value: ty.Tuple[str]):
+def arg_parse_framelist_multi(ctx, param, value: tuple[str]):
     """Parse framelist."""
     if value is None:
         return None
@@ -456,7 +456,7 @@ def parse_extra_args(extra_args: tuple[str, ...] | None) -> dict[str, ty.Any]:
     return kwargs
 
 
-def parse_fig_args(extra_args: ty.Optional[ty.Tuple[str]], clean: bool = False):
+def parse_fig_args(extra_args: tuple[str] | None, clean: bool = False):
     """Parse extra parameters."""
     extra_kwargs = {}
     if extra_args is None:
@@ -478,7 +478,7 @@ def parse_fig_args(extra_args: ty.Optional[ty.Tuple[str]], clean: bool = False):
     return extra_kwargs
 
 
-def parse_env_args(extra_args: ty.Optional[ty.Tuple[str]], clean: bool = False):
+def parse_env_args(extra_args: tuple[str] | None, clean: bool = False):
     """Parse extra environment variables."""
     env_kwargs = {}
     if extra_args is None:
@@ -516,7 +516,7 @@ def exit_with_error(skip_error: bool = False):
 
 
 def select_from_list(
-    item_list: ty.List[ty.Any],
+    item_list: list[ty.Any],
     text: str = "Please select one of the options from the list",
     auto_select: str = "off",
     default: int = -1,

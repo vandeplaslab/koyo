@@ -9,6 +9,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
+from PIL import Image
+
+from koyo.typing import PathLike
 
 if ty.TYPE_CHECKING:
     from matplotlib.backends.backend_pdf import PdfPages
@@ -48,22 +51,38 @@ class PDFMixin:
             self._pdf.close()
         self._pdf = value
 
+    @staticmethod
+    def _make_pdf(filename: PathLike) -> PdfPages:
+        """Make PDF."""
+        from matplotlib.backends.backend_pdf import PdfPages
+
+        return PdfPages(filename)
+
     @contextmanager
-    def _export_figures(self) -> ty.Generator[None, None, None]:
+    def _export_figures(self, filename: PathLike | None = None) -> ty.Generator[PdfPages | None, None, None]:
         """Export figures."""
         import matplotlib
 
         matplotlib.use("agg")
 
-        yield
-        if self.as_pdf and hasattr(self.pdf, "close"):
-            self.pdf.close()  # type: ignore[union-attr]
-            self._pdf = None
+        pdf, reset = None, False
+        if self.as_pdf:
+            if filename:
+                pdf = self._make_pdf(filename)
+            else:
+                pdf = self.pdf
+                reset = True
+        yield pdf
+        if self.as_pdf and hasattr(pdf, "close"):
+            pdf.close()  # type: ignore[union-attr]
+            if reset:
+                self._pdf = None
 
-    def _export_title(self, title: str) -> None:
+    def _export_title(self, title: str, pdf: PdfPages | None = None) -> None:
         from koyo.pdf import export_title
 
-        export_title(self.pdf, title)
+        pdf = pdf or self.pdf
+        export_title(pdf, title)
 
     def _check_figure(self, filename: Path, override: bool = False) -> bool:
         """Check if figure exists.
@@ -84,6 +103,7 @@ class PDFMixin:
         override: bool = False,
         if_empty: str = "warn",
         close: bool = False,
+        pdf: PdfPages | None = None,
         **kwargs: ty.Any,
     ) -> None:
         """Export figure to file."""
@@ -93,15 +113,32 @@ class PDFMixin:
             self._inform_on_empty(if_empty)
             return
 
-        export_figure(self.pdf, filename, fig, face_color, bbox_inches, dpi, override, close=close, **kwargs)
+        pdf = pdf or self.pdf
+        export_figure(pdf, filename, fig, face_color, bbox_inches, dpi, override, close=close, **kwargs)
 
-    def _insert_title(self, text: str) -> None:
+    def _export_pil_figure(
+        self,
+        filename: Path,
+        image: Image,
+        override: bool = False,
+        close: bool = False,
+        pdf: PdfPages | None = None,
+        **kwargs: ty.Any,
+    ) -> None:
+        """Export figure to file."""
+        from koyo.pdf import export_pil_figure
+
+        pdf = pdf or self.pdf
+        export_pil_figure(pdf, filename, image, override, close=close, **kwargs)
+
+    def _insert_title(self, text: str, pdf: PdfPages | None = None) -> None:
         """Insert title page to PDF document."""
-        if text and self.pdf:
+        pdf = pdf or self.pdf
+        if text and pdf:
             fig = plt.figure(figsize=(11.69, 8.27))
             fig.clf()
             fig.text(0.5, 0.5, text, transform=fig.transFigure, size=24, ha="center")
-            self.pdf.savefig()
+            pdf.savefig()
             plt.close(fig)
 
     @staticmethod

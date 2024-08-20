@@ -9,14 +9,17 @@ import numba as nb
 import numpy as np
 from matplotlib.collections import LineCollection
 
+if ty.TYPE_CHECKING:
+    from PIL import Image
 
-def set_tick_fmt(ax, use_offset=False, axis="both"):
+
+def set_tick_fmt(ax: plt.Axes, use_offset: bool = False, axis: str = "both") -> plt.Axes:
     """Set tick format to control whether scientific notation is shown."""
     ax.ticklabel_format(axis=axis, style="scientific" if use_offset else "plain", useOffset=use_offset)
     return ax
 
 
-def despine(ax, orientation):
+def despine(ax: plt.Axes, orientation: str) -> plt.Axes:
     """Remove spines from 1D plots."""
     plt.setp(ax.xaxis.get_majorticklines(), visible=False)
     plt.setp(ax.xaxis.get_minorticklines(), visible=False)
@@ -33,7 +36,7 @@ def despine(ax, orientation):
     return ax
 
 
-def fig_to_pil(fig):
+def fig_to_pil(fig: plt.Axes) -> Image:
     """Convert a Matplotlib figure to a PIL Image and return it."""
     import io
 
@@ -46,6 +49,17 @@ def fig_to_pil(fig):
     buf.seek(0)
     img = Image.open(buf)
     return img
+
+
+def pil_to_fig(image: Image) -> plt.Figure:
+    """Convert a PIL Image to a Matplotlib figure and return it."""
+    import matplotlib.pyplot as plt
+
+    fig = plt.figure(figsize=(image.width / 72, image.height / 72))
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.set_axis_off()
+    ax.imshow(image)
+    return fig
 
 
 def clear_axes(i: int, axs):

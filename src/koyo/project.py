@@ -177,8 +177,7 @@ class ProjectBase:
 
     def dataset_path_iter(self) -> ty.Iterator[tuple[str, Path]]:
         """Iterator of dataset:path values."""
-        for name, path in zip(self.datasets, self.paths):
-            yield name, path
+        yield from zip(self.datasets, self.paths)
 
     @property
     def n_datasets(self) -> int:

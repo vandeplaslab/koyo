@@ -1,8 +1,10 @@
-"""Dataframe utilities"""
+"""Dataframe utilities."""
 
 from __future__ import annotations
-from pathlib import Path
+
 import typing as ty
+from pathlib import Path
+
 from koyo.typing import PathLike
 
 if ty.TYPE_CHECKING:
