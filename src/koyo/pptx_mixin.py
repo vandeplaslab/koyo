@@ -75,7 +75,7 @@ class PPTXMixin:
                 pptx = self.pptx
                 reset = True
         yield pptx
-        if self.as_pptx and hasattr(pptx, "save"):
+        if self.as_pptx:
             self._save_pptx(pptx, filename, reset)  # type: ignore[arg-type]
 
     def _add_title_to_pptx(self, title: str, pptx: Presentation | None = None) -> None:
@@ -126,7 +126,9 @@ class PPTXMixin:
             filename = getattr(pptx, "_filename")
             pptx.save(filename)  # type: ignore[union-attr,arg-type]
         else:
-            pptx.save(filename or self.pptx_filename)  # type: ignore[union-attr,arg-type]
+            filename or self.pptx_filename
+        pptx.save(filename)  # type: ignore[union-attr,arg-type]
+        logger.trace(f"Saved PPTX to {filename}")
         if reset:
             self._pptx = None
 

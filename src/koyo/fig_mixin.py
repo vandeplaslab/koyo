@@ -13,6 +13,7 @@ import numpy as np
 from koyo.pdf_mixin import PDFMixin
 from koyo.pptx_mixin import PPTXMixin
 from koyo.typing import PathLike
+from loguru import logger
 
 if ty.TYPE_CHECKING:
     from PIL import Image
@@ -57,6 +58,8 @@ class FigureMixin(PDFMixin, PPTXMixin):
     @contextmanager
     def _export_figures(self, filename: PathLike | None = None) -> ty.Iterator[PptxPdfWrapper]:
         """Export figures."""
+        if filename:
+            logger.trace(f"Exporting figures to {filename}")
         if self.as_pptx:
             with self._export_pptx_figures(filename) as pptx:
                 yield PptxPdfWrapper(pptx, as_pptx=self.as_pptx, as_pdf=self.as_pdf)
