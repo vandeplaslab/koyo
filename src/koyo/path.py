@@ -51,12 +51,18 @@ def open_directory(path: PathLike) -> None:
     webbrowser.open(str(path))
 
 
-def open_directory_alt(path: PathLike) -> None:
+def open_directory_alt(path: PathLike, *which: str) -> None:
     """Open directory."""
     import platform
     import subprocess
 
+    if str(path).startswith("file://"):
+        path = str(path)[7:]
+        path = path.lstrip("/")
     path = Path(path)
+    if which:
+        path = path.joinpath(*which)
+
     if platform.system() == "Windows":
         if path.exists():
             if path.is_file():
