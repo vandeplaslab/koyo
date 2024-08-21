@@ -7,7 +7,7 @@ from urllib import request
 from loguru import logger
 from tqdm import tqdm
 
-from koyo.timer import report_measure_time
+from koyo.timer import MeasureTimer
 from koyo.typing import PathLike
 
 
@@ -89,7 +89,7 @@ def download_file(
     to_download = not path_to_file.exists()
 
     # download file if needed
-    with report_measure_time() as timer:
+    with MeasureTimer() as timer:
         if to_download:
             logger.info(f"Downloading {path_to_file}")
             # Check if directory exists else creates it

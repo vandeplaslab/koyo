@@ -1,4 +1,5 @@
 """Timer utilities."""
+
 from __future__ import annotations
 
 import time
@@ -184,7 +185,7 @@ def measure_time():
 
 
 @contextmanager
-def report_measure_time(human: bool = True) -> ty.Callable:
+def report_measure_timer(human: bool = True) -> ty.Generator[ty.Callable, None, None]:
     """Report measured time and print it."""
     if human:
         start = time.perf_counter_ns()

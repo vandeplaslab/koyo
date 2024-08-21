@@ -130,6 +130,11 @@ class PptxPdfWrapper:
         self.as_pptx = as_pptx
         self.as_pdf = as_pdf
 
+    @property
+    def as_pptx_or_pdf(self) -> bool:
+        """Check whether export is enabled."""
+        return self.as_pptx or self.as_pdf
+
     def add_title(self, title: str) -> None:
         """Add title slide or page."""
         if self.as_pdf:
@@ -148,6 +153,7 @@ class PptxPdfWrapper:
         dpi: int = 150,
         fmt: str = "JPEG",
         override: bool = False,
+        close: bool = False,
         **kwargs: ty.Any,
     ) -> None:
         """Add or export PIL image."""
@@ -161,6 +167,8 @@ class PptxPdfWrapper:
             add_pil_image_to_pptx(self.ppt_or_pdf, filename, image, override=override, **kwargs)
         elif override or not filename.exists():
             image.save(filename, dpi=(dpi, dpi), format=fmt, **kwargs)
+            if close:
+                image.close()
 
     def add_or_export_mpl_figure(
         self,
