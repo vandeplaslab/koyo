@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import typing as ty
 from collections.abc import Iterable
-from difflib import get_close_matches
+
 from math import ceil, floor
 from pathlib import Path
 
@@ -630,6 +630,8 @@ def running_as_pyinstaller_app() -> bool:
 
 def get_close_matches_case(word, possibilities, *args, **kwargs):
     """Case-insensitive version of difflib.get_close_matches."""
+    from difflib import get_close_matches
+
     lower_word = word.lower()
     lower_possibilities = {p.lower(): p for p in possibilities}
     lower_matches = get_close_matches(lower_word, lower_possibilities.keys(), *args, **kwargs)

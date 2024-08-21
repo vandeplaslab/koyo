@@ -23,17 +23,18 @@ class PDFMixin:
     _pdf = None
     as_pdf: bool = False
 
-    @property
-    def filename(self) -> str:
-        """Filename that can be used for PDF generation."""
-        raise NotImplementedError("Must implement method")
+    # @property
+    # def filename(self) -> str:
+    #     """Filename that can be used for PDF generation."""
+    #     raise NotImplementedError("Must implement method")
 
     @property
     def pdf_filename(self) -> Path:
         """Return the PDF filename."""
-        if self.filename is None:
-            raise ValueError("PDF filename not set")
-        return Path(self.filename).with_suffix(".pdf")
+        raise NotImplementedError("Must implement method")
+        # if self.filename is None:
+        #     raise ValueError("PDF filename not set")
+        # return Path(self.filename).with_suffix(".pdf")
 
     @property
     def pdf(self) -> PdfPages | None:
@@ -59,7 +60,7 @@ class PDFMixin:
         return PdfPages(filename)
 
     @contextmanager
-    def _export_figures(self, filename: PathLike | None = None) -> ty.Generator[PdfPages | None, None, None]:
+    def _export_pdf_figures(self, filename: PathLike | None = None) -> ty.Generator[PdfPages | None, None, None]:
         """Export figures."""
         import matplotlib
 
@@ -73,16 +74,8 @@ class PDFMixin:
                 pdf = self.pdf
                 reset = True
         yield pdf
-        if self.as_pdf and hasattr(pdf, "close"):
-            pdf.close()  # type: ignore[union-attr]
-            if reset:
-                self._pdf = None
-
-    def _export_title(self, title: str, pdf: PdfPages | None = None) -> None:
-        from koyo.pdf import export_title
-
-        pdf = pdf or self.pdf
-        export_title(pdf, title)
+        if self.as_pdf:
+            self._save_pdf(pdf, reset=reset)
 
     def _check_figure(self, filename: Path, override: bool = False) -> bool:
         """Check if figure exists.
@@ -93,7 +86,18 @@ class PDFMixin:
             return True
         return override or not filename.exists()
 
-    def _export_figure(
+    def _add_title_to_pdf(self, title: str, pdf: PdfPages | None = None) -> None:
+        pdf = pdf or self.pdf
+        add_title_to_pdf(pdf, title)
+
+    def _save_pdf(self, pdf: PdfPages, reset: bool = False) -> None:
+        """Save PPTX."""
+        if pdf and hasattr(pdf, "close"):
+            pdf.close()
+        if reset:
+            self._pdf = None
+
+    def _add_mpl_figure_to_pdf(
         self,
         filename: Path,
         fig: plt.Figure,
@@ -107,16 +111,15 @@ class PDFMixin:
         **kwargs: ty.Any,
     ) -> None:
         """Export figure to file."""
-        from koyo.pdf import export_figure
 
         if fig is None:
             self._inform_on_empty(if_empty)
             return
 
         pdf = pdf or self.pdf
-        export_figure(pdf, filename, fig, face_color, bbox_inches, dpi, override, close=close, **kwargs)
+        add_mpl_figure_to_pdf(pdf, filename, fig, face_color, bbox_inches, dpi, override, close=close, **kwargs)
 
-    def _export_pil_figure(
+    def _add_pil_image_to_pdf(
         self,
         filename: Path,
         image: Image,
@@ -126,20 +129,9 @@ class PDFMixin:
         **kwargs: ty.Any,
     ) -> None:
         """Export figure to file."""
-        from koyo.pdf import export_pil_figure
 
         pdf = pdf or self.pdf
-        export_pil_figure(pdf, filename, image, override, close=close, **kwargs)
-
-    def _insert_title(self, text: str, pdf: PdfPages | None = None) -> None:
-        """Insert title page to PDF document."""
-        pdf = pdf or self.pdf
-        if text and pdf:
-            fig = plt.figure(figsize=(11.69, 8.27))
-            fig.clf()
-            fig.text(0.5, 0.5, text, transform=fig.transFigure, size=24, ha="center")
-            pdf.savefig()
-            plt.close(fig)
+        add_pil_image_to_pdf(pdf, filename, image, override=override, close=close, **kwargs)
 
     @staticmethod
     def _inform_on_empty(if_empty: str = "warn") -> None:
@@ -150,3 +142,59 @@ class PDFMixin:
             logger.warning("Figure was empty")
         elif if_empty == "raise":
             raise ValueError("Figure was empty")
+
+
+def add_title_to_pdf(pdf: PdfPages | None, title: str) -> None:
+    """Export title."""
+    if title and pdf is not None:
+        fig = plt.figure(figsize=(11.69, 8.27))
+        fig.clf()
+        fig.text(0.5, 0.5, title, transform=fig.transFigure, size=24, ha="center")
+        pdf.savefig()
+        plt.close(fig)
+
+
+def add_mpl_figure_to_pdf(
+    pdf: PdfPages | None,
+    filename: Path,
+    fig: plt.Figure,
+    face_color: str | np.ndarray | None = None,
+    bbox_inches: str | None = "tight",
+    dpi: int = 150,
+    override: bool = False,
+    close: bool = False,
+    **kwargs: ty.Any,
+) -> None:
+    """Export figure to file."""
+    face_color = face_color if face_color is not None else fig.get_facecolor()
+    if pdf is not None:
+        pdf.savefig(dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
+    else:
+        if override or not filename.exists():
+            fig.savefig(filename, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
+    if close:
+        plt.close(fig)
+
+
+def add_pil_image_to_pdf(
+    pdf: PdfPages | None,
+    filename: Path,
+    image: Image,
+    override: bool = False,
+    dpi: int = 150,
+    close: bool = False,
+    **kwargs: ty.Any,
+) -> None:
+    """Export PIL image to PDF file (without closing it)."""
+    if pdf is not None:
+        fig = plt.figure(figsize=(image.width / 72, image.height / 72))
+        ax = fig.add_axes([0, 0, 1, 1])
+        ax.set_axis_off()
+        ax.imshow(image, aspect="auto")
+        pdf.savefig(fig, dpi=dpi, **kwargs)
+        plt.close(fig)
+    else:
+        if override or not filename.exists():
+            image.save(filename, dpi=(dpi, dpi), **kwargs)
+    if close:
+        image.close()
