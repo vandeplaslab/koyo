@@ -100,7 +100,7 @@ class PDFMixin:
 
     def _add_mpl_figure_to_pdf(
         self,
-        filename: Path,
+        filename: PathLike,
         fig: plt.Figure,
         face_color: str | np.ndarray | None = None,
         bbox_inches: str | None = "tight",
@@ -112,7 +112,6 @@ class PDFMixin:
         **kwargs: ty.Any,
     ) -> None:
         """Export figure to file."""
-
         if fig is None:
             self._inform_on_empty(if_empty)
             return
@@ -122,7 +121,7 @@ class PDFMixin:
 
     def _add_pil_image_to_pdf(
         self,
-        filename: Path,
+        filename: PathLike,
         image: Image,
         override: bool = False,
         close: bool = False,
@@ -130,7 +129,6 @@ class PDFMixin:
         **kwargs: ty.Any,
     ) -> None:
         """Export figure to file."""
-
         pdf = pdf or self.pdf
         add_pil_image_to_pdf(pdf, filename, image, override=override, close=close, **kwargs)
 
@@ -157,7 +155,7 @@ def add_title_to_pdf(pdf: PdfPages | None, title: str) -> None:
 
 def add_mpl_figure_to_pdf(
     pdf: PdfPages | None,
-    filename: Path,
+    filename: PathLike,
     fig: plt.Figure,
     face_color: str | np.ndarray | None = None,
     bbox_inches: str | None = "tight",
@@ -171,7 +169,7 @@ def add_mpl_figure_to_pdf(
     if pdf is not None:
         pdf.savefig(dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
     else:
-        if override or not filename.exists():
+        if override or not Path(filename).exists():
             fig.savefig(filename, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
     if close:
         plt.close(fig)
@@ -179,7 +177,7 @@ def add_mpl_figure_to_pdf(
 
 def add_pil_image_to_pdf(
     pdf: PdfPages | None,
-    filename: Path,
+    filename: PathLike,
     image: Image,
     override: bool = False,
     dpi: int = 150,
@@ -195,7 +193,7 @@ def add_pil_image_to_pdf(
         pdf.savefig(fig, dpi=dpi, **kwargs)
         plt.close(fig)
     else:
-        if override or not filename.exists():
+        if override or not Path(filename).exists():
             image.save(filename, dpi=(dpi, dpi), **kwargs)
     if close:
         image.close()

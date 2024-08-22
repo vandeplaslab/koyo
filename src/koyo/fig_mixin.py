@@ -1,23 +1,22 @@
-"""Mixin class for figure exports"""
+"""Mixin class for figure exports."""
 
 from __future__ import annotations
 
-from contextlib import contextmanager
-
 import typing as ty
+from contextlib import contextmanager
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+from loguru import logger
 
 from koyo.pdf_mixin import PDFMixin
 from koyo.pptx_mixin import PPTXMixin
 from koyo.typing import PathLike
-from loguru import logger
 
 if ty.TYPE_CHECKING:
-    from PIL import Image
     from matplotlib.backends.backend_pdf import PdfPages
+    from PIL import Image
 
     try:
         from pptx.presentation import Presentation
@@ -26,7 +25,7 @@ if ty.TYPE_CHECKING:
 
 
 class FigureMixin(PDFMixin, PPTXMixin):
-    """Mixin class for figure exports"""
+    """Mixin class for figure exports."""
 
     @property
     def as_pptx_or_pdf(self) -> bool:
@@ -46,7 +45,7 @@ class FigureMixin(PDFMixin, PPTXMixin):
         # if self.as_pdf:
         #     assert self.pdf_filename is not None, "PDF filename not set"
 
-    def _get_export_filename(self, filename: str) -> str:
+    def get_pptx_or_pdf_filename(self, filename: PathLike) -> str:
         """Get export filename."""
         filename = str(filename).split(".")[0]
         if self.as_pptx:
@@ -123,8 +122,30 @@ class FigureMixin(PDFMixin, PPTXMixin):
             image.save(filename, dpi=(dpi, dpi), format=fmt, **kwargs)
 
 
+class FigureExporter(FigureMixin):
+    """Wrapper around the mixin class to provide the interface without having to subclass it."""
+
+    def __init__(self, filename: PathLike | None = None, as_pptx: bool = False, as_pdf: bool = False) -> None:
+        self.filename = Path(filename) if filename else None
+        self._check_export(as_pptx=as_pptx, as_pdf=as_pdf)
+
+    @property
+    def pdf_filename(self) -> Path:
+        """Return the PDF filename."""
+        if not self.filename:
+            raise ValueError("Filename not set")
+        return Path(self.get_pptx_or_pdf_filename(self.filename))
+
+    @property
+    def pptx_filename(self) -> Path:
+        """Return the PPTX filename."""
+        if not self.filename:
+            raise ValueError("Filename not set")
+        return Path(self.get_pptx_or_pdf_filename(self.filename))
+
+
 class PptxPdfWrapper:
-    """Wrapper class that handles both PPTX and PDF exports"""
+    """Wrapper class that handles both PPTX and PDF exports."""
 
     def __init__(
         self, ppt_or_pdf: PdfPages | Presentation | None = None, as_pptx: bool = False, as_pdf: bool = False
@@ -151,12 +172,13 @@ class PptxPdfWrapper:
 
     def add_or_export_pil_image(
         self,
-        filename: Path,
+        filename: PathLike,
         image: Image,
         dpi: int = 150,
         fmt: str = "JPEG",
         override: bool = False,
         close: bool = False,
+        title: str = "",
         **kwargs: ty.Any,
     ) -> None:
         """Add or export PIL image."""
@@ -167,21 +189,22 @@ class PptxPdfWrapper:
         elif self.as_pptx:
             from koyo.pptx_mixin import add_pil_image_to_pptx
 
-            add_pil_image_to_pptx(self.ppt_or_pdf, filename, image, override=override, **kwargs)
-        elif override or not filename.exists():
+            add_pil_image_to_pptx(self.ppt_or_pdf, filename, image, override=override, title=title, **kwargs)
+        elif override or not Path(filename).exists():
             image.save(filename, dpi=(dpi, dpi), format=fmt, **kwargs)
             if close:
                 image.close()
 
     def add_or_export_mpl_figure(
         self,
-        filename: Path,
+        filename: PathLike,
         fig: ty.Any,
         face_color: str | np.ndarray | None = None,
         bbox_inches: str | None = "tight",
         dpi: int = 150,
         override: bool = False,
         close: bool = False,
+        title: str = "",
         **kwargs: ty.Any,
     ) -> None:
         """Add or export matplotlib figure."""
@@ -211,9 +234,10 @@ class PptxPdfWrapper:
                 dpi=dpi,
                 override=override,
                 close=close,
+                title=title,
                 **kwargs,
             )
-        elif override or not filename.exists():
+        elif override or not Path(filename).exists():
             fig.savefig(filename, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
             if close:
                 plt.close(fig)

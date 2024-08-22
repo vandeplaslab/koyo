@@ -1,11 +1,12 @@
 """Test PDF utilities."""
 
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 import numpy as np
+from PIL import Image
 
 from koyo.pdf_mixin import PDFMixin
-from pathlib import Path
-import matplotlib.pyplot as plt
-from PIL import Image
 
 
 class PDF(PDFMixin):
@@ -25,7 +26,13 @@ def test_pdf(tmp_path):
     tmp = Path(tmp_path)
     # init PDF
     pdf = PDF(tmp / "test.pdf", as_pdf=True)
+
     assert pdf.pdf_filename == tmp / "test.pdf"
+    array = np.random.randint(0, 255, (1000, 1000), dtype=np.uint8)
+    image = Image.fromarray(array)
+    pdf._add_pil_image_to_pdf(tmp / "test.png", image)
+    pdf._save_pdf(pdf.pdf)
+    assert (tmp / "test.pdf").exists()
 
     # create random page
     page = pdf._make_pdf(tmp / "test2.pdf")
@@ -42,6 +49,11 @@ def test_pdf(tmp_path):
     pdf._add_pil_image_to_pdf(tmp / "test.png", image, pdf=page)
     assert not (tmp / "test.png").exists()
     pdf._add_title_to_pdf("Title", page)
-
     pdf._save_pdf(page)
     assert (tmp / "test2.pdf").exists()
+
+    with pdf._export_pdf_figures(tmp / "test3.pdf") as page:
+        array = np.random.randint(0, 255, (1000, 1000), dtype=np.uint8)
+        image = Image.fromarray(array)
+        pdf._add_pil_image_to_pdf(tmp / "test.png", image, pdf=page)
+    assert (tmp / "test3.pdf").exists()

@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+import io
 import typing as ty
 from contextlib import contextmanager
 from pathlib import Path
-import io
+
+import matplotlib.pyplot as plt
 import numpy as np
+from loguru import logger
+
 from koyo.typing import PathLike
 from koyo.utilities import is_installed
-import matplotlib.pyplot as plt
-from loguru import logger
 
 HAS_PPTX = is_installed("pptx")
 
@@ -54,7 +56,7 @@ class PPTXMixin:
         try:
             from pptx import Presentation
         except ImportError:
-            raise ImportError("pptx is not installed. Please install it using `pip install python-pptx`.")
+            raise ImportError("pptx is not installed. Please install it using `pip install python-pptx`.") from None
 
         pptx = Presentation()
         pptx._filename = filename  # type: ignore[attr-defined]
@@ -85,7 +87,7 @@ class PPTXMixin:
 
     def _add_mpl_figure_to_pptx(
         self,
-        filename: Path,
+        filename: PathLike,
         fig: plt.Figure,
         face_color: str | np.ndarray | None = None,
         bbox_inches: str | None = "tight",
@@ -93,40 +95,45 @@ class PPTXMixin:
         override: bool = False,
         if_empty: str = "warn",
         close: bool = False,
+        title: str = "",
         pptx: Presentation | None = None,
         **kwargs: ty.Any,
     ) -> None:
         """Export figure to file."""
-
         if fig is None:
             self._inform_on_empty(if_empty)
             return
 
         pptx = pptx or self.pptx
-        add_mpl_figure_to_pptx(pptx, filename, fig, face_color, bbox_inches, dpi, override, close=close, **kwargs)
+        add_mpl_figure_to_pptx(
+            pptx, filename, fig, face_color, bbox_inches, dpi, override, close=close, title=title, **kwargs
+        )
 
     def _add_pil_image_to_pptx(
         self,
-        filename: Path,
+        filename: PathLike,
         image: Image,
         dpi: int = 150,
         fmt: str = "JPEG",
         override: bool = False,
         close: bool = False,
+        title: str = "",
         pptx: Presentation | None = None,
         **kwargs: ty.Any,
     ) -> None:
         """Add PIL image to pptx."""
         pptx = pptx or self.pptx
-        add_pil_image_to_pptx(pptx, filename, image, dpi, fmt=fmt, override=override, close=close, **kwargs)
+        add_pil_image_to_pptx(
+            pptx, filename, image, dpi, fmt=fmt, override=override, close=close, title=title, **kwargs
+        )
 
     def _save_pptx(self, pptx: Presentation, filename: PathLike | None = None, reset: bool = False) -> None:
         """Save PPTX."""
         if hasattr(pptx, "_filename"):
-            filename = getattr(pptx, "_filename")
+            filename = pptx._filename
             pptx.save(filename)  # type: ignore[union-attr,arg-type]
         else:
-            filename or self.pptx_filename
+            filename = filename or self.pptx_filename
         pptx.save(filename)  # type: ignore[union-attr,arg-type]
         logger.trace(f"Saved PPTX to {filename}")
         if reset:
@@ -152,13 +159,14 @@ def add_title_to_pptx(pptx: Presentation, title: str) -> None:
 
 def add_mpl_figure_to_pptx(
     pptx: Presentation | None,
-    filename: Path,
+    filename: PathLike,
     fig: plt.Figure,
     face_color: str | np.ndarray | None = None,
     bbox_inches: str | None = "tight",
     dpi: int = 150,
     override: bool = False,
     close: bool = False,
+    title: str = "",
     **kwargs: ty.Any,
 ) -> None:
     """Export figure to file."""
@@ -166,10 +174,10 @@ def add_mpl_figure_to_pptx(
     if pptx is not None:
         with io.BytesIO() as image_stream:
             fig.savefig(image_stream, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
-            slide = pptx.slides.add_slide(pptx.slide_layouts[6])
-            slide.shapes.add_picture(image_stream, 0, 0)  # , width=pptx.slide_width, height=pptx.slide_height)
+            slide, left, top = _insert_slide(pptx, title=title)
+            slide.shapes.add_picture(image_stream, left, top)  # , width=pptx.slide_width, height=pptx.slide_height)
     else:
-        if override or not filename.exists():
+        if override or not Path(filename).exists():
             fig.savefig(filename, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
     if close:
         plt.close(fig)
@@ -177,12 +185,13 @@ def add_mpl_figure_to_pptx(
 
 def add_pil_image_to_pptx(
     pptx: Presentation | None,
-    filename: Path,
+    filename: PathLike,
     image: Image,
     dpi: int = 150,
     fmt: str = "JPEG",
     override: bool = False,
     close: bool = False,
+    title: str = "",
     **kwargs: ty.Any,
 ) -> None:
     """Export figure to file."""
@@ -190,10 +199,28 @@ def add_pil_image_to_pptx(
     if pptx is not None:
         with io.BytesIO() as image_stream:
             image.save(image_stream, fmt, quality=quality, dpi=(dpi, dpi), **kwargs)
-            slide = pptx.slides.add_slide(pptx.slide_layouts[6])
-            slide.shapes.add_picture(image_stream, 0, 0)  # , width=pptx.slide_width, height=pptx.slide_height)
+            slide, left, top = _insert_slide(pptx, title=title)
+            slide.shapes.add_picture(image_stream, left, top)  # , width=pptx.slide_width, height=pptx.slide_height)
     else:
-        if override or not filename.exists():
+        if override or not Path(filename).exists():
             image.save(filename, dpi=(dpi, dpi), **kwargs)
     if close:
         image.close()
+
+
+def _insert_slide(pptx: Presentation, title: str = "") -> tuple[ty.Any, int, int]:
+    left = top = 0
+    template_index = 5 if title else 6
+    slide = pptx.slides.add_slide(pptx.slide_layouts[template_index])
+    if title:
+        from pptx.util import Cm
+
+        slide.shapes.title.text = title
+        height = slide.shapes.title.height // 2
+        slide.shapes.title.top = Cm(0)
+        slide.shapes.title.left = Cm(0)
+        slide.shapes.title.width = pptx.slide_width
+        slide.shapes.title.height = height
+        slide.shapes.title.top + height
+        top = slide.shapes.title.top + height
+    return slide, left, top

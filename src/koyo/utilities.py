@@ -5,7 +5,6 @@ from __future__ import annotations
 import re
 import typing as ty
 from collections.abc import Iterable
-
 from math import ceil, floor
 from pathlib import Path
 
@@ -13,7 +12,24 @@ import numba as nb
 import numpy as np
 from natsort import natsorted
 
-from koyo.typing import SimpleArrayLike
+from koyo.typing import PathLike, SimpleArrayLike
+
+
+def ensure_output_dir_exists(output_dir: PathLike | None) -> tuple[bool, Path]:
+    """Ensure that the output directory exists.
+
+    Returns
+    -------
+    bool
+        whether the directory was created
+    Path
+        output directory
+    """
+    if output_dir:
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        return True, output_dir
+    return False, Path("")
 
 
 def clean_path(path: str) -> Path:
@@ -40,6 +56,13 @@ def is_installed(module: str) -> bool:
 def get_format(fmt: str) -> str:
     """Parse format."""
     return fmt if fmt.startswith(".") else f".{fmt}"
+
+
+def ensure_list(array: np.ndarray | list[np.ndarray]) -> list[np.ndarray]:
+    """Ensure that the input is a list."""
+    if isinstance(array, np.ndarray):
+        return [array]
+    return array
 
 
 def find_nearest_divisor(
@@ -80,12 +103,12 @@ def find_nearest_divisor(
     return -1
 
 
-def slugify_name(value: str):
+def slugify_name(value: str) -> str:
     """Slugify filename."""
     return value.replace(" ", "_").replace("/", "_").replace("\\", "_").replace(":", "-")
 
 
-def order_parameters(**kwargs):
+def order_parameters(**kwargs: ty.Any) -> dict:
     """Order parameters."""
     kwargs_ = {}
     for key in natsorted(kwargs):
@@ -93,7 +116,7 @@ def order_parameters(**kwargs):
     return kwargs_
 
 
-def exclude_parameters(exclude: ty.Iterable[str], **kwargs):
+def exclude_parameters(exclude: ty.Iterable[str], **kwargs: ty.Any) -> dict:
     """Exclude parameters."""
     kwargs_ = {}
     for key in natsorted(kwargs):
@@ -113,7 +136,7 @@ def get_module_path(module: str, filename: str) -> str:
     return path
 
 
-def reraise_exception_if_debug(exc, message: str = "Exception occurred", env_key: str = "DEV_MODE"):
+def reraise_exception_if_debug(exc, message: str = "Exception occurred", env_key: str = "DEV_MODE") -> None:
     """Reraise exception if debug mode is enabled and jump into the debugger."""
     import os
 
@@ -155,7 +178,7 @@ def flatten_nested_list(list_of_lists: list[list]) -> list:
     return [item for sublist in list_of_lists for item in sublist]
 
 
-def get_list_difference(li1: list, li2: list):
+def get_list_difference(li1: list, li2: list) -> list:
     """Get difference between two lists."""
     # get difference between two lists while keeping the order
     li_dif = [i for i in li1 + li2 if i not in li1 or i not in li2]
@@ -256,7 +279,7 @@ def find_nearest_value(data: ty.Iterable, value: int | (float | (np.ndarray | It
     return data[idx]
 
 
-def get_kws(func: ty.Callable, **kwargs) -> dict:
+def get_kws(func: ty.Callable, **kwargs: ty.Any) -> dict:
     """Get kwargs."""
     import inspect
 
@@ -269,7 +292,7 @@ def get_kws(func: ty.Callable, **kwargs) -> dict:
     return kws
 
 
-def format_count(value):
+def format_count(value: float) -> str:
     """Format count."""
     if value < 1e3:
         return f"{value:.0f}"
@@ -283,7 +306,7 @@ def format_count(value):
 def format_size(size: int) -> str:
     """Convert bytes to nicer format."""
     if size < 2**10:
-        return "%s" % size
+        return f"{size}"
     elif size < 2**20:
         return "%.1fK" % (size / float(2**10))
     elif size < 2**30:
@@ -295,7 +318,7 @@ def format_size(size: int) -> str:
     return "%.1fP" % (size / float(2**50))
 
 
-def is_number(value):
+def is_number(value: ty.Any) -> bool:
     """Quick and easy way to check if input is a number.
 
     Parameters
@@ -336,7 +359,7 @@ def check_value_order(value_min: float, value_max: float) -> tuple[float, float]
     return value_min, value_max
 
 
-def get_value(new_value, current_value):
+def get_value(new_value: ty.Any, current_value: ty.Any) -> ty.Any:
     """Get value."""
     if new_value is None:
         return current_value
@@ -510,7 +533,7 @@ def check_image_orientation(array):
     # return np.rot90(array) if shape[0] > shape[1] else array
 
 
-def slugify(value, allow_unicode=False):
+def slugify(value: ty.Any, allow_unicode: bool = False) -> str:
     """Convert to ASCII if 'allow_unicode' is False.
 
     Convert spaces or repeated dashes to single dashes. Remove characters that aren't alphanumerics, underscores,
@@ -628,7 +651,7 @@ def running_as_pyinstaller_app() -> bool:
     return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 
-def get_close_matches_case(word, possibilities, *args, **kwargs):
+def get_close_matches_case(word, possibilities, *args: ty.Any, **kwargs: ty.Any):
     """Case-insensitive version of difflib.get_close_matches."""
     from difflib import get_close_matches
 

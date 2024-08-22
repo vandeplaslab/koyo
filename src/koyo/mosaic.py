@@ -1,4 +1,5 @@
 """Mosaic utilities."""
+
 import io
 import typing as ty
 from math import ceil
@@ -27,13 +28,13 @@ def add_label(
 
 
 def fig_to_bytes(
-    fig,
+    fig: plt.Figure,
     bbox_inches: ty.Optional[str] = "tight",
     pad_inches: float = 0.1,
     dpi: int = 100,
     close: bool = False,
     transparent: bool = True,
-):
+) -> io.BytesIO:
     """Convert matplotlib figure to bytes."""
     buf = io.BytesIO()
     fig.savefig(

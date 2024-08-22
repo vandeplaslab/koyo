@@ -454,7 +454,9 @@ def parse_extra_args(extra_args: tuple[str, ...] | None) -> dict[str, ty.Any]:
     return kwargs
 
 
-def parse_fig_args(extra_args: tuple[str] | None, clean: bool = False):
+def parse_fig_args(
+    extra_args: tuple[str] | None, clean: bool = False
+) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
     """Parse extra parameters."""
     extra_kwargs = {}
     if extra_args is None:
@@ -495,13 +497,18 @@ def parse_env_args(extra_args: tuple[str] | None, clean: bool = False):
     return env_kwargs
 
 
-def set_env_args(**kwargs):
+def set_env_args(**kwargs: ty.Any) -> None:
     """Set environment variables."""
     from loguru import logger
 
     for name, value in kwargs.items():
         os.environ[name] = str(value)
         logger.trace(f"Set environment variable: {name}={value}")
+
+
+def filter_kwargs(*allowed: str, **kwargs: ty.Any) -> dict[str, ty.Any]:
+    """Filter allowed kwargs."""
+    return {key: value for key, value in kwargs.items() if key in allowed}
 
 
 def exit_with_error(skip_error: bool = False):

@@ -1,22 +1,23 @@
 """Test PDF utilities."""
 
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from PIL import Image
 
 from koyo.fig_mixin import FigureMixin
 from koyo.pptx_mixin import HAS_PPTX
-from pathlib import Path
-import matplotlib.pyplot as plt
-from PIL import Image
 
 
 class PptxPdf(FigureMixin):
     """Mixin class."""
 
     def __init__(self, filename: Path, as_pdf: bool = False, as_pptx: bool = False):
-        self._filename = filename
         self.as_pdf = as_pdf
         self.as_pptx = as_pptx
+        self._filename = Path(self.get_pptx_or_pdf_filename(filename))
 
     @property
     def pdf_filename(self) -> Path:
@@ -37,6 +38,41 @@ def test_init(tmp_path):
         pptx_or_pdf._check_export()
 
 
+def test_api_auto_pdf(tmp_path):
+    tmp = Path(tmp_path)
+    pptx_or_pdf = PptxPdf(tmp / "test", as_pdf=True, as_pptx=False)
+    filename = pptx_or_pdf.get_pptx_or_pdf_filename("test")
+    with pptx_or_pdf._export_figures() as obj:
+        assert obj is not None
+        plt.plot([1, 2, 3], [1, 2, 3])
+        obj.add_or_export_mpl_figure(tmp / "test.png", plt.gcf(), title="test")
+        assert not (tmp / "test.png").exists()
+        array = np.random.randint(0, 255, (1000, 1000), dtype=np.uint8)
+        image = Image.fromarray(array)
+        obj.add_or_export_pil_image(tmp / "test.png", image, title="test")
+        assert not (tmp / "test.png").exists()
+        obj.add_title("Title")
+    assert (tmp / filename).exists()
+
+
+@pytest.mark.skipif(not HAS_PPTX, reason="pptx not installed")
+def test_api_auto_pptx(tmp_path):
+    tmp = Path(tmp_path)
+    pptx_or_pdf = PptxPdf(tmp / "test", as_pdf=False, as_pptx=True)
+    filename = pptx_or_pdf.get_pptx_or_pdf_filename("test")
+    with pptx_or_pdf._export_figures() as obj:
+        assert obj is not None
+        plt.plot([1, 2, 3], [1, 2, 3])
+        obj.add_or_export_mpl_figure(tmp / "test.png", plt.gcf(), title="test")
+        assert not (tmp / "test.png").exists()
+        array = np.random.randint(0, 255, (1000, 1000), dtype=np.uint8)
+        image = Image.fromarray(array)
+        obj.add_or_export_pil_image(tmp / "test.png", image, title="test")
+        assert not (tmp / "test.png").exists()
+        obj.add_title("Title")
+    assert (tmp / filename).exists()
+
+
 def test_api_pdf(tmp_path):
     tmp = Path(tmp_path)
     pptx_or_pdf = PptxPdf(tmp / "test.pdf", as_pdf=True, as_pptx=False)
@@ -54,6 +90,7 @@ def test_api_pdf(tmp_path):
     assert (tmp / "test.pdf").exists()
 
 
+@pytest.mark.skipif(not HAS_PPTX, reason="pptx not installed")
 def test_api_pptx(tmp_path):
     tmp = Path(tmp_path)
     pptx_or_pdf = PptxPdf(tmp / "test.pptx", as_pdf=False, as_pptx=True)

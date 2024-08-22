@@ -4,14 +4,36 @@ from __future__ import annotations
 
 import math
 import typing as ty
+import warnings
+from contextlib import suppress
 
 import matplotlib.pyplot as plt
 import numba as nb
 import numpy as np
-from matplotlib.collections import LineCollection
 
 if ty.TYPE_CHECKING:
+    from matplotlib.collections import LineCollection
     from PIL import Image
+
+
+def tight_layout(fig: plt.Figure) -> None:
+    """Apply tight layout to the figure."""
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        fig.tight_layout()
+
+
+def close_mpl_figure(fig: plt.Figure) -> None:
+    """Close figure without raising exception."""
+    with suppress(Exception):
+        plt.close(fig)
+
+
+def close_pil_image(fig: Image) -> None:
+    """Close PIL image without raising exceptions."""
+    with suppress(Exception):
+        fig.close()
+        del fig
 
 
 def set_tick_fmt(ax: plt.Axes, use_offset: bool = False, axis: str = "both") -> plt.Axes:
@@ -94,6 +116,8 @@ def vertices_to_collection(
     alpha: float = 1.0,
 ) -> LineCollection:
     """Convert list of [x, 0, y, y] vertices to line collection consumed by matplotlib."""
+    from matplotlib.collections import LineCollection
+
     xy_values = convert_to_vertical_line_input(x, y)
     line_col = LineCollection(
         xy_values,
