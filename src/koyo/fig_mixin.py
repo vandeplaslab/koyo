@@ -9,6 +9,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
+from tqdm import tqdm
 
 from koyo.pdf_mixin import PDFMixin
 from koyo.pptx_mixin import PPTXMixin
@@ -149,23 +150,31 @@ class FigureExporter(FigureMixin):
         extensions: tuple[str, ...] = ("*.png", "*.jpg", "*.jpeg"),
         filename: PathLike | None = None,
         clear: bool = False,
+        silent: bool = False,
     ) -> None:
         """Export existing figures from within a directory (this includes any PNG, JPEG) files read by PIL."""
         from PIL import Image
 
         extensions = tuple(ext if ext.startswith("*") else f"*{ext}" for ext in extensions)
+        assert any(ext.startswith("*") for ext in extensions), "Extensions must start with '*'"
+        assert "*.pptx" not in extensions, "Cannot export PPTX files"
+        assert "*.pdf" not in extensions, "Cannot export PDF files"
 
         n = 0
         with self._export_figures(filename) as pptx_or_pdf:
             for ext in extensions:
-                for file in Path(input_dir).rglob(ext):
+                for file in tqdm(
+                    Path(input_dir).rglob(ext), desc=f"Exporting images ({ext})", disable=silent, leave=False
+                ):
                     pptx_or_pdf.add_or_export_pil_image(file, Image.open(file), close=True)
                     n += 1
-                    if clear:
-                        file.unlink()
         # if clear is enabled, remove directory if it is empty
-        if clear and not list(Path(input_dir).rglob("*")):
-            Path(input_dir).rmdir()
+        if clear:
+            for ext in extensions:
+                for file in Path(input_dir).rglob(ext):
+                    file.unlink()
+            if not list(Path(input_dir).rglob("*")):
+                Path(input_dir).rmdir()
             logger.trace(f"Removed empty directory '{input_dir}'")
         logger.info(f"Exported {n} images from '{input_dir}' to '{self.filename}'")
 
