@@ -143,6 +143,32 @@ class FigureExporter(FigureMixin):
             raise ValueError("Filename not set")
         return Path(self.get_pptx_or_pdf_filename(self.filename))
 
+    def export_existing(
+        self,
+        input_dir: PathLike,
+        extensions: tuple[str, ...] = ("*.png", "*.jpg", "*.jpeg"),
+        filename: PathLike | None = None,
+        clear: bool = False,
+    ) -> None:
+        """Export existing figures from within a directory (this includes any PNG, JPEG) files read by PIL."""
+        from PIL import Image
+
+        extensions = tuple(ext if ext.startswith("*") else f"*{ext}" for ext in extensions)
+
+        n = 0
+        with self._export_figures(filename) as pptx_or_pdf:
+            for ext in extensions:
+                for file in Path(input_dir).rglob(ext):
+                    pptx_or_pdf.add_or_export_pil_image(file, Image.open(file), close=True)
+                    n += 1
+                    if clear:
+                        file.unlink()
+        # if clear is enabled, remove directory if it is empty
+        if clear and not list(Path(input_dir).rglob("*")):
+            Path(input_dir).rmdir()
+            logger.trace(f"Removed empty directory '{input_dir}'")
+        logger.info(f"Exported {n} images from '{input_dir}' to '{self.filename}'")
+
 
 class PptxPdfWrapper:
     """Wrapper class that handles both PPTX and PDF exports."""

@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from koyo.fig_mixin import FigureMixin
+from koyo.fig_mixin import FigureExporter, FigureMixin
 from koyo.pptx_mixin import HAS_PPTX
 
 
@@ -162,4 +162,41 @@ def test_pptx(tmp_path):
     pptx_or_pdf._add_title("Title", pptx=page)
 
     pptx_or_pdf._save(pptx=page)
+    assert (tmp / "test2.pptx").exists()
+
+
+def test_exporter_pdf(tmp_path):
+    tmp = Path(tmp_path)
+    # init PDF
+    pptx_or_pdf = FigureExporter(tmp / "test.pdf", as_pdf=True)
+    assert pptx_or_pdf.pdf_filename == tmp / "test.pdf"
+    plt.plot([1, 2, 3], [1, 2, 3])
+    plt.gcf().savefig(tmp / "test.png")
+    plt.gcf().savefig(tmp / "test.jpg")
+    plt.gcf().savefig(tmp / "test.jpeg")
+    plt.close("all")
+    pptx_or_pdf.export_existing(tmp)
+    assert (tmp / "test.pdf").exists()
+
+    pptx_or_pdf.export_existing(tmp, filename=tmp / "test2.pdf", clear=True)
+    assert not (tmp / "test.png").exists()
+    assert (tmp / "test2.pdf").exists()
+
+
+@pytest.mark.skipif(not HAS_PPTX, reason="pptx not installed")
+def test_exporter_pptx(tmp_path):
+    tmp = Path(tmp_path)
+    # init PDF
+    pptx_or_pdf = FigureExporter(tmp / "test.pptx", as_pptx=True)
+    assert pptx_or_pdf.pptx_filename == tmp / "test.pptx"
+    plt.plot([1, 2, 3], [1, 2, 3])
+    plt.gcf().savefig(tmp / "test.png")
+    plt.gcf().savefig(tmp / "test.jpg")
+    plt.gcf().savefig(tmp / "test.jpeg")
+    plt.close("all")
+    pptx_or_pdf.export_existing(tmp)
+    assert (tmp / "test.pptx").exists()
+
+    pptx_or_pdf.export_existing(tmp, filename=tmp / "test2.pptx", clear=True)
+    assert not (tmp / "test.png").exists()
     assert (tmp / "test2.pptx").exists()

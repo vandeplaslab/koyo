@@ -197,6 +197,8 @@ def add_pil_image_to_pptx(
     """Export figure to file."""
     quality = kwargs.pop("quality", 95)
     if pptx is not None:
+        if image.mode == "RGBA" and fmt.upper() in ["JPEG", "JPG"]:
+            image = image.convert("RGB")
         with io.BytesIO() as image_stream:
             image.save(image_stream, fmt, quality=quality, dpi=(dpi, dpi), **kwargs)
             slide, left, top = _insert_slide(pptx, title=title)
