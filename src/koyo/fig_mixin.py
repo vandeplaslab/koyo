@@ -55,6 +55,12 @@ class FigureMixin(PDFMixin, PPTXMixin):
             return f"{filename}.pdf"
         return filename
 
+    def get_actual_output_filename(self, output_dir: PathLike, pptx_or_pdf_path: PathLike) -> Path:
+        """Get output filename, depending on the export format."""
+        if self.as_pptx_or_pdf:
+            return Path(pptx_or_pdf_path)
+        return Path(output_dir)
+
     @contextmanager
     def _export_figures(self, filename: PathLike | None = None) -> ty.Iterator[PptxPdfWrapper]:
         """Export figures."""

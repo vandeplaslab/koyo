@@ -10,6 +10,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
+from enum import IntEnum
 
 from koyo.typing import PathLike
 from koyo.utilities import is_installed
@@ -23,6 +24,20 @@ if ty.TYPE_CHECKING:
         from pptx.presentation import Presentation
     except ImportError:
         Presentation = None  # type: ignore[assignment,misc]
+
+
+class SlideLayout(IntEnum):
+    """Slide layout options."""
+
+    TITLE = 0
+    TITLE_AND_CONTENT = 1
+    SECTION_HEADER = 2
+    TITLE_AND_TWO_CONTENT = 3
+    TITLE_AND_TWO_CONTENT_WITH_HEADER = 4
+    TITLE_AND_BLANK = 5
+    BLANK = 6
+    HEADER_AND_TWO_CONTENT = 7
+    PICTURE_AND_CAPTION = 8
 
 
 class PPTXMixin:
@@ -76,14 +91,23 @@ class PPTXMixin:
             else:
                 pptx = self.pptx
                 reset = True
-        yield pptx
-        if self.as_pptx:
-            self._save_pptx(pptx, filename, reset)  # type: ignore[arg-type]
+        try:
+            yield pptx
+        except Exception as e:
+            logger.error(f"Error exporting to PPTX: {e}")
+        finally:
+            if self.as_pptx:
+                self._save_pptx(pptx, filename, reset)  # type: ignore[arg-type]
 
     def _add_title_to_pptx(self, title: str, pptx: Presentation | None = None) -> None:
         """Add title page to the slide deck."""
         pptx = pptx or self.pptx
         add_title_to_pptx(pptx, title)
+
+    def _add_content_to_pptx(self, content: str, title: str = "", pptx: Presentation | None = None) -> None:
+        """Add title page to the slide deck."""
+        pptx = pptx or self.pptx
+        add_content_to_pptx(pptx, content, title)
 
     def _add_mpl_figure_to_pptx(
         self,
@@ -152,9 +176,15 @@ class PPTXMixin:
 
 def add_title_to_pptx(pptx: Presentation, title: str) -> None:
     """Add title to the slide."""
-    slide = pptx.slides.add_slide(pptx.slide_layouts[0])
-    title_placeholder = slide.shapes.title
-    title_placeholder.text = title
+    slide = pptx.slides.add_slide(pptx.slide_layouts[SlideLayout.TITLE])
+    slide.shapes.title.text = title
+
+
+def add_content_to_pptx(pptx: Presentation, content: str, title: str = "") -> None:
+    """Add title to the slide."""
+    slide = pptx.slides.add_slide(pptx.slide_layouts[SlideLayout.TITLE_AND_CONTENT])
+    slide.shapes.title.text = title
+    slide.placeholders[1].text = content
 
 
 def add_mpl_figure_to_pptx(
@@ -212,7 +242,7 @@ def add_pil_image_to_pptx(
 
 def _insert_slide(pptx: Presentation, title: str = "") -> tuple[ty.Any, int, int]:
     left = top = 0
-    template_index = 5 if title else 6
+    template_index = SlideLayout.TITLE_AND_BLANK if title else SlideLayout.BLANK
     slide = pptx.slides.add_slide(pptx.slide_layouts[template_index])
     if title:
         from pptx.util import Cm

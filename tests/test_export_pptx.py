@@ -52,6 +52,7 @@ def test_pptx(tmp_path):
     pptx._add_pil_image_to_pptx(tmp / "test.png", image, pptx=page, title="Title for plot")
     assert not (tmp / "test.png").exists()
     pptx._add_title_to_pptx("Title", page)
+    pptx._add_content_to_pptx("Other text\nOther text\nOther text", "Title", page)
     pptx._save_pptx(page)
     assert (tmp / "test2.pptx").exists()
 

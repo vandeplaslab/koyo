@@ -73,9 +73,13 @@ class PDFMixin:
             else:
                 pdf = self.pdf
                 reset = True
-        yield pdf
-        if self.as_pdf:
-            self._save_pdf(pdf, reset=reset)
+        try:
+            yield pdf
+        except Exception as e:
+            logger.error(f"Error exporting PDF: {e}")
+        finally:
+            if self.as_pdf:
+                self._save_pdf(pdf, reset=reset)
 
     def _check_figure(self, filename: Path, override: bool = False) -> bool:
         """Check if figure exists.
