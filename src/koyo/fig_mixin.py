@@ -82,6 +82,13 @@ class FigureMixin(PDFMixin, PPTXMixin):
         elif self.as_pdf:
             self._add_title_to_pdf(title, pdf=pdf)
 
+    def _add_content(
+        self, content: str, title: str, pdf: PdfPages | None = None, pptx: Presentation | None = None
+    ) -> None:
+        """Add title to pptx."""
+        if self.as_pptx:
+            self._add_content_to_pptx(content, title, pptx=pptx)
+
     def _save(self, pptx: Presentation | None = None, pdf: PdfPages | None = None) -> None:
         """Save pptx/pdf."""
         if self.as_pptx:
@@ -210,6 +217,13 @@ class PptxPdfWrapper:
             from koyo.pptx_mixin import add_title_to_pptx
 
             add_title_to_pptx(self.ppt_or_pdf, title)  # type: ignore[arg-type]
+
+    def add_content(self, content: str, title: str = "") -> None:
+        """Add title slide or page."""
+        if self.as_pptx:
+            from koyo.pptx_mixin import add_content_to_pptx
+
+            add_content_to_pptx(self.ppt_or_pdf, content, title)  # type: ignore[arg-type]
 
     def add_or_export_pil_image(
         self,
