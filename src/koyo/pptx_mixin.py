@@ -244,14 +244,14 @@ def _insert_slide(pptx: Presentation, title: str = "") -> tuple[ty.Any, int, int
     template_index = SlideLayout.TITLE_AND_BLANK if title else SlideLayout.BLANK
     slide = pptx.slides.add_slide(pptx.slide_layouts[template_index])
     if title:
-        from pptx.util import Cm
+        from pptx.util import Cm, Pt
 
+        slide.shapes.title.text_frame.paragraphs[0].font.size = Pt(20)
         slide.shapes.title.text = title
         height = slide.shapes.title.height // 2
         slide.shapes.title.top = Cm(0)
         slide.shapes.title.left = Cm(0)
         slide.shapes.title.width = pptx.slide_width
         slide.shapes.title.height = height
-        slide.shapes.title.top + height
         top = slide.shapes.title.top + height
     return slide, left, top
