@@ -5,12 +5,12 @@ from __future__ import annotations
 import io
 import typing as ty
 from contextlib import contextmanager
+from enum import IntEnum
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
-from enum import IntEnum
 
 from koyo.typing import PathLike
 from koyo.utilities import is_installed
@@ -62,7 +62,7 @@ class PPTXMixin:
     def pptx(self, value: Presentation | None) -> None:
         """Set PDF figure."""
         if self._pptx is not None:
-            self._pptx.save(self.pptx_filename)
+            self._pptx.save(self.pptx_filename)  # type: ignore[arg-type]
         self._pptx = value
 
     @staticmethod
@@ -102,12 +102,12 @@ class PPTXMixin:
     def _add_title_to_pptx(self, title: str, pptx: Presentation | None = None) -> None:
         """Add title page to the slide deck."""
         pptx = pptx or self.pptx
-        add_title_to_pptx(pptx, title)
+        add_title_to_pptx(pptx, title)  # type: ignore[arg-type]
 
     def _add_content_to_pptx(self, content: str, title: str = "", pptx: Presentation | None = None) -> None:
         """Add title page to the slide deck."""
         pptx = pptx or self.pptx
-        add_content_to_pptx(pptx, content, title)
+        add_content_to_pptx(pptx, content, title)  # type: ignore[arg-type]
 
     def _add_mpl_figure_to_pptx(
         self,
@@ -155,10 +155,9 @@ class PPTXMixin:
         """Save PPTX."""
         if hasattr(pptx, "_filename"):
             filename = pptx._filename
-            pptx.save(filename)  # type: ignore[union-attr,arg-type]
         else:
             filename = filename or self.pptx_filename
-        pptx.save(filename)  # type: ignore[union-attr,arg-type]
+        pptx.save(filename)  # type: ignore[arg-type]
         logger.trace(f"Saved PPTX to {filename}")
         if reset:
             self._pptx = None

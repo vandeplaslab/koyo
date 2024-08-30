@@ -500,20 +500,20 @@ def get_min_max(values: np.ndarray | ty.Iterable | list) -> tuple[int | float, i
     return np.min(values), np.max(values)
 
 
-def need_rotation(array: np.ndarray) -> bool:
+def need_rotation(array: np.ndarray | tuple[int, ...]) -> bool:
     """Check whether image needs to be rotated."""
-    shape = array.shape
+    shape = array.shape if not isinstance(array, tuple) else array
     if len(shape) == 3:
         return shape[1] > shape[2]
     return shape[0] > shape[1]
 
 
-def rotate(array: np.ndarray, auto_rotate: bool):
+def rotate(array: np.ndarray, auto_rotate: bool) -> np.ndarray:
     """Rotate but only if user requested rotation."""
     return array if not auto_rotate else check_image_orientation(array)
 
 
-def check_image_orientation(array):
+def check_image_orientation(array: np.ndarray) -> np.ndarray:
     """Transpose image if the primary size is larger than the secondary size in order to improve images.
 
     Parameters
