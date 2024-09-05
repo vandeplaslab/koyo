@@ -43,10 +43,18 @@ class BaseConfig(BaseModel):
             with suppress(OSError, PermissionError):
                 self.save()
 
+    def get_exclude_fields(self) -> set[str]:
+        """Get fields to exclude from saving."""
+        exclude = []
+        for field in self.__fields__.values():
+            if not field.field_info.extra.get("save", True):
+                exclude.append(field.name)
+        return set(exclude)
+
     def save(self) -> None:
         """Export configuration to file."""
         try:
-            self.output_path.write_text(self.json(indent=4, exclude_unset=True))
+            self.output_path.write_text(self.json(indent=4, exclude_unset=True, exclude=self.get_exclude_fields()))
             logger.info(f"Saved configuration to {self.output_path}")
         except Exception as e:
             logger.warning(f"Failed to save configuration to {self.output_path}: {e}")

@@ -9,8 +9,11 @@ def get_random_seed() -> int:
 
 
 @contextmanager
-def temporary_seed(seed: int):
+def temporary_seed(seed: int, skip_if_negative_one: bool = False):
     """Temporarily set numpy seed."""
+    if skip_if_negative_one and seed == -1:
+        yield
+        return
     state = np.random.get_state()
     np.random.seed(seed)
     try:
