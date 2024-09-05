@@ -94,6 +94,10 @@ class PDFMixin:
         pdf = pdf or self.pdf
         add_title_to_pdf(pdf, title)
 
+    def _add_content_to_pdf(self, content: str, title: str = "", pdf: PdfPages | None = None) -> None:
+        pdf = pdf or self.pdf
+        add_content_to_pdf(pdf, content, title)
+
     def _save_pdf(self, pdf: PdfPages, reset: bool = False) -> None:
         """Save PPTX."""
         if pdf and hasattr(pdf, "close"):
@@ -155,6 +159,16 @@ def add_title_to_pdf(pdf: PdfPages | None, title: str) -> None:
         fig.text(0.5, 0.5, title, transform=fig.transFigure, size=24, ha="center")
         pdf.savefig()
         plt.close(fig)
+
+
+def add_content_to_pdf(pdf: PdfPages | None, content: str, title: str = "") -> None:
+    """Export content."""
+    if content and pdf is not None:
+        fig = plt.figure(figsize=(11.69, 8.27))
+        fig.clf()
+        if title:
+            fig.text(0.5, 0.9, title, transform=fig.transFigure, size=16, ha="center")
+        fig.text(0.5, 0.5, content, transform=fig.transFigure, size=12, ha="center")
 
 
 def add_mpl_figure_to_pdf(

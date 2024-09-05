@@ -1,5 +1,7 @@
 """Mosaic utilities."""
 
+from __future__ import annotations
+
 import io
 import typing as ty
 from math import ceil
@@ -8,10 +10,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 
+if ty.TYPE_CHECKING:
+    from PIL import Image
+
 
 def add_label(
-    ax, label: str, x: float = 0.9, y: float = 0.98, color="w", size=14, weight="normal", bbox=None, va="top", ha="left"
-):
+    ax: plt.Axes,
+    label: str,
+    x: float = 0.9,
+    y: float = 0.98,
+    color: str = "w",
+    size: int = 14,
+    weight: str = "normal",
+    bbox: ty.Any = None,
+    va: str = "top",
+    ha: str = "left",
+) -> plt.Text:
     """Add label to the image."""
     return ax.text(
         x,
@@ -29,7 +43,7 @@ def add_label(
 
 def fig_to_bytes(
     fig: plt.Figure,
-    bbox_inches: ty.Optional[str] = "tight",
+    bbox_inches: str | None = "tight",
     pad_inches: float = 0.1,
     dpi: int = 100,
     close: bool = False,
@@ -52,7 +66,7 @@ def fig_to_bytes(
     return buf
 
 
-def make_fig_title(title: str, width: int, n_cols: int, text_color: str = "white", font_size: int = 36):
+def make_fig_title(title: str, width: int, n_cols: int, text_color: str = "white", font_size: int = 36) -> io.BytesIO:
     """Make title for a single image."""
     fig = plt.figure(figsize=(width * n_cols / 72, 1))
     fig.text(
@@ -68,18 +82,32 @@ def make_fig_title(title: str, width: int, n_cols: int, text_color: str = "white
     return fig_to_bytes(fig, bbox_inches=None, pad_inches=0, dpi=72, close=True)
 
 
+def merge_mosaic(
+    items: dict[str, io.BytesIO],
+    title_buf: io.BytesIO | None = None,
+    n_cols: int | None = None,
+    silent: bool = True,
+    color: tuple[int, ...] = (0, 0, 0, 0),
+    allow_placeholder: bool = False,
+    placeholder_color: tuple[int, ...] = (128, 0, 0, 255),
+) -> Image:
+    """Merge images."""
+    nr, nc, w, h = _get_mosaic_dims_for_list(items, n_cols=n_cols)
+    return _merge_mosaic(nr, nc, w, h, items, title_buf, silent, color, allow_placeholder, placeholder_color)
+
+
 def _merge_mosaic(
     n_rows: int,
     n_cols: int,
     width: int,
     height: int,
-    items: ty.Dict[str, io.BytesIO],
-    title_buf: ty.Optional[io.BytesIO] = None,
+    items: dict[str, io.BytesIO],
+    title_buf: io.BytesIO | None = None,
     silent: bool = True,
-    color=(0, 0, 0, 0),
+    color: tuple[int, ...] = (0, 0, 0, 0),
     allow_placeholder: bool = False,
-    placeholder_color=(128, 0, 0, 255),
-):
+    placeholder_color: tuple[int, ...] = (128, 0, 0, 255),
+) -> Image:
     from PIL import Image
 
     filelist = list(items.values())
@@ -115,8 +143,13 @@ def _merge_mosaic(
     return dst
 
 
-def _get_mosaic_dims_for_list(items: ty.Dict[str, io.BytesIO], n_cols: int = 0, check_size_of_all: bool = True):
+def _get_mosaic_dims_for_list(
+    items: dict[str, io.BytesIO], n_cols: int | None = 0, check_size_of_all: bool = True
+) -> tuple[int, int, int, int]:
     from PIL import Image
+
+    if n_cols is None:
+        n_cols = 0
 
     widths, heights = [], []
     if check_size_of_all:
@@ -136,17 +169,16 @@ def _get_mosaic_dims_for_list(items: ty.Dict[str, io.BytesIO], n_cols: int = 0, 
     return _get_mosaic_dims(len(items), width, height, n_cols=n_cols)
 
 
-def _get_mosaic_dims(n: int, width: int, height: int, n_cols: int = 0):
-    ratio = 100
+def _get_mosaic_dims(n: int, width: int, height: int, n_cols: int = 0) -> tuple[int, int, int, int]:
+    ratio = 100.0
     _width, _height = width, height
     if n_cols == 0:
         n_rows, n_cols = 1, 1
         desired_ratio = 16 / 9
         while ratio > desired_ratio:
             n_cols = ceil(n / n_rows)
-            width = _width * n_cols
             height = _height * n_rows
-            ratio = width / height
+            ratio = (_width * n_cols) / height
             n_rows += 1
     else:
         if n_cols > n:
