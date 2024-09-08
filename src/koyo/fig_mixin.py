@@ -204,6 +204,13 @@ class PptxPdfWrapper:
         self.as_pptx = as_pptx
         self.as_pdf = as_pdf
 
+    def make_directory_if_not_exporting(self, directory: PathLike) -> Path:
+        """Make directory if it's not being exported to PDF/PPTX."""
+        directory = Path(directory)
+        if not self.as_pptx_or_pdf:
+            directory.mkdir(parents=True, exist_ok=True)
+        return directory
+
     @property
     def as_pptx_or_pdf(self) -> bool:
         """Check whether export is enabled."""
@@ -230,7 +237,6 @@ class PptxPdfWrapper:
             from koyo.pdf_mixin import add_content_to_pdf
 
             add_content_to_pdf(self.ppt_or_pdf, content, title)
-
 
     def add_or_export_pil_image(
         self,
