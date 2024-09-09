@@ -53,6 +53,17 @@ def is_installed(module: str) -> bool:
     return loader is not None
 
 
+def is_above_version(module: str, version: str) -> bool:
+    """Check whether the module is above a certain version."""
+    import importlib.metadata
+
+    try:
+        installed_version = importlib.metadata.version(module)
+    except importlib.metadata.PackageNotFoundError:
+        return False
+    return installed_version >= version
+
+
 def get_format(fmt: str) -> str:
     """Parse format."""
     return fmt if fmt.startswith(".") else f".{fmt}"

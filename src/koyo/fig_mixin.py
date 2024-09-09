@@ -101,7 +101,7 @@ class FigureMixin(PDFMixin, PPTXMixin):
     def _add_or_export_mpl_figure(
         self,
         filename: Path,
-        fig: ty.Any,
+        fig: plt.Figure | None,
         face_color: str | np.ndarray | None = None,
         bbox_inches: str | None = "tight",
         dpi: int = 150,
@@ -111,6 +111,10 @@ class FigureMixin(PDFMixin, PPTXMixin):
         **kwargs: ty.Any,
     ) -> None:
         """Export figure to file."""
+        if fig is None:
+            logger.warning("Figure is None, skipping export")
+            return
+
         if self.as_pdf:
             self._add_mpl_figure_to_pdf(filename, fig, pdf=pdf, **kwargs)
         elif self.as_pptx:
@@ -266,7 +270,7 @@ class PptxPdfWrapper:
     def add_or_export_mpl_figure(
         self,
         filename: PathLike,
-        fig: ty.Any,
+        fig: plt.Figure | None,
         face_color: str | np.ndarray | None = None,
         bbox_inches: str | None = "tight",
         dpi: int = 150,
@@ -276,6 +280,9 @@ class PptxPdfWrapper:
         **kwargs: ty.Any,
     ) -> None:
         """Add or export matplotlib figure."""
+        if fig is None:
+            logger.warning("Figure is None, skipping export")
+            return
         if self.as_pdf:
             from koyo.pdf_mixin import add_mpl_figure_to_pdf
 

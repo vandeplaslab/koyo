@@ -11,9 +11,16 @@ import matplotlib.pyplot as plt
 import numba as nb
 import numpy as np
 
+from koyo.image import clip_hotspots
+from koyo.utilities import is_above_version
+
 if ty.TYPE_CHECKING:
     from matplotlib.collections import LineCollection
     from PIL import Image
+    from matplotlib.colorbar import Colorbar
+    from matplotlib.image import AxesImage
+
+MATPLOTLIB_ABOVE_3_5_2 = is_above_version("matplotlib", "3.5.2")
 
 
 def tight_layout(fig: plt.Figure) -> None:
@@ -226,13 +233,14 @@ def make_legend_handles(
 
 
 def add_legend(
-    fig,
-    ax,
+    fig: plt.Figure,
+    ax: plt.Axes,
     legend_palettes: dict[str, dict[str, str]],
     fontsize: float = 14,
     labelsize: float = 16,
     x_pad: float = 0.01,
-):
+    sort_legend: bool = True,
+) -> None:
     """Add legend to the plot.
 
     Parameters
@@ -250,6 +258,8 @@ def add_legend(
         Font size of the legend title.
     x_pad : float
         Padding between the legend and the plot.
+    sort_legend : bool
+        Whether to sort the legend by tag name.
     """
     from matplotlib.patches import Patch
     from natsort import natsorted
@@ -271,13 +281,27 @@ def add_legend(
     rend = fig.canvas.get_renderer()
     x_offset = ax.get_tightbbox(rend).transformed(ax.transAxes.inverted()).xmax + x_pad
     x_widest, y_offset = 0, 1
+    if ax.get_title():
+        y_offset += ax.title.get_window_extent(rend).transformed(ax.transAxes.inverted()).height
+    # calculate maximum height
+    max_height = 1.0
+    xaxis = ax.get_xaxis()
+    ticks = xaxis.get_ticklabels()
+    if ticks:
+        # find tick with longest label
+        index = np.argmax([len(tick.get_text()) for tick in xaxis.get_ticklabels()])
+        # get tick
+        tick = xaxis.get_ticklabels()[index]
+        max_height += tick.get_window_extent(rend).transformed(ax.transAxes.inverted()).height
+
     for tag, tag_to_color in legend_palettes.items():
-        lh = [Patch(facecolor=tag_to_color[tag], label=tag) for tag in natsorted(tag_to_color.keys())]
+        tag_to_color_ = natsorted(tag_to_color.keys()) if sort_legend else list(tag_to_color.keys())
+        lh = [Patch(facecolor=tag_to_color[tag], label=tag) for tag in tag_to_color_]
         n_col = 1
         while True:
             n_col, leg = _make_legend(n_col, loc=(x_offset, y_offset))
             bb = leg.get_window_extent(rend).transformed(ax.transAxes.inverted())
-            if bb.height <= 1:
+            if bb.height <= max_height:
                 break
             n_col += 1
         # if bb.height > 1:
@@ -289,7 +313,8 @@ def add_legend(
             x_offset += x_widest + 0.02
             y_offset = 1 - bb.height
         _, leg = _make_legend(n_col, (x_offset, y_offset))
-        ax.add_artist(leg)
+        if not MATPLOTLIB_ABOVE_3_5_2:
+            ax.add_artist(leg)
 
 
 def find_text_color(base_color, dark_color="black", light_color="white", coef_choice=0):
@@ -478,3 +503,66 @@ def _annotate_heatmap(g, ax, mesh):
             text_kwargs = {"color": text_color, "ha": "center", "va": "center"}
             text_kwargs.update(g.annot_kws)
             ax.text(x, y, annotation, **text_kwargs)
+
+
+def _plot_or_update_image(
+    ax: plt.Axes,
+    array: np.ndarray,
+    colormap: str = "viridis",
+    colorbar: bool = True,
+    clip: bool = False,
+    is_normalized: bool = False,
+    title: str = "",
+    as_title: bool = True,
+    quantile: float = 0.995,
+    img: AxesImage | None = None,
+    cbar: Colorbar | None = None,
+    min_val: float | None = None,
+    max_val: float | None = None,
+) -> tuple[AxesImage, Colorbar | None]:
+    """Plot or update image."""
+    if min_val is None:
+        min_val = np.nanmin(array)
+    if clip:
+        array = clip_hotspots(array, quantile)
+    if not max_val and is_normalized:
+        max_val = np.nanquantile(array, quantile) if quantile else np.nanmax(array)
+    elif not max_val:
+        max_val = np.nanmax(array)
+
+    ticks, tick_labels = get_ticks_with_unit(min_val, max_val)
+    if img is None:
+        img = ax.imshow(array, vmax=max_val, cmap=colormap)
+        if colorbar:
+            _, _, cbar = inset_colorbar(
+                ax,
+                img,
+                ticks=ticks,
+                tick_labels=tick_labels,
+                width="76%",
+                xpos=0.12,
+                ypos=-0.05,
+                labelcolor="white",
+                edgecolor="white",
+            )
+    else:
+        img.set_array(array)
+        img.set_cmap(colormap)
+        img.set_clim(vmin=min_val, vmax=max_val)
+        if cbar:
+            cbar.mappable.set_clim(min_val, max_val)
+            cbar.set_ticks(ticks)
+            cbar.set_ticklabels(tick_labels)
+    if as_title:
+        ax.set_title(title, color="white", fontsize=16)
+    else:
+        add_label(
+            ax,
+            title,
+            x=0.01,
+            y=0.95,
+            color="k",
+            size=16,
+            bbox={"boxstyle": "square", "facecolor": "white", "alpha": 0.75, "lw": 0},
+        )
+    return img, cbar

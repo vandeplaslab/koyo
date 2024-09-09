@@ -27,11 +27,12 @@ def uuid_obj(data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, Path, str, 
     return str(uuid.UUID(hash_obj(data)))
 
 
-def hash_obj(data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, Path, str, int, float]) -> str:
+def hash_obj(data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, Path, str, int, float], n_in_hash: int = 0) -> str:
     """Hash python object."""
     hash_id = hashlib.md5()
     hash_id.update(repr(data).encode("utf-8"))
-    return hash_id.hexdigest()
+    value = hash_id.hexdigest()
+    return value[0:n_in_hash] if n_in_hash else value
 
 
 def uuid_iterable(iterable) -> str:
