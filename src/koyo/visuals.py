@@ -136,18 +136,21 @@ def vertices_to_collection(
     return line_col
 
 
-def compute_divider(value: float) -> float:
+def compute_divider(value: float) -> int:
     """Compute divider."""
-    divider = 1000000000
+    divider = 1_000_000_000
     value = abs(value)
     if value == 0:
         return 1
-    while value == value % divider:
-        divider = divider / 1000
+    with suppress(ZeroDivisionError), warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        while value == value % divider:
+            divider = divider / 1_000
     return len(str(int(divider))) - len(str(int(divider)).rstrip("0"))
 
 
-def convert_divider_to_str(value, exp_value):
+def convert_divider_to_str(value: float, exp_value: int) -> str:
+    """Convert divider to string."""
     value = float(value)
     if exp_value in [0, 1, 2]:
         if abs(value) < 0.0001:
@@ -168,7 +171,7 @@ def convert_divider_to_str(value, exp_value):
         return f"{value / 1000000000:.1f}B"
 
 
-def y_tick_fmt(x, pos=None):
+def y_tick_fmt(x, pos=None) -> str:
     """Y-tick formatter."""
     return convert_divider_to_str(x, compute_divider(x))
 
@@ -505,6 +508,59 @@ def _annotate_heatmap(g, ax, mesh):
             ax.text(x, y, annotation, **text_kwargs)
 
 
+def _plot_image(
+    array: np.ndarray,
+    colormap: str = "viridis",
+    colorbar: bool = True,
+    clip: bool = False,
+    is_normalized: bool = False,
+    title: str = "",
+    as_title: bool = True,
+    quantile: float = 0.995,
+    min_val: float | None = None,
+    max_val: float | None = None,
+    figsize: tuple[int, int] = (8, 8),
+) -> tuple[plt.Figure, plt.Axes]:
+    if min_val is None:
+        min_val = np.min(array[np.isfinite(array)])
+    if clip:
+        array = clip_hotspots(array, quantile)
+    if not max_val and is_normalized:
+        max_val = np.quantile(array[np.isfinite(array)], quantile) if quantile else np.max(array[np.isfinite(array)])
+    elif not max_val:
+        max_val = np.max(array[np.isfinite(array)])
+
+    ticks, tick_labels = get_ticks_with_unit(min_val, max_val)
+    fig, ax = plt.subplots(figsize=figsize)
+    img = ax.imshow(array, vmax=max_val, cmap=colormap, aspect="equal")
+    if colorbar:
+        _, _, cbar = inset_colorbar(
+            ax,
+            img,
+            ticks=ticks,
+            tick_labels=tick_labels,
+            width="76%",
+            xpos=0.12,
+            ypos=-0.05,
+            labelcolor="white",
+            edgecolor="white",
+        )
+        cbar.mappable.set_clim(min_val, max_val)
+    if as_title:
+        ax.set_title(title, color="white", fontsize=16)
+    else:
+        add_label(
+            ax,
+            title,
+            x=0.01,
+            y=0.95,
+            color="k",
+            size=16,
+            bbox={"boxstyle": "square", "facecolor": "white", "alpha": 0.75, "lw": 0},
+        )
+    return fig, ax
+
+
 def _plot_or_update_image(
     ax: plt.Axes,
     array: np.ndarray,
@@ -522,17 +578,17 @@ def _plot_or_update_image(
 ) -> tuple[AxesImage, Colorbar | None]:
     """Plot or update image."""
     if min_val is None:
-        min_val = np.nanmin(array)
+        min_val = np.min(array[np.isfinite(array)])
     if clip:
         array = clip_hotspots(array, quantile)
     if not max_val and is_normalized:
-        max_val = np.nanquantile(array, quantile) if quantile else np.nanmax(array)
+        max_val = np.quantile(array[np.isfinite(array)], quantile) if quantile else np.max(array[np.isfinite(array)])
     elif not max_val:
-        max_val = np.nanmax(array)
+        max_val = np.max(array[np.isfinite(array)])
 
     ticks, tick_labels = get_ticks_with_unit(min_val, max_val)
     if img is None:
-        img = ax.imshow(array, vmax=max_val, cmap=colormap)
+        img = ax.imshow(array, vmax=max_val, cmap=colormap, aspect="equal")
         if colorbar:
             _, _, cbar = inset_colorbar(
                 ax,
@@ -545,6 +601,7 @@ def _plot_or_update_image(
                 labelcolor="white",
                 edgecolor="white",
             )
+            cbar.mappable.set_clim(min_val, max_val)
     else:
         img.set_array(array)
         img.set_cmap(colormap)

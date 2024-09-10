@@ -85,14 +85,17 @@ def make_fig_title(title: str, width: int, n_cols: int, text_color: str = "white
 def merge_mosaic(
     items: dict[str, io.BytesIO],
     title_buf: io.BytesIO | None = None,
+    title: str = "",
     n_cols: int | None = None,
     silent: bool = True,
-    color: tuple[int, ...] = (0, 0, 0, 0),
+    color: tuple[int, ...] = (0, 0, 0, 0),  # black
     allow_placeholder: bool = False,
-    placeholder_color: tuple[int, ...] = (128, 0, 0, 255),
+    placeholder_color: tuple[int, ...] = (0, 0, 0, 255),  # black
 ) -> Image:
     """Merge images."""
     nr, nc, w, h = _get_mosaic_dims_for_list(items, n_cols=n_cols)
+    if title:
+        title_buf = make_fig_title(title, w, nc)
     return _merge_mosaic(nr, nc, w, h, items, title_buf, silent, color, allow_placeholder, placeholder_color)
 
 

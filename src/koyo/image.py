@@ -1,4 +1,5 @@
 """Image processing functions."""
+
 import typing as ty
 
 import numpy as np
@@ -21,7 +22,7 @@ def clip_hotspots(img: np.ndarray, quantile: float = 0.99) -> np.ndarray:
 
     """
     mask = np.isnan(img)
-    img = np.nan_to_num(img)
+    img = np.nan_to_num(img, posinf=0, neginf=0)
     min_visible = np.max(img) / 256
     if min_visible > 0:
         hotspot_threshold = np.quantile(img[img > min_visible], quantile)
