@@ -61,7 +61,9 @@ def is_above_version(module: str, version: str) -> bool:
         installed_version = importlib.metadata.version(module)
     except importlib.metadata.PackageNotFoundError:
         return False
-    return installed_version >= version
+    if installed_version is not None:
+        return installed_version >= version
+    return False
 
 
 def get_format(fmt: str) -> str:
