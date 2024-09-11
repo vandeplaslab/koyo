@@ -519,7 +519,7 @@ def _plot_image(
     quantile: float = 0.995,
     min_val: float | None = None,
     max_val: float | None = None,
-    figsize: tuple[int, int] = (8, 8),
+    figsize: tuple[float, float] = (6, 6),
 ) -> tuple[plt.Figure, plt.Axes]:
     if min_val is None:
         min_val = np.min(array[np.isfinite(array)])

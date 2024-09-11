@@ -70,10 +70,13 @@ class PPTXMixin:
         """Make PDF."""
         try:
             from pptx import Presentation
+            from pptx.util import Inches
         except ImportError:
             raise ImportError("pptx is not installed. Please install it using `pip install python-pptx`.") from None
 
         pptx = Presentation()
+        pptx.slide_width = Inches(16)
+        pptx.slide_height = Inches(9)
         pptx._filename = filename  # type: ignore[attr-defined]
         return pptx
 
