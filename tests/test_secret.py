@@ -28,4 +28,4 @@ def test_hash_iterable():
 def test_hash_parameters():
     res = hash_parameters(a=1, b=2, c=3)
     assert isinstance(res, str)
-    assert hash_parameters({"a": [0, 1]}) == hash_parameters({"a": [1, 0]}) == hash_parameters({"a": (0, 1)})
+    assert hash_parameters(a=[0, 1]) == hash_parameters(a=[1, 0]) == hash_parameters(a=(0, 1))
