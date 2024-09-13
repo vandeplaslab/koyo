@@ -4,7 +4,6 @@ import uuid
 from pathlib import Path
 
 import numpy as np
-import scipy.sparse as ss
 from natsort import natsorted
 
 
