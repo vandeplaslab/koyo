@@ -57,7 +57,7 @@ def _natsort_if_iterable(value: ty.Any) -> ty.Any:
     if isinstance(value, (list, tuple, set, np.ndarray)):
         return list(natsorted(value))
     elif isinstance(value, dict):
-        return {key: _natsort_if_iterable(value) for key in value}
+        return {key: _natsort_if_iterable(value[key]) for key in value}
     return value
 
 
