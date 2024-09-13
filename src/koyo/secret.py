@@ -52,10 +52,18 @@ def uuid_parameters(**kwargs) -> str:
     return str(uuid.UUID(hash_parameters(**kwargs)))
 
 
-def hash_parameters(n_in_hash: int = 0, **kwargs) -> str:
+def _natsort_if_iterable(value: ty.Any) -> ty.Any:
+    if isinstance(value, (list, tuple, set)):
+        return natsorted(value)
+    if isinstance(value, dict):
+        return {key: _natsort_if_iterable(value) for key in value}
+    return value
+
+
+def hash_parameters(n_in_hash: int = 0, **kwargs: ty.Any) -> str:
     """Hash parameters."""
     hash_id = hashlib.md5()
     for key in natsorted(kwargs.keys()):
-        hash_id.update(repr(kwargs[key]).encode("utf-8"))
+        hash_id.update(repr(_natsort_if_iterable(kwargs[key])).encode("utf-8"))
     value = hash_id.hexdigest()
     return value[0:n_in_hash] if n_in_hash else value
