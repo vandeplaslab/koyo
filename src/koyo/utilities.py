@@ -14,8 +14,13 @@ from natsort import natsorted
 
 from koyo.typing import PathLike, SimpleArrayLike
 
+if ty.TYPE_CHECKING:
+    from koyo.fig_mixin import PptxPdfWrapper
 
-def ensure_output_dir_exists(output_dir: PathLike | None) -> tuple[bool, Path]:
+
+def ensure_output_dir_exists(
+    output_dir: PathLike | None, pptx_or_pdf: PptxPdfWrapper | None = None
+) -> tuple[bool, Path]:
     """Ensure that the output directory exists.
 
     Returns
@@ -25,6 +30,9 @@ def ensure_output_dir_exists(output_dir: PathLike | None) -> tuple[bool, Path]:
     Path
         output directory
     """
+    # check if the output directory is actually needed - not if exporting as PDF or PPTX
+    if pptx_or_pdf and pptx_or_pdf.as_pptx_or_pdf:
+        return False, Path("")
     if output_dir:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
