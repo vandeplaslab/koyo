@@ -49,7 +49,7 @@ def hash_obj(data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, Path, str, 
 def hash_iterable(iterable: ty.Iterable, n_in_hash: int = 0) -> str:
     """Hash iterable object."""
     iterable = list(iterable)
-    hash_id = hash_obj( _natsort_if_iterable(iterable))
+    hash_id = hash_obj(_natsort_if_iterable(iterable))
     return hash_id[0:n_in_hash] if n_in_hash else hash_id
 
 
