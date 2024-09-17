@@ -3,6 +3,7 @@ import typing as ty
 import uuid
 from pathlib import Path
 
+import numpy as np
 from natsort import natsorted
 
 
@@ -27,6 +28,16 @@ def uuid_obj(data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, Path, str, 
     return str(uuid.UUID(hash_obj(data)))
 
 
+def uuid_iterable(iterable: ty.Iterable) -> str:
+    """Hash iterable object."""
+    return str(uuid.UUID(hash_iterable(iterable)))
+
+
+def uuid_parameters(**kwargs) -> str:
+    """Hash iterable object."""
+    return str(uuid.UUID(hash_parameters(**kwargs)))
+
+
 def hash_obj(data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, Path, str, int, float], n_in_hash: int = 0) -> str:
     """Hash python object."""
     hash_id = hashlib.md5()
@@ -35,27 +46,25 @@ def hash_obj(data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, Path, str, 
     return value[0:n_in_hash] if n_in_hash else value
 
 
-def uuid_iterable(iterable) -> str:
-    """Hash iterable object."""
-    return str(uuid.UUID(hash_iterable(iterable)))
-
-
-def hash_iterable(iterable, n_in_hash: int = 0) -> str:
+def hash_iterable(iterable: ty.Iterable, n_in_hash: int = 0) -> str:
     """Hash iterable object."""
     iterable = list(iterable)
-    hash_id = hash_obj(natsorted(iterable))
+    hash_id = hash_obj( _natsort_if_iterable(iterable))
     return hash_id[0:n_in_hash] if n_in_hash else hash_id
 
 
-def uuid_parameters(**kwargs) -> str:
-    """Hash iterable object."""
-    return str(uuid.UUID(hash_parameters(**kwargs)))
+def _natsort_if_iterable(value: ty.Any) -> ty.Any:
+    if isinstance(value, (list, tuple, set, np.ndarray)):
+        return list(natsorted(value))
+    elif isinstance(value, dict):
+        return {key: _natsort_if_iterable(value[key]) for key in value}
+    return value
 
 
-def hash_parameters(n_in_hash: int = 0, **kwargs) -> str:
+def hash_parameters(n_in_hash: int = 0, **kwargs: ty.Any) -> str:
     """Hash parameters."""
     hash_id = hashlib.md5()
     for key in natsorted(kwargs.keys()):
-        hash_id.update(repr(kwargs[key]).encode("utf-8"))
+        hash_id.update(repr(_natsort_if_iterable(kwargs[key])).encode("utf-8"))
     value = hash_id.hexdigest()
     return value[0:n_in_hash] if n_in_hash else value
