@@ -97,7 +97,7 @@ class PPTXMixin:
         try:
             yield pptx
         except Exception as e:
-            logger.error(f"Error exporting to PPTX: {e}")
+            logger.exception(f"Error exporting to PPTX: {e}")
         finally:
             if self.as_pptx:
                 self._save_pptx(pptx, filename, reset)  # type: ignore[arg-type]
@@ -161,7 +161,7 @@ class PPTXMixin:
         else:
             filename = filename or self.pptx_filename
         pptx.save(filename)  # type: ignore[arg-type]
-        logger.trace(f"Saved PPTX to {filename}")
+        logger.trace(f"Saved PPTX to {filename} with {len(pptx.slides)} slides")
         if reset:
             self._pptx = None
 

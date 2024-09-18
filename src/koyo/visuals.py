@@ -19,6 +19,7 @@ if ty.TYPE_CHECKING:
     from PIL import Image
     from matplotlib.colorbar import Colorbar
     from matplotlib.image import AxesImage
+    from seaborn.matrix import _HeatMapper
 
 MATPLOTLIB_ABOVE_3_5_2 = is_above_version("matplotlib", "3.5.2")
 
@@ -488,13 +489,23 @@ def fix_style(style: str) -> str:
     return style
 
 
-def _annotate_heatmap(g, ax, mesh):
+def _override_seaborn_heatmap_annotations():
+    from seaborn.matrix import _HeatMapper
+
+    if not hasattr(_HeatMapper, "_annotate_heatmap_old"):
+        _HeatMapper._annotate_heatmap_old = _HeatMapper._annotate_heatmap
+    _HeatMapper._annotate_heatmap = _annotate_heatmap
+
+
+def _annotate_heatmap(g: _HeatMapper, ax: plt.Axes, mesh) -> None:
     from seaborn.utils import relative_luminance
 
     mesh.update_scalarmappable()
     height, width = g.annot_data.shape
     xpos, ypos = np.meshgrid(np.arange(width) + 0.5, np.arange(height) + 0.5)
-    for x, y, m, color, val in zip(xpos.flat, ypos.flat, mesh.get_array(), mesh.get_facecolors(), g.annot_data.flat):
+    for x, y, m, color, val in zip(
+        xpos.flat, ypos.flat, mesh.get_array().flat, mesh.get_facecolors(), g.annot_data.flat
+    ):
         if m is not np.ma.masked:
             lum = relative_luminance(color)
             text_color = ".15" if lum > 0.408 else "w"

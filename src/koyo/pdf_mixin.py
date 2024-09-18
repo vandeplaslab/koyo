@@ -102,6 +102,9 @@ class PDFMixin:
         """Save PPTX."""
         if pdf and hasattr(pdf, "close"):
             pdf.close()
+        filename = self.pdf_filename
+        if pdf and hasattr(pdf, "filename"):
+            filename = Path(pdf.filename)
         logger.debug(f"Saved PDF to {self.pdf_filename}")
         if reset:
             self._pdf = None
