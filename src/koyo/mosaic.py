@@ -190,3 +190,73 @@ def _get_mosaic_dims(n: int, width: int, height: int, n_cols: int = 0) -> tuple[
     if n_rows > ceil(n / n_cols):
         n_rows -= 1
     return n_rows, n_cols, _width, _height
+
+
+def plot_mosaic(
+    data: dict[str, np.ndarray],
+    title: str = "",
+    colormap: str = "viridis",
+    colorbar: bool = True,
+    dpi: int = 100,
+    min_val: float | None = None,
+    max_val: float | None = None,
+    figsize: tuple[float, float] = (6, 6),
+    style: str = "dark_background",
+) -> Image:
+    """Plot mosaic."""
+    from koyo.visuals import _plot_or_update_image
+
+    img, cbar = None, None
+    figures = {}
+    with plt.style.context(style):
+        fig, ax = plt.subplots(figsize=figsize)
+        ax.axis("off")
+
+        for key in data:
+            img, cbar = _plot_or_update_image(
+                ax,
+                data[key],
+                min_val=min_val,
+                max_val=max_val,
+                img=img,
+                cbar=cbar,
+                colorbar=colorbar,
+                colormap=colormap,
+                title=key,
+            )
+            figures[key] = fig_to_bytes(fig, close=False, dpi=dpi)
+        plt.close(fig)
+        image = merge_mosaic(figures, title=title)
+    return image
+
+
+def plot_mosaic_individual(
+    data: dict[str, np.ndarray],
+    title: str = "",
+    colormap: str = "viridis",
+    colorbar: bool = True,
+    dpi: int = 100,
+    min_val: float | None = None,
+    max_val: float | None = None,
+    figsize: tuple[float, float] = (6, 6),
+    style: str = "dark_background",
+) -> Image:
+    """Plot mosaic."""
+    from koyo.visuals import _plot_image
+
+    figures = {}
+    with plt.style.context(style):
+        for key in data:
+            fig, ax = _plot_image(
+                data[key],
+                min_val=min_val,
+                max_val=max_val,
+                colorbar=colorbar,
+                colormap=colormap,
+                title=key,
+                figsize=figsize,
+            )
+            ax.axis("off")
+            figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
+        image = merge_mosaic(figures, title=title)
+    return image
