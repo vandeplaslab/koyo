@@ -67,7 +67,7 @@ def despine(ax: plt.Axes, orientation: str) -> plt.Axes:
     return ax
 
 
-def fig_to_pil(fig: plt.Axes) -> Image:
+def fig_to_pil(fig: plt.Figure) -> Image:
     """Convert a Matplotlib figure to a PIL Image and return it."""
     import io
 
@@ -80,6 +80,12 @@ def fig_to_pil(fig: plt.Axes) -> Image:
     buf.seek(0)
     img = Image.open(buf)
     return img
+
+
+def show_fig(fig: plt.Figure) -> None:
+    """Show figure."""
+    image = fig_to_pil(fig)
+    image.show()
 
 
 def pil_to_fig(image: Image) -> plt.Figure:

@@ -41,10 +41,6 @@ class FigureMixin(PDFMixin, PPTXMixin):
             self.as_pdf = as_pdf
         if self.as_pptx and self.as_pdf:
             raise ValueError("Cannot export to both PDF and PPTX")
-        # if self.as_pptx:
-        #     assert self.pptx_filename is not None, "PPTX filename not set"
-        # if self.as_pdf:
-        #     assert self.pdf_filename is not None, "PDF filename not set"
 
     def get_pptx_or_pdf_filename(self, filename: PathLike) -> str:
         """Get export filename."""
@@ -64,6 +60,13 @@ class FigureMixin(PDFMixin, PPTXMixin):
         if self.as_pptx_or_pdf:
             return Path(pptx_or_pdf_path)
         return Path(output_dir)
+
+    def make_directory_if_not_exporting(self, directory: PathLike) -> Path:
+        """Make directory if it's not being exported to PDF/PPTX."""
+        directory = Path(directory)
+        if not self.as_pptx_or_pdf:
+            directory.mkdir(parents=True, exist_ok=True)
+        return directory
 
     @contextmanager
     def _export_figures(self, filename: PathLike | None = None) -> ty.Iterator[PptxPdfWrapper]:
