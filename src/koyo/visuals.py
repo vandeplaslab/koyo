@@ -10,6 +10,7 @@ from contextlib import suppress
 import matplotlib.pyplot as plt
 import numba as nb
 import numpy as np
+from koyo.typing import PathLike
 
 from koyo.image import clip_hotspots
 from koyo.utilities import is_above_version
@@ -42,6 +43,20 @@ def close_pil_image(fig: Image) -> None:
     with suppress(Exception):
         fig.close()
         del fig
+
+
+def save_rgb(path: PathLike, image: np.ndarray) -> None:
+    """Save image a RGB using PIL."""
+    from PIL import Image
+
+    Image.fromarray(image).save(path)
+
+
+def save_gray(path: PathLike, image: np.ndarray, multiplier: int = 255) -> None:
+    """Save image as grayscale using PIL."""
+    from PIL import Image
+
+    Image.fromarray(image * multiplier).convert("L").save(path)
 
 
 def set_tick_fmt(ax: plt.Axes, use_offset: bool = False, axis: str = "both") -> plt.Axes:
