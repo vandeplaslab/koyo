@@ -511,7 +511,7 @@ def filter_kwargs(*allowed: str, **kwargs: ty.Any) -> dict[str, ty.Any]:
     return {key: value for key, value in kwargs.items() if key in allowed}
 
 
-def exit_with_error(skip_error: bool = False):
+def exit_with_error(skip_error: bool = False) -> int | None:
     """Skip error or exit with error."""
     import sys
 
