@@ -1,6 +1,7 @@
 """Utilities for spectrum analysis."""
 
 import typing as ty
+import warnings
 from bisect import bisect_left, bisect_right
 
 import numba
@@ -94,9 +95,14 @@ def ppm_diff(a: np.ndarray, axis=-1) -> np.ndarray:
 
     This function is inspired by `np.diff` which very efficiently computes the difference between adjacent points.
     """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+
+        from numpy.core.multiarray import normalize_axis_index
+
     a = np.asarray(a, dtype=np.float32)
     nd = a.ndim
-    axis = np.core.multiarray.normalize_axis_index(axis, nd)
+    axis = normalize_axis_index(axis, nd)
     slice1 = [slice(None)] * nd
     slice2 = [slice(None)] * nd
     slice1[axis] = slice(1, None)
