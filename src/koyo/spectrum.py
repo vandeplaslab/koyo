@@ -234,9 +234,15 @@ def get_ppm_axis(mz_start: float, mz_end: float, ppm: float):
 
     if mz_start == 0 or mz_end == 0 or ppm == 0:
         raise ValueError("Input values cannot be equal to 0.")
-    length = (np.log(mz_end) - np.log(mz_start)) / np.log((1 + 1e-6 * ppm) / (1 - 1e-6 * ppm))
+    # Use the square root to correct the bin spacing
+    step_ratio = np.sqrt((1 + 1e-6 * ppm) / (1 - 1e-6 * ppm))
+
+    # Calculate the length using the corrected step ratio
+    length = (np.log(mz_end) - np.log(mz_start)) / np.log(step_ratio)
     length = math.floor(length) + 1
-    mz = mz_start * np.power(((1 + 1e-6 * ppm) / (1 - 1e-6 * ppm)), (np.arange(length)))
+
+    # Calculate m/z values using the corrected step ratio
+    mz = mz_start * np.power(step_ratio, np.arange(length))
     return mz
 
 
