@@ -180,12 +180,16 @@ def add_title_to_pptx(pptx: Presentation, title: str) -> None:
     """Add title to the slide."""
     slide = pptx.slides.add_slide(pptx.slide_layouts[SlideLayout.TITLE])
     slide.shapes.title.text = title
+    count = title.count("\n") + 1
+    slide.shapes.title.height *= count
 
 
 def add_content_to_pptx(pptx: Presentation, content: str, title: str = "") -> None:
     """Add title to the slide."""
     slide = pptx.slides.add_slide(pptx.slide_layouts[SlideLayout.TITLE_AND_CONTENT])
     slide.shapes.title.text = title
+    count = title.count("\n") + 1
+    slide.shapes.title.height *= count
     slide.placeholders[1].text = content
 
 
@@ -257,4 +261,6 @@ def _insert_slide(pptx: Presentation, title: str = "") -> tuple[ty.Any, int, int
         slide.shapes.title.width = pptx.slide_width
         slide.shapes.title.height = height
         top = slide.shapes.title.top + height
+        count = title.count("\n") + 1
+        slide.shapes.title.height *= count
     return slide, left, top
