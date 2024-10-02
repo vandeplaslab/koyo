@@ -178,19 +178,30 @@ class PPTXMixin:
 
 def add_title_to_pptx(pptx: Presentation, title: str) -> None:
     """Add title to the slide."""
+    from pptx.util import Cm
+
     slide = pptx.slides.add_slide(pptx.slide_layouts[SlideLayout.TITLE])
     slide.shapes.title.text = title
+    # adjust positions
+    slide.shapes.title.left = Cm(0)
+    slide.shapes.title.width = pptx.slide_width
     count = title.count("\n") + 1
+    print(count)
     slide.shapes.title.height *= count
 
 
 def add_content_to_pptx(pptx: Presentation, content: str, title: str = "") -> None:
     """Add title to the slide."""
+    from pptx.util import Cm
+
     slide = pptx.slides.add_slide(pptx.slide_layouts[SlideLayout.TITLE_AND_CONTENT])
     slide.shapes.title.text = title
+    slide.placeholders[1].text = content
+    # adjust positions
+    slide.shapes.title.left = Cm(0)
+    slide.shapes.title.width = pptx.slide_width
     count = title.count("\n") + 1
     slide.shapes.title.height *= count
-    slide.placeholders[1].text = content
 
 
 def add_mpl_figure_to_pptx(
