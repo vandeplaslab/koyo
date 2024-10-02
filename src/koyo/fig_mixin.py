@@ -115,6 +115,7 @@ class FigureMixin(PDFMixin, PPTXMixin):
         override: bool = False,
         pdf: PdfPages | None = None,
         pptx: Presentation | None = None,
+        close: bool = False,
         **kwargs: ty.Any,
     ) -> None:
         """Export figure to file."""
@@ -128,6 +129,8 @@ class FigureMixin(PDFMixin, PPTXMixin):
             self._add_mpl_figure_to_pptx(filename, fig, pptx=pptx, **kwargs)
         elif override or not filename.exists():
             fig.savefig(filename, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
+            if close:
+                plt.close(fig)
 
     def _add_or_export_pil_image(
         self,
@@ -138,6 +141,7 @@ class FigureMixin(PDFMixin, PPTXMixin):
         override: bool = False,
         pdf: PdfPages | None = None,
         pptx: Presentation | None = None,
+        close: bool = False,
         **kwargs: ty.Any,
     ) -> None:
         """Export PIL image to file."""
@@ -147,6 +151,8 @@ class FigureMixin(PDFMixin, PPTXMixin):
             self._add_pil_image_to_pptx(filename, image, pptx=pptx, **kwargs)
         elif override or not filename.exists():
             image.save(filename, dpi=(dpi, dpi), format=fmt, **kwargs)
+            if close:
+                image.close()
 
 
 class FigureExporter(FigureMixin):
@@ -221,6 +227,10 @@ class PptxPdfWrapper:
         if not self.as_pptx_or_pdf:
             directory.mkdir(parents=True, exist_ok=True)
         return directory
+
+    def figure_exists(self, filename: Path, override: bool = False) -> bool:
+        """Check whether figure exists."""
+        return (filename.exists() and not override) and not self.as_pptx_or_pdf
 
     @property
     def as_pptx_or_pdf(self) -> bool:

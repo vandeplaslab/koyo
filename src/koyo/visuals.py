@@ -257,10 +257,36 @@ def make_legend_handles(
     return handles
 
 
+def add_patches(
+    axs: ty.List, windows: ty.List[ty.Tuple[float, float]], colors: ty.Optional[ty.List] = None, alpha: float = 0.5
+):
+    """Add rectangular patches associated with the peak."""
+    from matplotlib.patches import Rectangle
+
+    if colors is None:
+        colors = plt.cm.get_cmap("viridis", len(axs)).colors
+    assert len(axs) == len(windows) == len(colors), "The number of axes does not match the number of windows."
+
+    for ax, (xmin, xmax), color in zip(axs, windows, colors):
+        ax.add_patch(Rectangle((xmin, 0), xmax - xmin, ax.get_ylim()[1], alpha=alpha, color=color))
+
+
+def add_scalebar(ax, px_size: ty.Optional[float], color="k"):
+    """Add scalebar to figure."""
+    try:
+        from matplotlib_scalebar.scalebar import ScaleBar
+    except ImportError:
+        return
+
+    scalebar = ScaleBar(px_size, "um", frameon=False, color=color, font_properties={"size": 20})
+    ax.add_artist(scalebar)
+    return scalebar
+
+
 def add_legend(
     fig: plt.Figure,
     ax: plt.Axes,
-    legend_palettes: dict[str, dict[str, str]],
+    legend_palettes: dict[str, str] | dict[str, dict[str, str]],
     fontsize: float = 14,
     labelsize: float = 16,
     x_pad: float = 0.01,
@@ -301,6 +327,10 @@ def add_legend(
             title_fontsize=labelsize,
             ncol=n_col,
         )
+
+    # check if legend_palettes is a nested dictionary
+    if not all(isinstance(v, dict) for v in legend_palettes.values()):
+        legend_palettes = {"": legend_palettes}
 
     n_palettes = len(legend_palettes) > 1
     rend = fig.canvas.get_renderer()

@@ -450,7 +450,13 @@ def parse_extra_args(extra_args: tuple[str, ...] | None) -> dict[str, ty.Any]:
             info_msg(f"Skipping argument {arg} as it does not contain '='")
             continue
         name, value = parse_arg(arg, "")
-        kwargs[name] = value
+        if name in kwargs:
+            if isinstance(kwargs[name], list):
+                kwargs[name].append(value)
+            else:
+                kwargs[name] = [kwargs[name], value]
+        else:
+            kwargs[name] = value
     return kwargs
 
 
