@@ -11,6 +11,7 @@ from koyo.utilities import (
     format_size,
     get_kws,
     get_min_max,
+    get_pixels_within_radius,
     is_between,
     is_installed,
     is_number,
@@ -24,6 +25,26 @@ def test_is_installed():
     assert is_installed("numpy")
     assert is_installed("numpy.linalg")
     assert not is_installed("not_installed_package")
+
+
+def test_get_pixels_within_radius():
+    array = np.arange(25).reshape(5, 5)
+    x, y = 0, 0
+    res = get_pixels_within_radius(array, x, y, 0)
+    assert res == 0
+    res = get_pixels_within_radius(array, x, y, 1)
+    np.testing.assert_array_equal(res, [0, 1, 5, 6])
+
+    x, y = 2, 2
+    res = get_pixels_within_radius(array, x, y, 1)
+    np.testing.assert_array_equal(res, [6, 7, 8, 11, 12, 13, 16, 17, 18])
+
+    x, y = 4, 4
+    res = get_pixels_within_radius(array, x, y, 1)
+    np.testing.assert_array_equal(res, [18, 19, 23, 24])
+
+    res = get_pixels_within_radius(array, x, y, 10)
+    assert len(res) == 25
 
 
 class TestViewAsBlocks:

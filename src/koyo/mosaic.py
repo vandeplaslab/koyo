@@ -260,3 +260,33 @@ def plot_mosaic_individual(
             figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
         image = merge_mosaic(figures, title=title)
     return image
+
+
+def plot_mosaic_line_individual(
+    data: dict[str, tuple[np.ndarray, np.ndarray]],
+    marker: float | None = None,
+    x_label: str = "",
+    y_label: str = "",
+    title: str = "",
+    dpi: int = 100,
+    figsize: tuple[float, float] = (6, 6),
+    style: str = "dark_background",
+) -> Image:
+    """Plot mosaic."""
+    from koyo.visuals import _plot_line
+
+    figures = {}
+    with plt.style.context(style):
+        for key in data:
+            fig, ax = _plot_line(
+                data[key][0],
+                data[key][1],
+                marker=marker,
+                title=key,
+                x_label=x_label,
+                y_label=y_label,
+                figsize=figsize,
+            )
+            figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
+        image = merge_mosaic(figures, title=title)
+    return image

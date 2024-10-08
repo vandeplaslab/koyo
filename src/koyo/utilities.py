@@ -300,6 +300,20 @@ def find_nearest_value(data: ty.Iterable, value: int | (float | (np.ndarray | It
     return data[idx]
 
 
+def get_pixels_within_radius(grid: np.ndarray, x: int, y: int, radius: int = 0) -> np.ndarray:
+    """Get pixels within radius."""
+    # Get the bounds for the sub-grid (handling edge cases)
+    y_min = max(0, y - radius)
+    y_max = min(grid.shape[1], y + radius + 1)
+    x_min = max(0, x - radius)
+    x_max = min(grid.shape[0], x + radius + 1)
+
+    # Extract the sub-grid around the point (y, x)
+    sub_grid = grid[y_min:y_max, x_min:x_max].flatten()
+    # drop NaNs, Infs, etc
+    return sub_grid[np.isfinite(sub_grid)]
+
+
 def get_kws(func: ty.Callable, **kwargs: ty.Any) -> dict:
     """Get kwargs."""
     import inspect

@@ -685,3 +685,24 @@ def _plot_or_update_image(
             bbox={"boxstyle": "square", "facecolor": "white", "alpha": 0.75, "lw": 0},
         )
     return img, cbar
+
+
+def _plot_line(
+    x: np.ndarray,
+    y: np.ndarray,
+    marker: float | None = None,
+    title: str = "",
+    x_label: str = "",
+    y_label: str = "",
+    figsize: tuple[float, float] = (6, 6),
+) -> tuple[plt.Figure, plt.Axes]:
+    """Plot line."""
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.plot(x, y)
+    if marker:
+        ax.axvline(marker, color="r", linestyle="--")
+    ax.set_title(title)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    set_tick_fmt(ax, use_offset=False)
+    return fig, ax
