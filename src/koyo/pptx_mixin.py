@@ -181,13 +181,13 @@ def add_title_to_pptx(pptx: Presentation, title: str) -> None:
     from pptx.util import Cm
 
     slide = pptx.slides.add_slide(pptx.slide_layouts[SlideLayout.TITLE])
+    count = title.count("\n") + 1
+    height = slide.shapes.title.height * count
     slide.shapes.title.text = title
     # adjust positions
     slide.shapes.title.left = Cm(0)
     slide.shapes.title.width = pptx.slide_width
-    count = title.count("\n") + 1
-    print(count)
-    slide.shapes.title.height *= count
+    slide.shapes.title.height = height
 
 
 def add_content_to_pptx(pptx: Presentation, content: str, title: str = "") -> None:
@@ -195,13 +195,14 @@ def add_content_to_pptx(pptx: Presentation, content: str, title: str = "") -> No
     from pptx.util import Cm
 
     slide = pptx.slides.add_slide(pptx.slide_layouts[SlideLayout.TITLE_AND_CONTENT])
+    count = title.count("\n") + 1
+    height = slide.shapes.title.height * count
     slide.shapes.title.text = title
     slide.placeholders[1].text = content
     # adjust positions
     slide.shapes.title.left = Cm(0)
     slide.shapes.title.width = pptx.slide_width
-    count = title.count("\n") + 1
-    slide.shapes.title.height *= count
+    slide.shapes.title.height = height
 
 
 def add_mpl_figure_to_pptx(
@@ -264,14 +265,15 @@ def _insert_slide(pptx: Presentation, title: str = "") -> tuple[ty.Any, int, int
     if title:
         from pptx.util import Cm, Pt
 
+        count = title.count("\n") + 1
+
         slide.shapes.title.text_frame.paragraphs[0].font.size = Pt(20)
         slide.shapes.title.text = title
         height = slide.shapes.title.height // 2
+        height *= count
         slide.shapes.title.top = Cm(0)
         slide.shapes.title.left = Cm(0)
         slide.shapes.title.width = pptx.slide_width
         slide.shapes.title.height = height
         top = slide.shapes.title.top + height
-        count = title.count("\n") + 1
-        slide.shapes.title.height *= count
     return slide, left, top

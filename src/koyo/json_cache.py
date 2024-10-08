@@ -70,11 +70,11 @@ class JSONCache:
         """Return all keys in cache."""
         return self.read().keys()
 
-    def items(self):
+    def items(self) -> ty.ItemsView:
         """Return all items in cache."""
         return self.read().items()
 
-    def update(self, **kwargs):
+    def update(self, **kwargs: ty.Any) -> None:
         """Update cache with new key-value pairs."""
         data = self.read()
         data.update(**kwargs)
