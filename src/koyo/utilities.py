@@ -273,7 +273,7 @@ def find_nearest_value_single(data: SimpleArrayLike, value: int | float) -> int 
     return data[idx]
 
 
-def find_nearest_index_batch(array: SimpleArrayLike, values: SimpleArrayLike) -> np.ndarray:
+def find_nearest_index_batch(array: SimpleArrayLike, values: SimpleArrayLike, sort: bool = False) -> np.ndarray:
     """Find nearest index."""
     # make sure array is a numpy array
     array = np.asarray(array)
@@ -282,7 +282,8 @@ def find_nearest_index_batch(array: SimpleArrayLike, values: SimpleArrayLike) ->
         return np.array([])
 
     # get insert positions
-    indices = np.searchsorted(array, values, side="left")
+    sorter = np.argsort(array) if sort else None
+    indices = np.searchsorted(array, values, side="left", sorter=sorter)
 
     # find indexes where previous index is closer
     prev_idx_is_less = (indices == len(array)) | (
@@ -290,6 +291,8 @@ def find_nearest_index_batch(array: SimpleArrayLike, values: SimpleArrayLike) ->
         < np.fabs(values - array[np.minimum(indices, len(array) - 1)])
     )
     indices[prev_idx_is_less] -= 1
+    if sorter is not None:
+        indices = sorter[indices]
     return indices
 
 
