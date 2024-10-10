@@ -699,6 +699,13 @@ def get_close_matches_case(word, possibilities, *args: ty.Any, **kwargs: ty.Any)
     return [lower_possibilities[m] for m in lower_matches]
 
 
+def get_close_matches_case_msg(word: str, possibilities: ty.Iterable[str]) -> str:
+    """Get message for close matches."""
+    match = get_close_matches_case(word, possibilities)
+    match = f"Did you mean: `{', '.join(match)}`?" if match else ""
+    return f"Unknown parameter: `{word}`.{match}"
+
+
 def calculate_array_size(a, as_str: bool = True):
     """Calculate the size of an array in Mb."""
     if not hasattr(a, "nbytes"):
