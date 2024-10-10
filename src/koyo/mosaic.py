@@ -56,6 +56,7 @@ def fig_to_bytes(
         format="jpg",
         dpi=dpi,
         facecolor=fig.get_facecolor(),
+        edgecolor=fig.get_edgecolor(),
         bbox_inches=bbox_inches,
         pad_inches=pad_inches,
         transparent=transparent,
@@ -240,9 +241,15 @@ def plot_mosaic_individual(
     max_val: float | None = None,
     figsize: tuple[float, float] = (6, 6),
     style: str = "dark_background",
+    n_cols: int | None = None,
+    border_color: dict[str, str] | None = None,
+    title_color: dict[str, str] | None = None,
 ) -> Image:
     """Plot mosaic."""
     from koyo.visuals import _plot_image
+
+    border_color = {} if border_color is None else border_color
+    title_color = {} if title_color is None else title_color
 
     figures = {}
     with plt.style.context(style):
@@ -255,10 +262,12 @@ def plot_mosaic_individual(
                 colormap=colormap,
                 title=key,
                 figsize=figsize,
+                border_color=border_color.get(key, None),
+                title_color=title_color.get(key, None),
             )
             ax.axis("off")
             figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
-        image = merge_mosaic(figures, title=title)
+        image = merge_mosaic(figures, title=title, n_cols=n_cols)
     return image
 
 
@@ -271,9 +280,15 @@ def plot_mosaic_line_individual(
     dpi: int = 100,
     figsize: tuple[float, float] = (6, 6),
     style: str = "dark_background",
+    n_cols: int | None = None,
+    border_color: dict[str, str] | None = None,
+    title_color: dict[str, str] | None = None,
 ) -> Image:
     """Plot mosaic."""
     from koyo.visuals import _plot_line
+
+    border_color = {} if border_color is None else border_color
+    title_color = {} if title_color is None else title_color
 
     figures = {}
     with plt.style.context(style):
@@ -286,7 +301,9 @@ def plot_mosaic_line_individual(
                 x_label=x_label,
                 y_label=y_label,
                 figsize=figsize,
+                border_color=border_color.get(key, None),
+                title_color=title_color.get(key, None),
             )
             figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
-        image = merge_mosaic(figures, title=title)
+        image = merge_mosaic(figures, title=title, n_cols=n_cols)
     return image

@@ -10,16 +10,16 @@ from contextlib import suppress
 import matplotlib.pyplot as plt
 import numba as nb
 import numpy as np
-from koyo.typing import PathLike
 
 from koyo.image import clip_hotspots
+from koyo.typing import PathLike
 from koyo.utilities import is_above_version
 
 if ty.TYPE_CHECKING:
     from matplotlib.collections import LineCollection
-    from PIL import Image
     from matplotlib.colorbar import Colorbar
     from matplotlib.image import AxesImage
+    from PIL import Image
     from seaborn.matrix import _HeatMapper
 
 MATPLOTLIB_ABOVE_3_5_2 = is_above_version("matplotlib", "3.5.2")
@@ -582,6 +582,8 @@ def _plot_image(
     min_val: float | None = None,
     max_val: float | None = None,
     figsize: tuple[float, float] = (6, 6),
+    border_color: str | None = None,
+    title_color: str | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
     if min_val is None:
         min_val = np.min(array[np.isfinite(array)])
@@ -620,6 +622,11 @@ def _plot_image(
             size=16,
             bbox={"boxstyle": "square", "facecolor": "white", "alpha": 0.75, "lw": 0},
         )
+    if title_color:
+        ax.title.set_color(title_color)
+    if border_color:
+        fig.patch.set_linewidth(2)
+        fig.patch.set_edgecolor(border_color)
     return fig, ax
 
 
@@ -695,6 +702,8 @@ def _plot_line(
     x_label: str = "",
     y_label: str = "",
     figsize: tuple[float, float] = (6, 6),
+    border_color: str | None = None,
+    title_color: str | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
     """Plot line."""
     fig, ax = plt.subplots(figsize=figsize)
@@ -704,5 +713,11 @@ def _plot_line(
     ax.set_title(title)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
+    ax.set_xlim(x[0], x[-1])
     set_tick_fmt(ax, use_offset=False)
+    if title_color:
+        ax.title.set_color(title_color)
+    if border_color:
+        fig.patch.set_linewidth(2)
+        fig.patch.set_edgecolor(border_color)
     return fig, ax
