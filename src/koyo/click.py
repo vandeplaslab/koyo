@@ -460,10 +460,9 @@ def parse_extra_args(extra_args: tuple[str, ...] | None) -> dict[str, ty.Any]:
     return kwargs
 
 
-def parse_fig_args(
-    extra_args: tuple[str] | None, clean: bool = False
+def parse_args_with_keys(
+    extra_args: tuple[str] | None, fields: tuple[str, ...], clean: bool = False
 ) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
-    """Parse extra parameters."""
     extra_kwargs = {}
     if extra_args is None:
         if clean:
@@ -471,17 +470,22 @@ def parse_fig_args(
         return extra_kwargs
     extra_args_ = []
     for arg in extra_args:
-        if arg.startswith("--fig:"):
-            name, value = parse_arg(arg, "--fig:")
-            extra_kwargs[name] = value
-        elif arg.startswith("--f:"):
-            name, value = parse_arg(arg, "--f:")
-            extra_kwargs[name] = value
-        else:
-            extra_args_.append(arg)
+        for k in fields:
+            if arg.startswith(k):
+                name, value = parse_arg(arg, k)
+                extra_kwargs[name] = value
+            else:
+                extra_args_.append(arg)
     if clean:
         return extra_kwargs, extra_args_
     return extra_kwargs
+
+
+def parse_fig_args(
+    extra_args: tuple[str] | None, clean: bool = False
+) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
+    """Parse extra parameters."""
+    return parse_args_with_keys(extra_args, ("--fig:", "--f:"), clean)
 
 
 def parse_env_args(extra_args: tuple[str] | None, clean: bool = False):
