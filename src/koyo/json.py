@@ -62,7 +62,7 @@ def read_json_data(filepath: PathLike):
     return json_data
 
 
-def write_json_data(filepath: PathLike, obj, indent=4, check_existing=False):
+def write_json_data(filepath: PathLike, obj, indent=4, check_existing=False, compress: bool = False):
     """Write data to JSON file.
 
     Parameters
@@ -75,10 +75,14 @@ def write_json_data(filepath: PathLike, obj, indent=4, check_existing=False):
         number of spaces to indent by, by default 4
     check_existing : bool, optional
         if True, existing JSON file data will be merged with the new data object
+    compress : bool, optional
     """
+    kws = {} if not compress else {"separators": (",", ":")}
+    indent = 1 if compress else indent
+
     if not check_existing or not os.path.exists(filepath):
         with open(filepath, "w") as f_ptr:
-            json.dump(obj, f_ptr, indent=indent, default=default)
+            json.dump(obj, f_ptr, indent=indent, default=default, **kws)
     else:
         with open(filepath, "r+") as f_ptr:
             data = json.load(f_ptr)
@@ -92,6 +96,6 @@ def write_json_data(filepath: PathLike, obj, indent=4, check_existing=False):
             data = _remove_duplicates_from_dict(data)
 
             f_ptr.seek(0)  # rewind
-            json.dump(data, f_ptr, indent=indent, default=default)
+            json.dump(data, f_ptr, indent=indent, default=default, **kws)
             f_ptr.truncate()
     return filepath
