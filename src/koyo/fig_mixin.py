@@ -45,7 +45,7 @@ class FigureMixin(PDFMixin, PPTXMixin):
     def get_pptx_or_pdf_filename(self, filename: PathLike) -> str:
         """Get export filename."""
         filename = str(filename)
-        parts = filename.split(".")
+        parts = filename.rsplit(".", maxsplit=1)
         # if there are multiple ., then let's combine it using . but exclude the last one
         if len(parts) > 1:
             filename = ".".join(parts[:-1])
