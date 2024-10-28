@@ -313,7 +313,7 @@ def add_legend(
         Whether to sort the legend by tag name.
     """
     from matplotlib.patches import Patch
-    from natsort import natsorted
+    from natsort import natsorted, ns
 
     def _make_legend(n_col=1, loc="best"):
         return n_col, ax.legend(
@@ -350,7 +350,7 @@ def add_legend(
         max_height += tick.get_window_extent(rend).transformed(ax.transAxes.inverted()).height
 
     for tag, tag_to_color in legend_palettes.items():
-        tag_to_color_ = natsorted(tag_to_color.keys()) if sort_legend else list(tag_to_color.keys())
+        tag_to_color_ = natsorted(tag_to_color.keys(), alg=ns.REAL) if sort_legend else list(tag_to_color.keys())
         lh = [Patch(facecolor=tag_to_color[tag], label=tag) for tag in tag_to_color_]
         n_col = 1
         while True:
