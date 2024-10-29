@@ -3,7 +3,6 @@
 import os
 import platform
 import sys
-from pathlib import Path
 
 IS_WIN = sys.platform == "win32"
 IS_LINUX = sys.platform == "linux"
@@ -34,6 +33,7 @@ def get_cli_path(name: str, env_key: str = "") -> str:
     import os
     import sys
 
+    from pathlib import Path
     from koyo.utilities import running_as_pyinstaller_app
 
     env_var = f"{env_key}_{name.upper()}_PATH"
