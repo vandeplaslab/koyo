@@ -4,6 +4,18 @@ import gc
 import os
 import sys
 from contextlib import contextmanager, redirect_stdout
+import pathlib
+
+
+@contextmanager
+def fix_pathlib():
+    """Fix pathlib on Windows."""
+    posix_backup = pathlib.PosixPath
+    try:
+        pathlib.PosixPath = pathlib.WindowsPath
+        yield
+    finally:
+        pathlib.PosixPath = posix_backup
 
 
 @contextmanager
