@@ -2,9 +2,9 @@
 
 import gc
 import os
+import pathlib
 import sys
 from contextlib import contextmanager, redirect_stdout
-import pathlib
 
 
 @contextmanager
