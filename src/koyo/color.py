@@ -8,6 +8,13 @@ from ast import literal_eval
 import numpy as np
 
 
+def mpl_to_rgba_255(color: str | tuple | list) -> tuple[int, int, int, int]:
+    """Convert color from matplotlib to RGBA 255-scale."""
+    from matplotlib.colors import to_rgba_array
+
+    return tuple(to_rgba_array(color)[0].astype(np.uint8) * 255)
+
+
 def rgb_1_to_hex(color: tuple | list):
     """Convert RGB to Hex."""
     color = list(color)[0:3]

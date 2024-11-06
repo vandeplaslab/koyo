@@ -594,6 +594,7 @@ def _plot_image(
     elif not max_val:
         max_val = np.max(array[np.isfinite(array)])
 
+    text_color = plt.rcParams["text.color"]
     ticks, tick_labels = get_ticks_with_unit(min_val, max_val)
     fig, ax = plt.subplots(figsize=figsize)
     img = ax.imshow(array, vmax=max_val, cmap=colormap, aspect="equal")
@@ -606,12 +607,12 @@ def _plot_image(
             width="76%",
             xpos=0.12,
             ypos=-0.05,
-            labelcolor="white",
-            edgecolor="white",
+            labelcolor=text_color,
+            edgecolor=text_color,
         )
         cbar.mappable.set_clim(min_val, max_val)
     if as_title:
-        ax.set_title(title, color="white", fontsize=16)
+        ax.set_title(title, color=text_color, fontsize=16)
     else:
         add_label(
             ax,
@@ -655,6 +656,7 @@ def _plot_or_update_image(
     elif not max_val:
         max_val = np.max(array[np.isfinite(array)])
 
+    text_color = plt.rcParams["text.color"]
     ticks, tick_labels = get_ticks_with_unit(min_val, max_val)
     if img is None:
         img = ax.imshow(array, vmax=max_val, cmap=colormap, aspect="equal")
@@ -667,8 +669,8 @@ def _plot_or_update_image(
                 width="76%",
                 xpos=0.12,
                 ypos=-0.05,
-                labelcolor="white",
-                edgecolor="white",
+                labelcolor=text_color,
+                edgecolor=text_color,
             )
             cbar.mappable.set_clim(min_val, max_val)
     else:
@@ -680,7 +682,7 @@ def _plot_or_update_image(
             cbar.set_ticks(ticks)
             cbar.set_ticklabels(tick_labels)
     if as_title:
-        ax.set_title(title, color="white", fontsize=16)
+        ax.set_title(title, color=text_color, fontsize=16)
     else:
         add_label(
             ax,

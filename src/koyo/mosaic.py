@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 
+from koyo.visuals import fix_style
+
 if ty.TYPE_CHECKING:
     from PIL import Image
 
@@ -67,9 +69,12 @@ def fig_to_bytes(
     return buf
 
 
-def make_fig_title(title: str, width: int, n_cols: int, text_color: str = "white", font_size: int = 36) -> io.BytesIO:
+def make_fig_title(title: str, width: int, n_cols: int, text_color: str = "auto", font_size: int = 36) -> io.BytesIO:
     """Make title for a single image."""
-    fig = plt.figure(figsize=(width * n_cols / 72, 1))
+    n_rows = max(1, title.count("\n"))
+    fig = plt.figure(figsize=(width * n_cols / 72, n_rows))
+    text_color = text_color if text_color != "auto" else plt.rcParams["text.color"]
+
     fig.text(
         0.5,
         0.5,
@@ -196,20 +201,23 @@ def _get_mosaic_dims(n: int, width: int, height: int, n_cols: int = 0) -> tuple[
 def plot_mosaic(
     data: dict[str, np.ndarray],
     title: str = "",
-    colormap: str = "viridis",
+    colormap: str | dict[str, str] = "viridis",
     colorbar: bool = True,
     dpi: int = 100,
     min_val: float | None = None,
     max_val: float | None = None,
     figsize: tuple[float, float] = (6, 6),
+    n_cols: int | None = None,
     style: str = "dark_background",
+    color: tuple[int, int, int, int] = (0, 0, 0, 0),
+    placeholder_color: tuple[int, int, int, int] = (0, 0, 0, 255),
 ) -> Image:
     """Plot mosaic."""
     from koyo.visuals import _plot_or_update_image
 
     img, cbar = None, None
     figures = {}
-    with plt.style.context(style):
+    with plt.style.context(fix_style(style)):
         fig, ax = plt.subplots(figsize=figsize)
         ax.axis("off")
 
@@ -222,12 +230,12 @@ def plot_mosaic(
                 img=img,
                 cbar=cbar,
                 colorbar=colorbar,
-                colormap=colormap,
+                colormap=colormap if isinstance(colormap, str) else colormap[key],
                 title=key,
             )
             figures[key] = fig_to_bytes(fig, close=False, dpi=dpi)
         plt.close(fig)
-        image = merge_mosaic(figures, title=title)
+        image = merge_mosaic(figures, title=title, n_cols=n_cols, placeholder_color=placeholder_color, color=color)
     return image
 
 
@@ -252,7 +260,7 @@ def plot_mosaic_individual(
     title_color = {} if title_color is None else title_color
 
     figures = {}
-    with plt.style.context(style):
+    with plt.style.context(fix_style(style)):
         for key in data:
             fig, ax = _plot_image(
                 data[key],
@@ -291,7 +299,7 @@ def plot_mosaic_line_individual(
     title_color = {} if title_color is None else title_color
 
     figures = {}
-    with plt.style.context(style):
+    with plt.style.context(fix_style(style)):
         for key in data:
             fig, ax = _plot_line(
                 data[key][0],

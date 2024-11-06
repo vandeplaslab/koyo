@@ -55,6 +55,16 @@ class FigureMixin(PDFMixin, PPTXMixin):
             return f"{filename}.pdf"
         return filename
 
+    def has_slides(self, pptx_filename: Path) -> bool:
+        """Check whether PPTX has slides."""
+        from pptx import Presentation
+
+        if pptx_filename.exists():
+            pptx = Presentation(pptx_filename)
+            has_slides = bool(pptx.slides)
+            return has_slides
+        return False
+
     def get_actual_output_filename(self, output_dir: PathLike, pptx_or_pdf_path: PathLike) -> Path:
         """Get output filename, depending on the export format."""
         if self.as_pptx_or_pdf:

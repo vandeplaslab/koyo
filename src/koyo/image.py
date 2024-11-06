@@ -66,9 +66,9 @@ def reshape_array(array: np.ndarray, image_shape: ty.Tuple[int, int], pixel_inde
 
 def unshape_array(image: np.ndarray, pixel_index: np.ndarray) -> np.ndarray:
     """Retrieve original vector of intensities from an image."""
-    image_flat = image.reshape(-1)
-    y_data = image_flat[pixel_index]
-    return y_data
+    if image.ndim == 3:  # channels, height, width
+        return image.reshape(image.shape[0], -1)[:, pixel_index].T
+    return image.reshape(-1)[pixel_index]
 
 
 def reshape_array_from_coordinates(
