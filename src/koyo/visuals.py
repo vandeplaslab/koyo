@@ -517,10 +517,10 @@ def inset_colorbar(
     cax = ax.inset_axes([xpos, ypos, width, height])
     cax.tick_params(labelcolor=labelcolor, labelsize=16)
     cbar = plt.colorbar(im, cax=cax, orientation=kwargs.get("orientation", "horizontal"), pad=0.1, ticks=ticks)
-    if ticklabels:
-        cax.ax.set_xticklabels(ticklabels)
     cbar.outline.set_edgecolor(edgecolor)
     cbar.outline.set_linewidth(1)
+    if ticklabels:
+        cbar.set_ticklabels(ticklabels)
     return ax, cax, cbar
 
 
@@ -603,7 +603,7 @@ def _plot_image(
             ax,
             img,
             ticks=ticks,
-            tick_labels=tick_labels,
+            ticklabels=tick_labels,
             width="76%",
             xpos=0.12,
             ypos=-0.05,
@@ -665,7 +665,7 @@ def _plot_or_update_image(
                 ax,
                 img,
                 ticks=ticks,
-                tick_labels=tick_labels,
+                ticklabels=tick_labels,
                 width="76%",
                 xpos=0.12,
                 ypos=-0.05,

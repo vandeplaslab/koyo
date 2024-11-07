@@ -166,6 +166,45 @@ def colocalization(img_a: np.ndarray, img_b: np.ndarray) -> float:
     return cosine_similarity(_preprocess(img_a), _preprocess(img_b))[0, 0]
 
 
+def colocalization_matrix(images: np.ndarray, size: ty.Tuple[int, ...] = (3, 3)) -> np.ndarray:
+    """
+    Calculates level of colocalization between all pairs of images in a list of ion images.
+    If many checks are needed, it is usually faster to generate the entire matrix than to do
+    many separate calls to "colocalization".
+
+    Citation: Ovchinnikova et al. (2020) ColocML. https://doi.org/10.1093/bioinformatics/btaa085
+
+    Parameters
+    ----------
+    images : List[np.ndarray]
+        list of ion images
+    size : Tuple[int, ...]
+        size of the median filter.
+
+    Returns
+    -------
+    similarity_matrix : np.ndarray
+        colocalization similarity matrix
+    """
+    from scipy.ndimage import median_filter
+    from sklearn.metrics.pairwise import pairwise_kernels
+
+    assert images.ndim == 3, "Expected 2D array."  # flat images
+
+    count = images.shape[0]
+    if count == 0:
+        similarity_matrix = np.ones((0, 0))
+    elif count == 1:
+        similarity_matrix = np.ones((1, 1))
+    else:
+        h, w = images[0].shape
+        flat_images = np.vstack([i.flatten() for i in images])
+        flat_images[flat_images < np.quantile(flat_images, 0.5, axis=1, keepdims=True)] = 0
+        filtered_images = median_filter(images.reshape((count, h, w)), (1, *size)).reshape((count, h * w))
+        similarity_matrix = pairwise_kernels(filtered_images, metric="cosine")
+    return similarity_matrix
+
+
 def pearson_similarity(img_a: np.ndarray, img_b: np.ndarray, size: ty.Tuple[int, int] = (3, 3)) -> float:
     """Calculate degree of similarity between two images using Pearson correlation.
 
