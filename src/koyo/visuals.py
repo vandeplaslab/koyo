@@ -257,9 +257,7 @@ def make_legend_handles(
     return handles
 
 
-def add_patches(
-    axs: ty.List, windows: ty.List[ty.Tuple[float, float]], colors: ty.Optional[ty.List] = None, alpha: float = 0.5
-):
+def add_patches(axs: list, windows: list[tuple[float, float]], colors: list | None = None, alpha: float = 0.5):
     """Add rectangular patches associated with the peak."""
     from matplotlib.patches import Rectangle
 
@@ -271,7 +269,7 @@ def add_patches(
         ax.add_patch(Rectangle((xmin, 0), xmax - xmin, ax.get_ylim()[1], alpha=alpha, color=color))
 
 
-def add_scalebar(ax, px_size: ty.Optional[float], color="k"):
+def add_scalebar(ax, px_size: float | None, color="k"):
     """Add scalebar to figure."""
     try:
         from matplotlib_scalebar.scalebar import ScaleBar
@@ -723,3 +721,27 @@ def _plot_line(
         fig.patch.set_linewidth(2)
         fig.patch.set_edgecolor(border_color)
     return fig, ax
+
+
+def plot_multiple_images(
+    data: dict[str, np.ndarray],
+    cmap: str | dict[str, str] = "viridis",
+    style: str = "dark_background",
+    title: str = "",
+    figsize: tuple[int, int] = (10, 10),
+    one_row: bool = False,
+    n_cols: int = 0,
+) -> Image:
+    """Plot a pair of images."""
+    from koyo.mosaic import plot_mosaic
+
+    if one_row:
+        n_cols = len(data)
+    return plot_mosaic(
+        data,
+        colormap=cmap,
+        style=style,
+        figsize=figsize,
+        title=title,
+        n_cols=n_cols,
+    )
