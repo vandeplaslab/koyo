@@ -16,6 +16,7 @@ from koyo.typing import PathLike
 from koyo.utilities import is_above_version
 
 if ty.TYPE_CHECKING:
+    import pandas as pd
     from matplotlib.collections import LineCollection
     from matplotlib.colorbar import Colorbar
     from matplotlib.image import AxesImage
@@ -731,6 +732,7 @@ def plot_multiple_images(
     figsize: tuple[int, int] = (10, 10),
     one_row: bool = False,
     n_cols: int = 0,
+    highlight: str | None = None,
 ) -> Image:
     """Plot a pair of images."""
     from koyo.mosaic import plot_mosaic
@@ -744,4 +746,37 @@ def plot_multiple_images(
         figsize=figsize,
         title=title,
         n_cols=n_cols,
+        highlight=highlight,
     )
+
+
+def plot_correlation(
+    correlation: pd.DataFrame,
+    cmap: str = "coolwarm",
+    vmin: float = -1,
+    vmax: float = 1,
+    figsize: tuple = (16, 16),
+    x_label: str = "",
+    y_label: str = "",
+    annot: bool = False,
+    tree: bool = False,
+) -> plt.Figure:
+    """Plot correlation matrix."""
+    import seaborn as sns
+
+    annot_kws = {}
+    if annot:
+        annot_kws = dict(annot=True, annot_kws={"size": 10, "weight": "bold"}, fmt=".2f")
+    tree_kws = {}
+    if tree:
+        tree_kws = dict(tree_kws={"linewidths": 2})
+
+    fig = sns.clustermap(correlation.T, cmap=cmap, vmin=vmin, vmax=vmax, figsize=figsize, **annot_kws, **tree_kws)
+    fig.ax_heatmap.tick_params(labelsize=12)
+    fig.ax_heatmap.set_xlabel(x_label, fontsize=16)
+    fig.ax_heatmap.set_ylabel(y_label, fontsize=16)
+    fig.ax_heatmap.set_xticklabels(fig.ax_heatmap.get_xticklabels(), rotation=45, ha="right")
+    fig.ax_heatmap.yaxis.set_tick_params(rotation=0)
+    cbar = fig.ax_heatmap.collections[0].colorbar
+    cbar.ax.tick_params(labelsize=10)
+    return fig.fig

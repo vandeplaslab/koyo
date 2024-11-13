@@ -211,6 +211,7 @@ def plot_mosaic(
     style: str = "dark_background",
     color: tuple[int, int, int, int] = (0, 0, 0, 0),
     placeholder_color: tuple[int, int, int, int] = (0, 0, 0, 255),
+    highlight: str | None = None,
 ) -> Image:
     """Plot mosaic."""
     from koyo.visuals import _plot_or_update_image
@@ -233,6 +234,11 @@ def plot_mosaic(
                 colormap=colormap if isinstance(colormap, str) else colormap[key],
                 title=key,
             )
+            if highlight and key == highlight:
+                # change ax title color
+                ax.title.set_color("red")
+            else:
+                ax.title.set_color(plt.rcParams["text.color"])
             figures[key] = fig_to_bytes(fig, close=False, dpi=dpi)
         plt.close(fig)
         image = merge_mosaic(figures, title=title, n_cols=n_cols, placeholder_color=placeholder_color, color=color)
