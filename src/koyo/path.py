@@ -23,7 +23,21 @@ def get_copy_path(path: PathLike) -> Path:
     return new_path
 
 
-def empty_directory(path: str) -> None:
+def remove_file(file: PathLike) -> None:
+    """Remove file."""
+    file = Path(file)
+    if file.exists():
+        if file.is_file():
+            try:
+                file.unlink()
+                logger.trace(f"Removed '{file}'")
+            except Exception as e:
+                logger.error(f"Failed to remove '{file}'. Reason: {e}")
+        else:
+            logger.error(f"Failed to remove '{file}'. Reason: Not a file - it's a directory.")
+
+
+def empty_directory(path: PathLike) -> None:
     """Recursively clear directory."""
     path = Path(path)
     if not path.exists():
@@ -40,6 +54,9 @@ def empty_directory(path: str) -> None:
         except Exception as e:
             print(f"Failed to delete {file_path}. Reason: {e}")
     shutil.rmtree(path, ignore_errors=True)
+
+
+remove_directory = empty_directory
 
 
 def open_directory(path: PathLike) -> None:

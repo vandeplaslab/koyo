@@ -21,7 +21,7 @@ def is_envvar_set(key: str) -> bool:
     return key in os.environ and os.environ[key]
 
 
-def get_cli_path(name: str, env_key: str = "") -> str:
+def get_cli_path(name: str, env_key: str = "", default: str = "") -> str:
     """Get path to imimspy executable.
 
     The path is determined in the following order:
@@ -68,4 +68,6 @@ def get_cli_path(name: str, env_key: str = "") -> str:
             script_path = base_path / f"{name}.exe"
             if script_path.exists():
                 return str(script_path)
+    if default:
+        return default
     raise RuntimeError(f"Could not find '{name}' executable.")
