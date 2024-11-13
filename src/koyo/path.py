@@ -52,7 +52,7 @@ def empty_directory(path: PathLike) -> None:
                 shutil.rmtree(file_path)
                 logger.trace(f"Deleted '{file_path}'")
         except Exception as e:
-            print(f"Failed to delete {file_path}. Reason: {e}")
+            logger.warning(f"Failed to delete {file_path}. Reason: {e}")
     shutil.rmtree(path, ignore_errors=True)
 
 
