@@ -287,7 +287,7 @@ def plot_mosaic_individual(
 
 def plot_mosaic_line_individual(
     data: dict[str, tuple[np.ndarray, np.ndarray]],
-    marker: float | None = None,
+    marker: float | dict[str, float] | None = None,
     x_label: str = "",
     y_label: str = "",
     title: str = "",
@@ -310,7 +310,7 @@ def plot_mosaic_line_individual(
             fig, ax = _plot_line(
                 data[key][0],
                 data[key][1],
-                marker=marker,
+                marker=marker[key] if isinstance(marker, dict) else marker,
                 title=key,
                 x_label=x_label,
                 y_label=y_label,
