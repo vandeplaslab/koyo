@@ -1,4 +1,6 @@
 """Fault handler."""
+
+from contextlib import suppress
 from pathlib import Path
 
 from loguru import logger
@@ -45,10 +47,17 @@ def maybe_submit_segfault(output_dir: PathLike) -> None:
         logger.error("There was a segmentation fault previously - submitting to Sentry if it's available.")
 
         # create backup of the segfault file
-        segfault_backup_path = Path(output_dir) / f"segfault_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-        segfault_path.rename(segfault_backup_path)
+        try:
+            segfault_backup_path = Path(output_dir) / f"segfault_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+            segfault_path.rename(segfault_backup_path)
 
-        # submit to Sentry
-        submit_sentry_attachment("Segfault detected", segfault_backup_path)
+            # submit to Sentry
+            submit_sentry_attachment("Segfault detected", segfault_backup_path)
+        except PermissionError:
+            with suppress(Exception):
+                submit_sentry_attachment("Segfault detected", segfault_path)
+            logger.exception("Failed to backup segfault file.")
+            return
+
     except Exception:
         logger.exception("Failed to submit segfault to Sentry.")
