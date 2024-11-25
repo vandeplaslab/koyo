@@ -110,6 +110,15 @@ class JSONCache:
             return ret
         return ""
 
+    def as_dict(self, exclude: ty.Optional[ty.Tuple[str, ...]] = None) -> dict:
+        """Get dictionary representation of the flags."""
+        if exclude is None:
+            exclude = ()
+        if self.exists():
+            data = self.read()
+            return {k: v for k, v in data.items() if k not in exclude}
+        return {}
+
     def print_summary(self, name: str = "", pre: str = "\t", sep: str = "\n"):
         """Print summary about JSON store."""
         if name:
@@ -123,9 +132,26 @@ class JSONCache:
 
     def read(self) -> ty.Dict:
         """Read data."""
+
+        def _convert(v):
+            if isinstance(v, str):
+                if v.lower() == "true":
+                    return True
+                elif v.lower() == "false":
+                    return False
+                elif v.isnumeric():
+                    return int(v)
+                try:
+                    return float(v)
+                except ValueError:
+                    return v
+            return v
+
         if self.exists():
             try:
-                return read_json_data(self.path)
+                data = read_json_data(self.path)
+                data = {k: _convert(v) for k, v in data.items()}
+                return data
             except JSONDecodeError:
                 warnings.warn(f"Failed to read JSON file: {self.path}")
         return {}
