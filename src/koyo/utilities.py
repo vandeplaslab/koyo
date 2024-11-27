@@ -18,6 +18,13 @@ if ty.TYPE_CHECKING:
     from koyo.fig_mixin import PptxPdfWrapper
 
 
+def get_unique_without_sort(seq: list) -> list:
+    """Get unique values without sorting."""
+    seen = set()
+    seen_add = seen.add
+    return [x for x in seq if not (x in seen or seen_add(x))]
+
+
 def ensure_output_dir_exists(
     output_dir: PathLike | None, pptx_or_pdf: PptxPdfWrapper | None = None
 ) -> tuple[bool, Path]:
