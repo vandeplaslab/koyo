@@ -42,7 +42,7 @@ class ProjectBase:
         self.project_dir.mkdir(exist_ok=True, parents=True)
         self._cache_dir = cache_dir
         self._log_dir = self.project_dir / "Logs"
-        self._fig_dir = self.project_dir / "Figures"
+        self._figures_dir = self.project_dir / "Figures"
         self._results_dir = self.project_dir / "Results"
         self._config = None
 
@@ -88,12 +88,12 @@ class ProjectBase:
         return self._log_dir
 
     @property
-    def fig_dir(self) -> Path:
+    def figures_dir(self) -> Path:
         """Return path to Figure directory."""
-        if self._fig_dir is None:
-            self._fig_dir = self.project_dir / "Figures"
-        self._fig_dir.mkdir(parents=True, exist_ok=True)
-        return self._fig_dir
+        if self._figures_dir is None:
+            self._figures_dir = self.project_dir / "Figures"
+        self._figures_dir.mkdir(parents=True, exist_ok=True)
+        return self._figures_dir
 
     @property
     def results_dir(self) -> Path:
