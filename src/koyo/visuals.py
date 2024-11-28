@@ -593,10 +593,14 @@ def _plot_image(
     elif not max_val:
         max_val = np.max(array[np.isfinite(array)])
 
+    kws = {}
+    if array.dtype in [np.uint, np.uint8, bool]:
+        kws["interpolation"] = "nearest"
+
     text_color = plt.rcParams["text.color"]
     ticks, tick_labels = get_ticks_with_unit(min_val, max_val)
     fig, ax = plt.subplots(figsize=figsize)
-    img = ax.imshow(array, vmax=max_val, cmap=colormap, aspect="equal")
+    img = ax.imshow(array, vmax=max_val, cmap=colormap, aspect="equal", **kws)
     if colorbar:
         _, _, cbar = inset_colorbar(
             ax,
@@ -655,10 +659,14 @@ def _plot_or_update_image(
     elif not max_val:
         max_val = np.max(array[np.isfinite(array)])
 
+    kws = {}
+    if array.dtype in [np.uint, np.uint8, bool]:
+        kws["interpolation"] = "nearest"
+
     text_color = plt.rcParams["text.color"]
     ticks, tick_labels = get_ticks_with_unit(min_val, max_val)
     if img is None:
-        img = ax.imshow(array, vmax=max_val, cmap=colormap, aspect="equal")
+        img = ax.imshow(array, vmax=max_val, cmap=colormap, aspect="equal", **kws)
         if colorbar:
             _, _, cbar = inset_colorbar(
                 ax,
