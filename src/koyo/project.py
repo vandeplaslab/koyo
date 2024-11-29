@@ -137,6 +137,11 @@ class ProjectBase:
         """Cleanup config."""
         raise NotImplementedError("Must implement method")
 
+    def save(self) -> None:
+        """Save project configuration."""
+        self._export()
+        logger.info(f"Project configuration saved to {self.filename}")
+
     @contextmanager
     def autosave(self) -> ty.Generator[None, None, None]:
         """Context manager to automatically save project configuration."""
