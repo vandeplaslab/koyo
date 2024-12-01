@@ -167,6 +167,11 @@ class ProjectBase:
             dump(project_config, f_ptr, indent=2)
 
     @property
+    def n_datasets(self) -> int:
+        """Get number of datasets."""
+        return len(self.datasets)
+
+    @property
     def datasets(self) -> list[str]:
         """List set of available datasets that have been registered to the project."""
         return list(self.project_config.get(self.DATASETS_KEY, {}).keys())
@@ -183,8 +188,3 @@ class ProjectBase:
     def dataset_path_iter(self) -> ty.Iterator[tuple[str, Path]]:
         """Iterator of dataset:path values."""
         yield from zip(self.datasets, self.paths)
-
-    @property
-    def n_datasets(self) -> int:
-        """Get number of datasets."""
-        return len(self.datasets)

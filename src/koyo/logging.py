@@ -7,6 +7,7 @@ import sys
 import typing as ty
 from functools import partial
 
+from koyo.typing import PathLike
 from koyo.utilities import find_nearest_value
 
 if ty.TYPE_CHECKING:
@@ -32,6 +33,37 @@ def timed_call(log_func: ty.Callable, message: str, *args: ty.Any, **kwargs: ty.
     with MeasureTimer() as timer:
         yield
     log_func(message + f" in {timer()}", *args, **kwargs)
+
+
+def set_logger(
+    verbosity: int,
+    no_color: bool,
+    log: PathLike | None = None,
+    logger: Logger = None,
+    enable: tuple[str, ...] = ("koyo",),
+):
+    """Setup logger."""
+    level = verbosity * 10
+    level, fmt, colorize, enqueue = get_loguru_config(level, no_color=no_color)
+    set_loguru_env(fmt, level, colorize, enqueue)
+    set_loguru_log(level=level.upper(), no_color=no_color, logger=logger)
+    for enable_ in enable:
+        logger.enable(enable_)
+    set_loguru_log(level=level.upper(), no_color=no_color)
+    # override koyo logger
+    if log:
+        set_loguru_log(
+            log,
+            level=level.upper(),  # type: ignore[attr-defined]
+            enqueue=enqueue,
+            colorize=False,
+            no_color=True,
+            catch=True,
+            diagnose=True,
+            logger=logger,
+            remove=False,
+        )
+    logger.debug(f"Activated logger with level '{level}'.")
 
 
 def get_logger() -> Logger:
@@ -121,7 +153,7 @@ def set_loguru_log(
     colorize: bool | None = None,
     remove: bool = True,
     logger: Logger = None,
-):
+) -> int:
     """Set loguru formatting."""
     if logger is None:
         from loguru import logger
@@ -138,4 +170,6 @@ def set_loguru_log(
 
     if remove:
         logger.remove(None)
-    logger.add(sink, level=level, format=fmt, colorize=not no_color, enqueue=enqueue, diagnose=diagnose, catch=catch)
+    return logger.add(
+        sink, level=level, format=fmt, colorize=not no_color, enqueue=enqueue, diagnose=diagnose, catch=catch
+    )
