@@ -10,10 +10,154 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 
+from koyo.typing import PathLike
 from koyo.visuals import fix_style
 
 if ty.TYPE_CHECKING:
     from PIL import Image
+
+
+class RectanglePacker:
+    """Rectangle packer."""
+
+    def __init__(self, min_width: int = 0, x_pad: int = 0, y_pad: int = 0):
+        self.free_rectangles = []  # List of free spaces (x, y, w, h)
+        self.placed_rectangles = []  # List of placed rectangles (x, y, w, h)
+        self.current_width = 0  # Current canvas width
+        self.current_height = 0  # Current canvas height
+        self.min_width = min_width
+        self.x_pad = x_pad
+        self.y_pad = y_pad
+
+    def initialize_canvas(self, initial_width: int, initial_height: int):
+        """
+        Initialize the canvas with a starting size.
+        """
+        self.current_width = max(initial_width, self.min_width)
+        self.current_height = initial_height
+        self.free_rectangles = [(0, 0, self.current_width, self.current_height)]
+
+    def place_rectangle(self, rect_width: int, rect_height: int) -> tuple[int, int]:
+        """
+        Place a rectangle of size (rect_width, rect_height) in the packing area.
+        Returns the (x, y) position if placed, or raises an error if no space is available.
+        """
+        padded_width = rect_width + self.x_pad * 2
+        padded_height = rect_height + self.y_pad * 2
+
+        for i, (x, y, w, h) in enumerate(self.free_rectangles):
+            if padded_width <= w and padded_height <= h:
+                # Place the rectangle
+                self.placed_rectangles.append((x + self.x_pad, y + self.y_pad, rect_width, rect_height))
+                self.split_free_space(i, x, y, padded_width, padded_height)
+                return x + self.x_pad, y + self.y_pad
+
+        # If no space is found, expand the canvas
+        self.expand_canvas(padded_width, padded_height)
+        return self.place_rectangle(rect_width, rect_height)
+
+    def expand_canvas(self, rect_width: int, rect_height: int):
+        """
+        Expand the canvas size to accommodate a rectangle that doesn't fit.
+        """
+        new_width = max(self.current_width, rect_width)
+        new_height = self.current_height + rect_height
+        self.free_rectangles.append((0, self.current_height, new_width, rect_height))
+        self.current_width = new_width
+        self.current_height = new_height
+
+    def split_free_space(self, index: int, x: int, y: int, rect_width: int, rect_height: int):
+        """
+        Split the free space at index into smaller regions after placing a rectangle.
+        """
+        original_x, original_y, original_w, original_h = self.free_rectangles.pop(index)
+
+        # Space to the right of the rectangle
+        right_space = (x + rect_width, y, original_x + original_w - (x + rect_width), rect_height)
+        if right_space[2] > 0 and right_space[3] > 0:
+            self.free_rectangles.append(right_space)
+
+        # Space below the rectangle
+        below_space = (x, y + rect_height, original_w, original_y + original_h - (y + rect_height))
+        if below_space[2] > 0 and below_space[3] > 0:
+            self.free_rectangles.append(below_space)
+
+        # Remaining space to the left and above (if applicable)
+        left_space = (original_x, original_y, x - original_x, original_h)
+        if left_space[2] > 0 and left_space[3] > 0:
+            self.free_rectangles.append(left_space)
+
+        above_space = (original_x, original_y, original_w, y - original_y)
+        if above_space[2] > 0 and above_space[3] > 0:
+            self.free_rectangles.append(above_space)
+
+        # Sort free spaces by area (smaller spaces prioritized for tight packing)
+        self.free_rectangles.sort(key=lambda r: r[2] * r[3])
+
+    def get_packed_area(self) -> tuple[int, int]:
+        """
+        Returns the width and height of the smallest rectangle that fits all placed items.
+        """
+        max_width = max(x + w for x, y, w, h in self.placed_rectangles)
+        max_height = max(y + h for x, y, w, h in self.placed_rectangles)
+        return max(max_width, self.min_width), max_height
+
+
+def get_positions(
+    images: list[Image], min_width: int = 0, x_pad: int = 0, y_pad: int = 0
+) -> tuple[tuple[int, int], list[tuple[int, int]], list[Image]]:
+    """Get positions and canvas size."""
+    packer = RectanglePacker(min_width=min_width, x_pad=x_pad, y_pad=y_pad)
+
+    # Sort images by area (descending) for better packing
+    images = sorted(images, key=lambda im: im.width * im.height, reverse=True)
+
+    # Start with an initial canvas size
+    initial_width = max(im.width for im in images) + x_pad * 2
+    initial_height = sum(im.height for im in images) // len(images) + y_pad * 2
+    packer.initialize_canvas(initial_width, initial_height)
+
+    # Pack each image
+    packed_positions = []
+    for image in images:
+        rect_width, rect_height = image.width, image.height
+        position = packer.place_rectangle(rect_width, rect_height)
+        packed_positions.append(position)
+
+    # Get the final bounding box for the packed items
+    packed_width, packed_height = packer.get_packed_area()
+    return (packed_width, packed_height), packed_positions, images
+
+
+def pack_images(images: list[Image], min_width: int = 0, x_pad: int = 0, y_pad: int = 0) -> Image:
+    """
+    Packs a list of images into a high-density rectangle packing with automatic canvas sizing.
+    """
+    packer = RectanglePacker(min_width=min_width, x_pad=x_pad, y_pad=y_pad)
+
+    # Sort images by area (descending) for better packing
+    images = sorted(images, key=lambda im: im.width * im.height, reverse=True)
+
+    # Start with an initial canvas size
+    initial_width = max(im.width for im in images) + x_pad * 2
+    initial_height = sum(im.height for im in images) // len(images) + y_pad * 2
+    packer.initialize_canvas(initial_width, initial_height)
+
+    # Pack each image
+    packed_positions = []
+    for image in images:
+        rect_width, rect_height = image.width, image.height
+        position = packer.place_rectangle(rect_width, rect_height)
+        packed_positions.append((image, position))
+
+    # Get the final bounding box for the packed items
+    packed_width, packed_height = packer.get_packed_area()
+
+    # Create a canvas to draw the packed images
+    canvas = Image.new("RGB", (packed_width, packed_height), (0, 0, 0))
+    for image, (x, y) in packed_positions:
+        canvas.paste(image, (x, y))
+    return canvas
 
 
 def add_label(
@@ -97,12 +241,134 @@ def merge_mosaic(
     color: tuple[int, ...] = (0, 0, 0, 0),  # black
     allow_placeholder: bool = False,
     placeholder_color: tuple[int, ...] = (0, 0, 0, 255),  # black
+    x_pad: int = 0,
+    y_pad: int = 0,
 ) -> Image:
     """Merge images."""
-    nr, nc, w, h = _get_mosaic_dims_for_list(items, n_cols=n_cols)
+    nr, nc, w, h = _get_mosaic_dims_for_list(items, n_cols=n_cols, x_pad=x_pad, y_pad=y_pad)
     if title:
         title_buf = make_fig_title(title, w, nc)
-    return _merge_mosaic(nr, nc, w, h, items, title_buf, silent, color, allow_placeholder, placeholder_color)
+    return _merge_mosaic(
+        nr, nc, w, h, items, title_buf, silent, color, allow_placeholder, placeholder_color, x_pad=x_pad, y_pad=y_pad
+    )
+
+
+def merge_mosaic_packed(
+    items: dict[str, io.BytesIO],
+    title_buf: io.BytesIO | None = None,
+    title: str = "",
+    min_width: int = 0,
+    silent: bool = True,
+    color: tuple[int, ...] = (0, 0, 0, 0),  # black
+    allow_placeholder: bool = False,
+    placeholder_color: tuple[int, ...] = (0, 0, 0, 255),  # black
+    x_pad: int = 0,
+    y_pad: int = 0,
+):
+    """Pack images tightly into a grid."""
+    from PIL import Image
+
+    images = list(Image.open(buf) for buf in items.values())
+    (w, h), positions, images = get_positions(images, min_width=min_width, x_pad=x_pad, y_pad=y_pad)
+    if title:
+        title_buf = make_fig_title(title, w, 1)
+
+    if title_buf is not None:
+        title = Image.open(title_buf)
+        dst = Image.new("RGB", (w, h + title.height), color=color)
+        dst.paste(title, (0, 0))
+        title.close()
+        del title_buf
+        y_offset = title.height
+    else:
+        dst = Image.new("RGB", (w, h), color=color)
+        y_offset = 0
+    with tqdm(desc="Merging images...", total=len(images), disable=silent) as pbar:
+        for im, (x, y) in zip(images, positions):
+            dst.paste(im, (x, y + y_offset))
+            pbar.update(1)
+    return dst
+
+
+def merge_mosaic_from_dir(
+    image_dir: PathLike,
+    title: str = "",
+    n_cols: int | None = None,
+    x_pad: int = 0,
+    y_pad: int = 0,
+) -> Image:
+    """Merge images from a directory."""
+    items = {}
+    for filename in image_dir.glob("*"):
+        if filename.is_file():
+            with open(filename, "rb") as f:
+                items[filename.stem] = io.BytesIO(f.read())
+    return merge_mosaic(items, title=title, n_cols=n_cols, x_pad=x_pad, y_pad=y_pad)
+
+
+def merge_mosaic_with_columns(
+    image_dir: PathLike | list[io.BytesIO],
+    n_cols: int,
+    x_pad: int = 0,
+    y_pad: int = 0,
+    placeholder_color: tuple[int, ...] = (0, 0, 0, 255),  # black
+) -> Image:
+    """
+    Merge images from a directory into a grid with a fixed number of columns.
+    """
+    # Load images into a list
+    from PIL import Image
+
+    items = []
+    if isinstance(image_dir, list):
+        for buf in image_dir:
+            with Image.open(buf) as im:
+                items.append((im.copy(), im.width, im.height))
+    else:
+        for filename in image_dir.glob("*"):
+            if filename.is_file():
+                with open(filename, "rb") as f:
+                    with Image.open(io.BytesIO(f.read())) as im:
+                        items.append((im.copy(), im.width, im.height))
+
+    if not items:
+        raise ValueError("No images found in the specified directory.")
+
+    # Calculate the number of rows
+    num_images = len(items)
+    n_rows = ceil(num_images / n_cols)
+
+    # Determine the width of each column and height of each row
+    column_widths = [0] * n_cols
+    row_heights = [0] * n_rows
+
+    # Assign images to the grid
+    grid = [[None for _ in range(n_cols)] for _ in range(n_rows)]
+    for idx, (im, width, height) in enumerate(items):
+        row = idx // n_cols
+        col = idx % n_cols
+        grid[row][col] = im
+        column_widths[col] = max(column_widths[col], width)
+        row_heights[row] = max(row_heights[row], height)
+
+    # Calculate the total mosaic dimensions
+    mosaic_width = sum(column_widths) + (n_cols - 1) * x_pad
+    mosaic_height = sum(row_heights) + (n_rows - 1) * y_pad
+
+    # Create the output mosaic
+    mosaic = Image.new("RGB", (mosaic_width, mosaic_height), color=placeholder_color)
+
+    # Place images in the mosaic
+    y_offset = 0
+    for row_idx, row in enumerate(grid):
+        x_offset = 0
+        for col_idx, im in enumerate(row):
+            if im:
+                mosaic.paste(im, (x_offset, y_offset))
+            x_offset += column_widths[col_idx] + x_pad
+        y_offset += row_heights[row_idx] + y_pad
+
+    return mosaic
 
 
 def _merge_mosaic(
@@ -115,7 +381,9 @@ def _merge_mosaic(
     silent: bool = True,
     color: tuple[int, ...] = (0, 0, 0, 0),
     allow_placeholder: bool = False,
-    placeholder_color: tuple[int, ...] = (128, 0, 0, 255),
+    placeholder_color: tuple[int, ...] = (0, 0, 0, 255),
+    x_pad: int = 0,
+    y_pad: int = 0,
 ) -> Image:
     from PIL import Image
 
@@ -133,17 +401,17 @@ def _merge_mosaic(
     k = 0  # image counter
     with tqdm(desc="Merging images...", total=len(filelist), disable=silent) as pbar:
         for i in range(n_rows):  # iterate over rows
-            y = height * i + y_offset
+            y = height * i + y_offset + y_pad
             for j in range(n_cols):  # iterate over columns
                 # load image
                 try:
                     filename = filelist[k]
                     if filename:
                         with Image.open(filename) as im:
-                            x = width * j
+                            x = width * j + x_pad
                             dst.paste(im, (x, y))
                     elif filename is None and allow_placeholder:
-                        x = width * j
+                        x = width * j + x_pad
                         dst.paste(Image.new("RGB", (width, height), color=placeholder_color), (x, y))
                     k += 1  # increment image counter
                     pbar.update(1)
@@ -153,12 +421,19 @@ def _merge_mosaic(
 
 
 def _get_mosaic_dims_for_list(
-    items: dict[str, io.BytesIO], n_cols: int | None = 0, check_size_of_all: bool = True
+    items: dict[str, io.BytesIO],
+    n_cols: int | None = 0,
+    check_size_of_all: bool = True,
+    x_pad: int = 0,
+    y_pad: int = 0,
 ) -> tuple[int, int, int, int]:
     from PIL import Image
 
     if n_cols is None:
         n_cols = 0
+
+    x_pad = x_pad * 2
+    y_pad = y_pad * 2
 
     widths, heights = [], []
     if check_size_of_all:
@@ -166,8 +441,8 @@ def _get_mosaic_dims_for_list(
             if buf is None:
                 continue
             with Image.open(buf) as im:
-                widths.append(im.width)
-                heights.append(im.height)
+                widths.append(im.width + x_pad)
+                heights.append(im.height + y_pad)
         widths = np.unique(widths)
         heights = np.unique(heights)
         width, height = np.max(widths), np.max(heights)

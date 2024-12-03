@@ -1,8 +1,10 @@
 """Compression utilities."""
+
 import os
 import zipfile
 
 from loguru import logger
+from tqdm import tqdm
 
 from koyo.typing import PathLike
 
@@ -22,5 +24,19 @@ def unzip_directory(path_to_zip: PathLike, output_dir: PathLike, remove_archive:
     if remove_archive:  # Remove archive :
         logger.debug("Archive %s removed" % path_to_zip)
         os.remove(path_to_zip)
-
     return path_to_file
+
+
+def zip_directory(path_to_directory: PathLike, output_dir: PathLike) -> PathLike:
+    """Zip directory."""
+    logger.debug("Zipping directory...")
+    # zip directory
+    zip_file_object = zipfile.ZipFile(output_dir, "w", zipfile.ZIP_DEFLATED)
+    for root, _, files in tqdm(os.walk(path_to_directory)):
+        for file in files:
+            zip_file_object.write(
+                os.path.join(root, file), os.path.relpath(os.path.join(root, file), path_to_directory)
+            )
+    zip_file_object.close()
+    logger.debug("Zipped directory")
+    return output_dir

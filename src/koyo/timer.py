@@ -154,7 +154,8 @@ class MeasureTimer:
 
     def __repr__(self) -> str:
         """Return nicely formatted execution time."""
-        return f"{self.__class__.__name__}<total={self()}"
+        return self()
+        # return f"{self.__class__.__name__}<total={self()}"
 
     def __str__(self) -> str:
         """Return nicely formatted execution time."""
