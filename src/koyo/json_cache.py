@@ -161,6 +161,12 @@ class JSONCache:
         self._dir_path.mkdir(parents=True, exist_ok=True)
         write_json_data(self.path, data)
 
+    def save(self, path: PathLike):
+        """Save data to disk."""
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        write_json_data(path, self.read())
+
     def get_key(self, key: str, default=None):
         """Read flag from the flag file."""
         if not self.exists():

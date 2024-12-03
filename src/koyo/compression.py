@@ -32,7 +32,8 @@ def zip_directory(path_to_directory: PathLike, output_dir: PathLike) -> PathLike
     logger.debug("Zipping directory...")
     # zip directory
     zip_file_object = zipfile.ZipFile(output_dir, "w", zipfile.ZIP_DEFLATED)
-    for root, _, files in tqdm(os.walk(path_to_directory)):
+    files = list(os.walk(path_to_directory))
+    for root, _, files in tqdm(files, desc="Zipping", unit="file"):
         for file in files:
             zip_file_object.write(
                 os.path.join(root, file), os.path.relpath(os.path.join(root, file), path_to_directory)
