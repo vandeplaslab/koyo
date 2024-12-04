@@ -76,6 +76,7 @@ def reshape_array_from_coordinates(
     image_shape: ty.Tuple[int, int],
     coordinates: np.ndarray,
     fill_value: float = 0,
+    offset: int = 0,
 ):
     """Reshape array based on xy coordinates.
 
@@ -84,18 +85,18 @@ def reshape_array_from_coordinates(
     dtype = np.float32 if np.isnan(fill_value) else array.dtype
     im = np.full(image_shape, fill_value=fill_value, dtype=dtype)
     try:
-        im[coordinates[:, 1] - 1, coordinates[:, 0] - 1] = array
+        im[coordinates[:, 1] - offset, coordinates[:, 0] - offset] = array
     except IndexError:
-        im[coordinates[:, 0] - 1, coordinates[:, 1] - 1] = array
+        im[coordinates[:, 0] - offset, coordinates[:, 1] - offset] = array
     return im
 
 
-def flatten_array_from_coordinates(array: np.ndarray, coordinates: np.ndarray) -> np.ndarray:
+def flatten_array_from_coordinates(array: np.ndarray, coordinates: np.ndarray, offset: int = 0) -> np.ndarray:
     """Flatten array based on xy coordinates."""
     try:
-        return array[coordinates[:, 1] - 1, coordinates[:, 0] - 1]
+        return array[coordinates[:, 1] - offset, coordinates[:, 0] - offset]
     except IndexError:
-        return array[coordinates[:, 0] - 1, coordinates[:, 1] - 1]
+        return array[coordinates[:, 0] - offset, coordinates[:, 1] - offset]
 
 
 def reshape_array_batch(
@@ -121,6 +122,7 @@ def reshape_array_batch_from_coordinates(
     image_shape: ty.Tuple[int, int],
     coordinates: np.ndarray,
     fill_value: int = 0,
+    offset: int = 0,
 ):
     """Batch reshape image.
 
@@ -133,10 +135,10 @@ def reshape_array_batch_from_coordinates(
     im = np.full((n, *image_shape), fill_value=fill_value, dtype=dtype)
     try:
         for i in range(n):
-            im[i, coordinates[:, 1] - 1, coordinates[:, 0] - 1] = array[:, i]
+            im[i, coordinates[:, 1] - offset, coordinates[:, 0] - offset] = array[:, i]
     except IndexError:
         for i in range(n):
-            im[i, coordinates[:, 0] - 1, coordinates[:, 1] - 1] = array[:, i]
+            im[i, coordinates[:, 0] - offset, coordinates[:, 1] - offset] = array[:, i]
     return im
 
 
