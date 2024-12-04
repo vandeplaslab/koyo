@@ -72,13 +72,30 @@ def unshape_array(image: np.ndarray, pixel_index: np.ndarray) -> np.ndarray:
 
 
 def reshape_array_from_coordinates(
-    array: np.ndarray, image_shape: ty.Tuple[int, int], coordinates: np.ndarray, fill_value: float = 0
+    array: np.ndarray,
+    image_shape: ty.Tuple[int, int],
+    coordinates: np.ndarray,
+    fill_value: float = 0,
 ):
-    """Reshape array based on xy coordinates."""
+    """Reshape array based on xy coordinates.
+
+    This function assumes that the coordinates are 1-indexed.
+    """
     dtype = np.float32 if np.isnan(fill_value) else array.dtype
     im = np.full(image_shape, fill_value=fill_value, dtype=dtype)
-    im[coordinates[:, 1] - 1, coordinates[:, 0] - 1] = array
+    try:
+        im[coordinates[:, 1] - 1, coordinates[:, 0] - 1] = array
+    except IndexError:
+        im[coordinates[:, 0] - 1, coordinates[:, 1] - 1] = array
     return im
+
+
+def flatten_array_from_coordinates(array: np.ndarray, coordinates: np.ndarray) -> np.ndarray:
+    """Flatten array based on xy coordinates."""
+    try:
+        return array[coordinates[:, 1] - 1, coordinates[:, 0] - 1]
+    except IndexError:
+        return array[coordinates[:, 0] - 1, coordinates[:, 1] - 1]
 
 
 def reshape_array_batch(
@@ -100,9 +117,15 @@ def reshape_array_batch(
 
 
 def reshape_array_batch_from_coordinates(
-    array: np.ndarray, image_shape: ty.Tuple[int, int], coordinates: np.ndarray, fill_value: int = 0
+    array: np.ndarray,
+    image_shape: ty.Tuple[int, int],
+    coordinates: np.ndarray,
+    fill_value: int = 0,
 ):
-    """Batch reshape image."""
+    """Batch reshape image.
+
+    This function assumes that the coordinates are 1-indexed.
+    """
     if array.ndim != 2:
         raise ValueError("Expected 2-D array.")
     n = array.shape[1]
