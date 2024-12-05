@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import typing as ty
+from functools import lru_cache
 from math import ceil
 
 import matplotlib.pyplot as plt
@@ -11,6 +12,7 @@ import numpy as np
 from tqdm import tqdm
 
 from koyo.typing import PathLike
+from koyo.utilities import rotate
 from koyo.visuals import fix_style
 
 if ty.TYPE_CHECKING:
@@ -30,9 +32,7 @@ class RectanglePacker:
         self.y_pad = y_pad
 
     def initialize_canvas(self, initial_width: int, initial_height: int):
-        """
-        Initialize the canvas with a starting size.
-        """
+        """Initialize the canvas with a starting size."""
         self.current_width = max(initial_width, self.min_width)
         self.current_height = initial_height
         self.free_rectangles = [(0, 0, self.current_width, self.current_height)]
@@ -57,9 +57,7 @@ class RectanglePacker:
         return self.place_rectangle(rect_width, rect_height)
 
     def expand_canvas(self, rect_width: int, rect_height: int):
-        """
-        Expand the canvas size to accommodate a rectangle that doesn't fit.
-        """
+        """Expand the canvas size to accommodate a rectangle that doesn't fit."""
         new_width = max(self.current_width, rect_width)
         new_height = self.current_height + rect_height
         self.free_rectangles.append((0, self.current_height, new_width, rect_height))
@@ -67,9 +65,7 @@ class RectanglePacker:
         self.current_height = new_height
 
     def split_free_space(self, index: int, x: int, y: int, rect_width: int, rect_height: int):
-        """
-        Split the free space at index into smaller regions after placing a rectangle.
-        """
+        """Split the free space at index into smaller regions after placing a rectangle."""
         original_x, original_y, original_w, original_h = self.free_rectangles.pop(index)
 
         # Space to the right of the rectangle
@@ -95,9 +91,7 @@ class RectanglePacker:
         self.free_rectangles.sort(key=lambda r: r[2] * r[3])
 
     def get_packed_area(self) -> tuple[int, int]:
-        """
-        Returns the width and height of the smallest rectangle that fits all placed items.
-        """
+        """Returns the width and height of the smallest rectangle that fits all placed items."""
         max_width = max(x + w for x, y, w, h in self.placed_rectangles)
         max_height = max(y + h for x, y, w, h in self.placed_rectangles)
         return max(max_width, self.min_width), max_height
@@ -130,9 +124,7 @@ def get_positions(
 
 
 def pack_images(images: list[Image], min_width: int = 0, x_pad: int = 0, y_pad: int = 0) -> Image:
-    """
-    Packs a list of images into a high-density rectangle packing with automatic canvas sizing.
-    """
+    """Packs a list of images into a high-density rectangle packing with automatic canvas sizing."""
     packer = RectanglePacker(min_width=min_width, x_pad=x_pad, y_pad=y_pad)
 
     # Sort images by area (descending) for better packing
@@ -188,7 +180,7 @@ def add_label(
 
 
 def fig_to_bytes(
-    fig: plt.Figure,
+    fig: plt.Figure | Image,
     bbox_inches: str | None = "tight",
     pad_inches: float = 0.1,
     dpi: int = 100,
@@ -197,19 +189,24 @@ def fig_to_bytes(
 ) -> io.BytesIO:
     """Convert matplotlib figure to bytes."""
     buf = io.BytesIO()
-    fig.savefig(
-        buf,
-        format="jpg",
-        dpi=dpi,
-        facecolor=fig.get_facecolor(),
-        edgecolor=fig.get_edgecolor(),
-        bbox_inches=bbox_inches,
-        pad_inches=pad_inches,
-        transparent=transparent,
-    )
+    if isinstance(fig, plt.Figure):
+        fig.savefig(
+            buf,
+            format="jpg",
+            dpi=dpi,
+            facecolor=fig.get_facecolor(),
+            edgecolor=fig.get_edgecolor(),
+            bbox_inches=bbox_inches,
+            pad_inches=pad_inches,
+            transparent=transparent,
+        )
+        if close:
+            plt.close(fig)
+    else:
+        fig.save(buf, format="PNG")
+        if close:
+            fig.close()
     buf.seek(0)
-    if close:
-        plt.close(fig)
     return buf
 
 
@@ -243,13 +240,28 @@ def merge_mosaic(
     placeholder_color: tuple[int, ...] = (0, 0, 0, 255),  # black
     x_pad: int = 0,
     y_pad: int = 0,
+    add_title_to_images: bool = False,
+    text_color: str | tuple[int, int, int, int] = (255, 255, 255, 255),
 ) -> Image:
     """Merge images."""
     nr, nc, w, h = _get_mosaic_dims_for_list(items, n_cols=n_cols, x_pad=x_pad, y_pad=y_pad)
     if title:
         title_buf = make_fig_title(title, w, nc)
     return _merge_mosaic(
-        nr, nc, w, h, items, title_buf, silent, color, allow_placeholder, placeholder_color, x_pad=x_pad, y_pad=y_pad
+        nr,
+        nc,
+        w,
+        h,
+        items,
+        title_buf,
+        silent,
+        color,
+        allow_placeholder,
+        placeholder_color,
+        x_pad=x_pad,
+        y_pad=y_pad,
+        add_title_to_images=add_title_to_images,
+        text_color=text_color,
     )
 
 
@@ -268,7 +280,7 @@ def merge_mosaic_packed(
     """Pack images tightly into a grid."""
     from PIL import Image
 
-    images = list(Image.open(buf) for buf in items.values())
+    images = [Image.open(buf) for buf in items.values()]
     (w, h), positions, images = get_positions(images, min_width=min_width, x_pad=x_pad, y_pad=y_pad)
     if title:
         title_buf = make_fig_title(title, w, 1)
@@ -313,9 +325,7 @@ def merge_mosaic_with_columns(
     y_pad: int = 0,
     placeholder_color: tuple[int, ...] = (0, 0, 0, 255),  # black
 ) -> Image:
-    """
-    Merge images from a directory into a grid with a fixed number of columns.
-    """
+    """Merge images from a directory into a grid with a fixed number of columns."""
     # Load images into a list
     from PIL import Image
 
@@ -384,9 +394,12 @@ def _merge_mosaic(
     placeholder_color: tuple[int, ...] = (0, 0, 0, 255),
     x_pad: int = 0,
     y_pad: int = 0,
+    add_title_to_images: bool = False,
+    text_color: str | tuple[int, int, int, int] = (255, 255, 255, 255),
 ) -> Image:
     from PIL import Image
 
+    names = list(items.keys())
     filelist = list(items.values())
     if title_buf is not None:
         title = Image.open(title_buf)
@@ -410,6 +423,8 @@ def _merge_mosaic(
                         with Image.open(filename) as im:
                             x = width * j + x_pad
                             dst.paste(im, (x, y))
+                        if add_title_to_images:
+                            _add_text_to_pil_image(dst, str(names[k]), (x, y), text_color)
                     elif filename is None and allow_placeholder:
                         x = width * j + x_pad
                         dst.paste(Image.new("RGB", (width, height), color=placeholder_color), (x, y))
@@ -487,6 +502,8 @@ def plot_mosaic(
     color: tuple[int, int, int, int] = (0, 0, 0, 0),
     placeholder_color: tuple[int, int, int, int] = (0, 0, 0, 255),
     highlight: str | None = None,
+    auto_rotate: bool = False,
+    **kwargs: ty.Any,
 ) -> Image:
     """Plot mosaic."""
     from koyo.visuals import _plot_or_update_image
@@ -500,7 +517,7 @@ def plot_mosaic(
         for key in data:
             img, cbar = _plot_or_update_image(
                 ax,
-                data[key],
+                rotate(data[key], auto_rotate),
                 min_val=min_val,
                 max_val=max_val,
                 img=img,
@@ -520,10 +537,49 @@ def plot_mosaic(
     return image
 
 
+def plot_mosaic_no_colorbar(
+    data: dict[str, np.ndarray],
+    colormap: str | dict[str, str] = "viridis",
+    min_val: float | None = None,
+    max_val: float | None = None,
+    title: str = "",
+    auto_rotate: bool = False,
+    n_cols: int | None = None,
+    style: str = "dark_background",
+    color: tuple[int, int, int, int] = (0, 0, 0, 0),
+    placeholder_color: tuple[int, int, int, int] = (0, 0, 0, 255),
+    **kwargs: ty.Any,
+) -> Image:
+    """Plot mosaic without colorbar."""
+    images = {}
+    with plt.style.context(style):
+        for key in data:
+            images[key] = fig_to_bytes(
+                convert_array_to_image(
+                    rotate(data[key], auto_rotate),
+                    title="",
+                    min_val=min_val,
+                    max_val=max_val,
+                    colormap=colormap if isinstance(colormap, str) else colormap[key],
+                )
+            )
+        image = merge_mosaic(
+            images,
+            title=title,
+            x_pad=5,
+            y_pad=5,
+            add_title_to_images=True,
+            n_cols=n_cols,
+            placeholder_color=placeholder_color,
+            color=color,
+        )
+    return image
+
+
 def plot_mosaic_individual(
     data: dict[str, np.ndarray],
     title: str = "",
-    colormap: str = "viridis",
+    colormap: str | dict[str, str] = "viridis",
     colorbar: bool = True,
     dpi: int = 100,
     min_val: float | None = None,
@@ -533,6 +589,10 @@ def plot_mosaic_individual(
     n_cols: int | None = None,
     border_color: dict[str, str] | None = None,
     title_color: dict[str, str] | None = None,
+    color: tuple[int, int, int, int] = (0, 0, 0, 0),
+    placeholder_color: tuple[int, int, int, int] = (0, 0, 0, 255),
+    auto_rotate: bool = False,
+    **kwargs: ty.Any,
 ) -> Image:
     """Plot mosaic."""
     from koyo.visuals import _plot_image
@@ -544,11 +604,11 @@ def plot_mosaic_individual(
     with plt.style.context(fix_style(style)):
         for key in data:
             fig, ax = _plot_image(
-                data[key],
+                rotate(data[key], auto_rotate),
                 min_val=min_val,
                 max_val=max_val,
                 colorbar=colorbar,
-                colormap=colormap,
+                colormap=colormap if isinstance(colormap, str) else colormap[key],
                 title=key,
                 figsize=figsize,
                 border_color=border_color.get(key, None),
@@ -556,7 +616,7 @@ def plot_mosaic_individual(
             )
             ax.axis("off")
             figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
-        image = merge_mosaic(figures, title=title, n_cols=n_cols)
+        image = merge_mosaic(figures, title=title, n_cols=n_cols, placeholder_color=placeholder_color, color=color)
     return image
 
 
@@ -596,3 +656,82 @@ def plot_mosaic_line_individual(
             figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
         image = merge_mosaic(figures, title=title, n_cols=n_cols)
     return image
+
+
+@lru_cache(maxsize=10)
+def find_font(name: str = "arial.ttf") -> str | None:
+    """Find font."""
+    # get list of fonts
+    from matplotlib import font_manager
+
+    fonts = font_manager.findSystemFonts(fontpaths=None, fontext="ttf")
+    for font in fonts:
+        if name in font.lower():
+            return font
+    return None
+
+
+def convert_array_to_image(
+    array: np.ndarray,
+    colormap: str = "viridis",
+    title: str = "",
+    min_val: float | None = None,
+    max_val: float | None = None,
+) -> Image:
+    """Convert a 2D array to a PNG image using a specified colormap."""
+    from matplotlib.colors import Normalize, to_hex
+    from PIL import Image
+
+    # Define the colormap
+    cmap = plt.get_cmap(colormap)
+
+    # Normalize the array excluding NaNs or zeros
+    valid_mask = ~np.isnan(array) & (array != 0)
+    min_val = min_val if min_val is not None else np.min(array[valid_mask])
+    max_val = max_val if max_val is not None else np.max(array[valid_mask])
+    norm = Normalize(vmin=min_val, vmax=max_val)
+
+    # Create the normalized array
+    normalized_array = np.zeros_like(array, dtype=float)  # Default to 0 for NaNs and zeros
+    normalized_array[valid_mask] = norm(array[valid_mask])
+
+    # Apply the colormap
+    colored_image = cmap(normalized_array)
+
+    # Set NaNs and zeros to black (0, 0, 0, 1 in RGBA)
+    colored_image[~valid_mask] = (0, 0, 0, 1)
+
+    # Convert to 8-bit unsigned integers
+    uint8_image = (colored_image[:, :, :3] * 255).astype(np.uint8)  # Drop alpha channel for saving
+
+    # Save the image
+    image = Image.fromarray(uint8_image)
+    if title:
+        if colormap == "viridis":
+            color = "white"
+        else:
+            color = to_hex(plt.rcParams["text.color"])
+        _add_text_to_pil_image(image, title, (3, 3), color)
+    return image
+
+
+def _add_text_to_pil_image(
+    image: Image, text: str, position: tuple[int, int], color: str | tuple[int, int, int, int]
+) -> None:
+    from PIL import ImageDraw, ImageFont
+
+    font_path = find_font()
+    if font_path:
+        font = ImageFont.truetype(font_path, 14)
+    else:
+        font = ImageFont.load_default()
+    draw = ImageDraw.Draw(image)
+    draw.text(position, text, fill=color, font=font)  # (255, 255, 255, 255))
+
+
+def export_array_as_bytes(array: np.ndarray, colormap: str = "viridis") -> io.BytesIO:
+    """Export a 2D array as a PNG image in bytes format."""
+    image = convert_array_to_image(array, colormap)
+    output = io.BytesIO()
+    image.save(output, format="PNG")
+    return output
