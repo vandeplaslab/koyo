@@ -1,5 +1,6 @@
 """System utilities."""
 
+import inspect
 import os
 import platform
 import sys
@@ -71,3 +72,18 @@ def get_cli_path(name: str, env_key: str = "", default: str = "") -> str:
     if default:
         return default
     raise RuntimeError(f"Could not find '{name}' executable.")
+
+
+def who_called_me() -> tuple[str, str, int]:
+    """Get the file name, function name, and line number of the caller."""
+    # Get the current frame
+    current_frame = inspect.currentframe()
+    # Get the caller's frame
+    caller_frame = current_frame.f_back
+
+    # Extract file name, line number, and function name
+    file_name = caller_frame.f_code.co_filename
+    line_number = caller_frame.f_lineno
+    function_name = caller_frame.f_code.co_name
+    print(f"Called from file: {file_name}, function: {function_name}, line: {line_number}")
+    return file_name, function_name, line_number
