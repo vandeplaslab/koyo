@@ -21,6 +21,16 @@ def is_envvar_set(key: str) -> bool:
     return key in os.environ and os.environ[key]
 
 
+def set_freeze_support() -> None:
+    """Set freeze support for multiprocessing."""
+    import sys
+    from multiprocessing import freeze_support, set_start_method
+
+    freeze_support()
+    if sys.platform == "darwin":
+        set_start_method("spawn", True)
+
+
 def get_cli_path(name: str, env_key: str = "", default: str = "") -> str:
     """Get path to imimspy executable.
 
