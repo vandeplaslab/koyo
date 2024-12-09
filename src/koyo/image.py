@@ -93,10 +93,19 @@ def reshape_array_from_coordinates(
 
 def flatten_array_from_coordinates(array: np.ndarray, coordinates: np.ndarray, offset: int = 0) -> np.ndarray:
     """Flatten array based on xy coordinates."""
-    try:
-        return array[coordinates[:, 1] - offset, coordinates[:, 0] - offset]
-    except IndexError:
-        return array[coordinates[:, 0] - offset, coordinates[:, 1] - offset]
+    if array.ndim == 2:
+        try:
+            return array[coordinates[:, 1] - offset, coordinates[:, 0] - offset]
+        except IndexError:
+            return array[coordinates[:, 0] - offset, coordinates[:, 1] - offset]
+    else:
+        try:
+            res = array[:, coordinates[:, 1] - offset, coordinates[:, 0] - offset]
+        except IndexError:
+            res = array[:, coordinates[:, 0] - offset, coordinates[:, 1] - offset]
+        # need to swap axes
+        res = np.swapaxes(res, 0, 1)
+        return res
 
 
 def reshape_array_batch(
