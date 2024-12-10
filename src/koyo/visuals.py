@@ -774,10 +774,10 @@ def plot_correlation(
 
     annot_kws = {}
     if annot:
-        annot_kws = dict(annot=True, annot_kws={"size": 10, "weight": "bold"}, fmt=".2f")
+        annot_kws = {"annot": True, "annot_kws": {"size": 10, "weight": "bold"}, "fmt": ".2f"}
     tree_kws = {}
     if tree:
-        tree_kws = dict(tree_kws={"linewidths": 2})
+        tree_kws = {"tree_kws": {"linewidths": 2}}
 
     fig = sns.clustermap(correlation.T, cmap=cmap, vmin=vmin, vmax=vmax, figsize=figsize, **annot_kws, **tree_kws)
     fig.ax_heatmap.tick_params(labelsize=12)

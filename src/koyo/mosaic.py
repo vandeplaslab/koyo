@@ -30,9 +30,7 @@ class RectanglePacker:
         self.y_pad = y_pad
 
     def initialize_canvas(self, initial_width: int, initial_height: int):
-        """
-        Initialize the canvas with a starting size.
-        """
+        """Initialize the canvas with a starting size."""
         self.current_width = max(initial_width, self.min_width)
         self.current_height = initial_height
         self.free_rectangles = [(0, 0, self.current_width, self.current_height)]
@@ -57,9 +55,7 @@ class RectanglePacker:
         return self.place_rectangle(rect_width, rect_height)
 
     def expand_canvas(self, rect_width: int, rect_height: int):
-        """
-        Expand the canvas size to accommodate a rectangle that doesn't fit.
-        """
+        """Expand the canvas size to accommodate a rectangle that doesn't fit."""
         new_width = max(self.current_width, rect_width)
         new_height = self.current_height + rect_height
         self.free_rectangles.append((0, self.current_height, new_width, rect_height))
@@ -67,9 +63,7 @@ class RectanglePacker:
         self.current_height = new_height
 
     def split_free_space(self, index: int, x: int, y: int, rect_width: int, rect_height: int):
-        """
-        Split the free space at index into smaller regions after placing a rectangle.
-        """
+        """Split the free space at index into smaller regions after placing a rectangle."""
         original_x, original_y, original_w, original_h = self.free_rectangles.pop(index)
 
         # Space to the right of the rectangle
@@ -95,9 +89,7 @@ class RectanglePacker:
         self.free_rectangles.sort(key=lambda r: r[2] * r[3])
 
     def get_packed_area(self) -> tuple[int, int]:
-        """
-        Returns the width and height of the smallest rectangle that fits all placed items.
-        """
+        """Returns the width and height of the smallest rectangle that fits all placed items."""
         max_width = max(x + w for x, y, w, h in self.placed_rectangles)
         max_height = max(y + h for x, y, w, h in self.placed_rectangles)
         return max(max_width, self.min_width), max_height
@@ -130,9 +122,7 @@ def get_positions(
 
 
 def pack_images(images: list[Image], min_width: int = 0, x_pad: int = 0, y_pad: int = 0) -> Image:
-    """
-    Packs a list of images into a high-density rectangle packing with automatic canvas sizing.
-    """
+    """Packs a list of images into a high-density rectangle packing with automatic canvas sizing."""
     packer = RectanglePacker(min_width=min_width, x_pad=x_pad, y_pad=y_pad)
 
     # Sort images by area (descending) for better packing
@@ -268,7 +258,7 @@ def merge_mosaic_packed(
     """Pack images tightly into a grid."""
     from PIL import Image
 
-    images = list(Image.open(buf) for buf in items.values())
+    images = [Image.open(buf) for buf in items.values()]
     (w, h), positions, images = get_positions(images, min_width=min_width, x_pad=x_pad, y_pad=y_pad)
     if title:
         title_buf = make_fig_title(title, w, 1)
@@ -313,9 +303,7 @@ def merge_mosaic_with_columns(
     y_pad: int = 0,
     placeholder_color: tuple[int, ...] = (0, 0, 0, 255),  # black
 ) -> Image:
-    """
-    Merge images from a directory into a grid with a fixed number of columns.
-    """
+    """Merge images from a directory into a grid with a fixed number of columns."""
     # Load images into a list
     from PIL import Image
 
