@@ -118,7 +118,7 @@ class ProjectBase:
                     self._config = {}
             else:
                 self._config = {}
-        self._validate_config()
+            self._validate_config()
         return self._config
 
     def validate_inputs(self) -> None:

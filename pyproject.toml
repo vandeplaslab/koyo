@@ -29,7 +29,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "numpy",
+    "numpy<2",
     "scipy",
     "numba",
     "natsort",

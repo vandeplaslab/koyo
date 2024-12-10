@@ -72,13 +72,40 @@ def unshape_array(image: np.ndarray, pixel_index: np.ndarray) -> np.ndarray:
 
 
 def reshape_array_from_coordinates(
-    array: np.ndarray, image_shape: ty.Tuple[int, int], coordinates: np.ndarray, fill_value: float = 0
+    array: np.ndarray,
+    image_shape: ty.Tuple[int, int],
+    coordinates: np.ndarray,
+    fill_value: float = 0,
+    offset: int = 0,
 ):
-    """Reshape array based on xy coordinates."""
+    """Reshape array based on xy coordinates.
+
+    This function assumes that the coordinates are 1-indexed.
+    """
     dtype = np.float32 if np.isnan(fill_value) else array.dtype
     im = np.full(image_shape, fill_value=fill_value, dtype=dtype)
-    im[coordinates[:, 1] - 1, coordinates[:, 0] - 1] = array
+    try:
+        im[coordinates[:, 1] - offset, coordinates[:, 0] - offset] = array
+    except IndexError:
+        im[coordinates[:, 0] - offset, coordinates[:, 1] - offset] = array
     return im
+
+
+def flatten_array_from_coordinates(array: np.ndarray, coordinates: np.ndarray, offset: int = 0) -> np.ndarray:
+    """Flatten array based on xy coordinates."""
+    if array.ndim == 2:
+        try:
+            return array[coordinates[:, 1] - offset, coordinates[:, 0] - offset]
+        except IndexError:
+            return array[coordinates[:, 0] - offset, coordinates[:, 1] - offset]
+    else:
+        try:
+            res = array[:, coordinates[:, 1] - offset, coordinates[:, 0] - offset]
+        except IndexError:
+            res = array[:, coordinates[:, 0] - offset, coordinates[:, 1] - offset]
+        # need to swap axes
+        res = np.swapaxes(res, 0, 1)
+        return res
 
 
 def reshape_array_batch(
@@ -100,9 +127,16 @@ def reshape_array_batch(
 
 
 def reshape_array_batch_from_coordinates(
-    array: np.ndarray, image_shape: ty.Tuple[int, int], coordinates: np.ndarray, fill_value: int = 0
+    array: np.ndarray,
+    image_shape: ty.Tuple[int, int],
+    coordinates: np.ndarray,
+    fill_value: int = 0,
+    offset: int = 0,
 ):
-    """Batch reshape image."""
+    """Batch reshape image.
+
+    This function assumes that the coordinates are 1-indexed.
+    """
     if array.ndim != 2:
         raise ValueError("Expected 2-D array.")
     n = array.shape[1]
@@ -110,10 +144,10 @@ def reshape_array_batch_from_coordinates(
     im = np.full((n, *image_shape), fill_value=fill_value, dtype=dtype)
     try:
         for i in range(n):
-            im[i, coordinates[:, 1] - 1, coordinates[:, 0] - 1] = array[:, i]
+            im[i, coordinates[:, 1] - offset, coordinates[:, 0] - offset] = array[:, i]
     except IndexError:
         for i in range(n):
-            im[i, coordinates[:, 0] - 1, coordinates[:, 1] - 1] = array[:, i]
+            im[i, coordinates[:, 0] - offset, coordinates[:, 1] - offset] = array[:, i]
     return im
 
 

@@ -137,10 +137,25 @@ _verbosity_options = [
 ]
 
 
-def verbosity_options(func):
+def verbosity_options(func: ty.Callable) -> ty.Callable:
     """Verbosity options."""
     for option in reversed(_verbosity_options):
         func = option(func)
+    return func
+
+
+def dev_options(func: ty.Callable) -> ty.Callable:
+    """Setup dev options."""
+    from koyo.system import IS_PYINSTALLER
+
+    if not IS_PYINSTALLER:
+        func = click.option(
+            "--dev",
+            help="Flat to indicate that CLI should run in development mode and catch all errors.",
+            default=False,
+            is_flag=True,
+            show_default=True,
+        )(func)
     return func
 
 
