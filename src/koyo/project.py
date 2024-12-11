@@ -29,11 +29,10 @@ class ProjectBase:
     PROJECT_SUFFIX: str = ".project"
 
     # config attributes
-    DATASETS_KEY: str = "datasets"
-    METADATA_KEY: str = "metadata"
-    SEARCH_KEY: str = "parameters"
-    PARAMS_KEY: str = "parameters"
-    EXECUTION_KEY: str = "execution"
+    DATASETS_KEY: ty.Literal["datasets"] = "datasets"
+    METADATA_KEY: ty.Literal["metadata"] = "metadata"
+    PARAMS_KEY: ty.Literal["parameters"] = "parameters"
+    EXECUTION_KEY: ty.Literal["execution"] = "execution"
 
     def __init__(self, project_dir: PathLike, cache_dir: PathLike | None = None):
         self.project_dir = Path(project_dir)
