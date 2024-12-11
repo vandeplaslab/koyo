@@ -22,7 +22,7 @@ def unzip_directory(path_to_zip: PathLike, output_dir: PathLike, remove_archive:
     logger.debug("Unzipped directory")
 
     if remove_archive:  # Remove archive :
-        logger.debug("Archive %s removed" % path_to_zip)
+        logger.debug(f"Archive {path_to_zip} removed")
         os.remove(path_to_zip)
     return path_to_file
 
