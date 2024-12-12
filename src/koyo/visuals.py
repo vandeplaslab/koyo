@@ -711,6 +711,7 @@ def _plot_line(
     x_label: str = "",
     y_label: str = "",
     figsize: tuple[float, float] = (6, 6),
+    marker_color: str = "r",
     border_color: str | None = None,
     title_color: str | None = None,
 ) -> tuple[plt.Figure, plt.Axes]:
@@ -718,7 +719,7 @@ def _plot_line(
     fig, ax = plt.subplots(figsize=figsize)
     ax.plot(x, y)
     if marker:
-        ax.axvline(marker, color="r", linestyle="--")
+        ax.axvline(marker, color=marker_color, linestyle="--", linewidth=2)
     ax.set_title(title)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)

@@ -628,7 +628,7 @@ def plot_mosaic_line_individual(
     title: str = "",
     dpi: int = 100,
     figsize: tuple[float, float] = (6, 6),
-    style: str = "dark_background",
+    style: str = "seaborn-ticks",
     n_cols: int | None = None,
     border_color: dict[str, str] | None = None,
     title_color: dict[str, str] | None = None,
