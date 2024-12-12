@@ -97,3 +97,18 @@ def who_called_me() -> tuple[str, str, int]:
     function_name = caller_frame.f_code.co_name
     print(f"Called from file: {file_name}, function: {function_name}, line: {line_number}")
     return file_name, function_name, line_number
+
+
+def who_called_me_stack() -> None:
+    """Print the last 5 callers that led to this function being called."""
+    stack = inspect.stack()
+    # The stack list starts with the current frame at index 0,
+    # so the callers start from index 1 onward.
+    # We will retrieve up to 5 callers, or fewer if the stack isn't that deep.
+    limit = min(6, len(stack))  # 1 (immediate caller) + up to 5 total callers
+    for i in range(1, limit):
+        frame_info = stack[i]
+        file_name = frame_info.filename
+        function_name = frame_info.function
+        line_number = frame_info.lineno
+        print(f"Caller #{i}: File '{file_name}', Function '{function_name}', Line {line_number}")
