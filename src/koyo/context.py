@@ -40,6 +40,12 @@ def nullout():
 
 
 @contextmanager
+def noop(*args, **kwargs):
+    """Function."""
+    yield
+
+
+@contextmanager
 def no_gc():
     """Context manager to disable garbage collection."""
     enable = gc.isenabled()

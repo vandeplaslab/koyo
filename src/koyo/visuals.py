@@ -211,6 +211,58 @@ def set_intensity_formatter(ax):
     ax.yaxis.set_major_formatter(get_intensity_formatter())
 
 
+def add_contours(
+    ax: plt.Axes, contours: np.ndarray | dict[str, np.ndarray], line_width: float = 1.0, color: str | None = None
+) -> None:
+    """Add contours to the axes."""
+    if contours is None:
+        return
+    if isinstance(contours, np.ndarray):
+        contours = {"": contours}
+    color = color if color is not None else plt.rcParams["text.color"]
+    for _key, contour in contours.items():
+        ax.plot(contour[:, 0], contour[:, 1], lw=line_width, color=color)
+
+
+def add_labels(
+    ax: plt.Axes,
+    contours: np.ndarray | dict[str, np.ndarray],
+    labels: str | dict[str, str],
+    font_size: int = 12,
+    color: str | None = None,
+    where: ty.Literal["top", "bottom"] = "bottom",
+) -> None:
+    """Add labels to the contours."""
+    y_offset = font_size  # * 2
+    if contours is None:
+        return
+    if isinstance(contours, np.ndarray):
+        contours = {"": contours}
+    if isinstance(labels, str):
+        labels = {"": labels}
+    is_top = where == "top"
+
+    color = color if color is not None else plt.rcParams["text.color"]
+    new_y_ax = 0
+    for key, contour in contours.items():
+        # find horizontal center of the contour
+        x = np.mean(contour[:, 0])
+        # find vertical top of the contour
+        if is_top:
+            y = np.min(contour[:, 1])
+        else:
+            y = np.max(contour[:, 1]) + y_offset
+        new_y_ax = min(y, new_y_ax)  # if is_top else min(y, new_y_ax)
+        ax.text(x, y, labels[key], fontsize=font_size, color=color, va="bottom" if is_top else "top")
+    # set y limit to the maximum y value
+    ax_y_lim = ax.get_ylim()
+    if is_top:
+        ax_y_lim = (ax_y_lim[0], ax_y_lim[1] - y_offset * 4)
+    else:
+        ax_y_lim = (ax_y_lim[0] + y_offset * 4, new_y_ax)
+    ax.set_ylim(ax_y_lim)
+
+
 def add_ax_colorbar(mappable):
     """Add colorbar to axis."""
     import matplotlib.pyplot as plt
@@ -275,6 +327,7 @@ def add_scalebar(ax, px_size: float | None, color="k"):
     try:
         from matplotlib_scalebar.scalebar import ScaleBar
     except ImportError:
+        print("matplotlib-scalebar not installed. Please install it using 'pip install matplotlib-scalebar'")
         return
 
     scalebar = ScaleBar(px_size, "um", frameon=False, color=color, font_properties={"size": 20})
