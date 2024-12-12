@@ -6,13 +6,14 @@ import os
 import sys
 import typing as ty
 from functools import partial
+from pathlib import Path
 
 from koyo.typing import PathLike
 from koyo.utilities import find_nearest_value
 
 if ty.TYPE_CHECKING:
     from loguru import Logger
-
+LOGGER_TO_PATH: dict[PathLike, int] = {}
 
 LEVEL_FORMAT = "<level>{level: <8}</level>"
 TIME_FORMAT = "{time:YYYY-MM-DD HH:mm:ss:SSS}"
@@ -173,3 +174,68 @@ def set_loguru_log(
     return logger.add(
         sink, level=level, format=fmt, colorize=not no_color, enqueue=enqueue, diagnose=diagnose, catch=catch
     )
+
+
+class LoggerMixin:
+    """Logger mixin."""
+
+    dataset_name: str
+
+    log_dir: Path
+    _log_name: Path | None = None
+
+    def is_logging_enabled(self) -> bool:
+        """Check if logging is enabled."""
+        raise NotImplementedError("Must implement method")
+
+    def set_log(self, log: bool | None = None) -> None:
+        """Set logging."""
+        from loguru import logger
+
+        from koyo.system import who_called_me_stack
+
+        who_called_me_stack()
+        if log is None:
+            log = self.is_logging_enabled()
+
+        global LOGGER_TO_PATH
+        print(LOGGER_TO_PATH)
+
+        logger.enable("qucee")
+        if not log:
+            return
+
+        _, level, enqueue, colorize = get_loguru_env()
+        # add stderr logger
+        if "stdout" not in LOGGER_TO_PATH:
+            LOGGER_TO_PATH["stdout"] = set_loguru_log(
+                level=level,
+                enqueue=enqueue,
+                colorize=colorize,
+                catch=True,
+                diagnose=True,
+                logger=logger,
+                remove=False,
+            )
+            logger.info("Setup logging to file - 'stderr'")
+        # add file logger
+        if not self._log_name:
+            filename = "log"
+            if self.dataset_name:
+                filename += f"_dataset={self.dataset_name}"
+            else:
+                filename += "_main"
+            self._log_name = (self.log_dir / filename).with_suffix(".txt")
+            if self._log_name not in LOGGER_TO_PATH:
+                LOGGER_TO_PATH[self._log_name] = set_loguru_log(
+                    self._log_name,
+                    level=level,
+                    enqueue=enqueue,
+                    colorize=False,
+                    no_color=True,
+                    catch=True,
+                    diagnose=True,
+                    logger=logger,
+                    remove=False,
+                )
+                logger.info(f"Setup logging to file - '{self._log_name!s}'")
