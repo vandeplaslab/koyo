@@ -224,7 +224,7 @@ def add_contours(
         ax.plot(contour[:, 0], contour[:, 1], lw=line_width, color=color)
 
 
-def add_labels(
+def add_contour_labels(
     ax: plt.Axes,
     contours: np.ndarray | dict[str, np.ndarray],
     labels: str | dict[str, str],
@@ -233,27 +233,30 @@ def add_labels(
     where: ty.Literal["top", "bottom"] = "bottom",
 ) -> None:
     """Add labels to the contours."""
-    y_offset = font_size  # * 2
+    y_offset = font_size
+    is_top = where == "top"
+
     if contours is None:
         return
     if isinstance(contours, np.ndarray):
         contours = {"": contours}
     if isinstance(labels, str):
         labels = {"": labels}
-    is_top = where == "top"
 
     color = color if color is not None else plt.rcParams["text.color"]
     new_y_ax = 0
     for key, contour in contours.items():
         # find horizontal center of the contour
-        x = np.mean(contour[:, 0])
+        xs = contour[:, 0]
+        xmin, xmax = xs.min(), xs.max()
+        x = xmin + (xmax - xmin) / 2
         # find vertical top of the contour
         if is_top:
             y = np.min(contour[:, 1])
         else:
             y = np.max(contour[:, 1]) + y_offset
         new_y_ax = min(y, new_y_ax)  # if is_top else min(y, new_y_ax)
-        ax.text(x, y, labels[key], fontsize=font_size, color=color, va="bottom" if is_top else "top")
+        ax.text(x, y, labels[key], fontsize=font_size, color=color, va="bottom" if is_top else "top", ha="center")
     # set y limit to the maximum y value
     ax_y_lim = ax.get_ylim()
     if is_top:
