@@ -188,7 +188,7 @@ class LoggerMixin:
         """Check if logging is enabled."""
         raise NotImplementedError("Must implement method")
 
-    def set_log(self, log: bool | None = None) -> None:
+    def set_log(self, log: bool | None = None, remove: bool = False) -> None:
         """Set logging."""
         from loguru import logger
 
@@ -199,11 +199,12 @@ class LoggerMixin:
             log = self.is_logging_enabled()
 
         global LOGGER_TO_PATH
-        print(LOGGER_TO_PATH)
 
         logger.enable("qucee")
         if not log:
             return
+        if remove:
+            logger.remove()
 
         _, level, enqueue, colorize = get_loguru_env()
         # add stderr logger
