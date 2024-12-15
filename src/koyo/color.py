@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import colorsys
 import random
 from ast import literal_eval
 
@@ -74,4 +75,98 @@ def hex_to_rgb_255(hex_str):
 
 def get_random_hex_color() -> str:
     """Return random hex color."""
-    return "#%06x" % random.randint(0, 0xFFFFFF)
+    return f"#{random.randint(0, 0xFFFFFF):06x}"
+
+
+def get_next_color(n: int, other_colors: list[str] | None = None) -> str:
+    """
+    Get the next color based on the index, avoiding duplicates in `other_colors`.
+
+    Parameters
+    ----------
+        n (int): The index of the desired color.
+        other_colors (list[str] | None): A list of colors to avoid, default is None.
+
+    Returns
+    -------
+        str: The next distinct color in lowercase hex format.
+    """
+    if other_colors is None:
+        other_colors = []
+
+    # Predefined list of colors
+    colors = [
+        "#ff0000",
+        "#00ff00",
+        "#0000ff",
+        "#ffff00",
+        "#ff00ff",
+        "#00ffff",
+        "#ff4500",
+        "#ff69b4",
+        "#1e90ff",
+        "#32cd32",
+        "#ffd700",
+        "#40e0d0",
+        "#ff6347",
+        "#7b68ee",
+        "#adff2f",
+        "#87ceeb",
+    ]
+
+    # Extend colors if `n` exceeds predefined list
+    if n >= len(colors):
+        additional_count = n - len(colors) + 1
+        hue_step = 1 / (additional_count + 1)
+        for i in range(additional_count):
+            h = (i + 1) * hue_step
+            s, l = 0.7, 0.5
+            r, g, b = colorsys.hls_to_rgb(h, l, s)
+            colors.append(f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}")
+
+    # Get the nth color and check for duplicates
+    color = colors[n].lower()
+    if color in (c.lower() for c in other_colors):
+        return get_next_color(n + 1, other_colors=other_colors)
+    return color
+
+
+def generate_distinct_colors(starting_colors: list[str], n_colors: int) -> list[str]:
+    """
+    Generate a list of n_colors distinct colors starting from the given list.
+
+    Parameters
+    ----------
+        starting_colors (List[str]): List of predefined colors in hex format.
+        n_colors (int): The total number of distinct colors required.
+
+    Returns
+    -------
+        List[str]: List of n_colors in hex format.
+    """
+
+    def hsl_to_hex(h, s, l):
+        r, g, b = colorsys.hls_to_rgb(h, l, s)
+        return f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
+
+    # Convert predefined colors to HSL and collect them
+    starting_hsl = []
+    for hex_color in starting_colors:
+        hex_color = hex_color.lstrip("#")
+        r, g, b = (int(hex_color[i : i + 2], 16) / 255.0 for i in (0, 2, 4))
+        h, l, s = colorsys.rgb_to_hls(r, g, b)
+        starting_hsl.append((h, s, l))
+
+    # Generate new colors if needed
+    additional_colors_needed = max(0, n_colors - len(starting_colors))
+    if additional_colors_needed > 0:
+        step = 1 / (additional_colors_needed + 1)
+        for i in range(additional_colors_needed):
+            h = (i + 1) * step  # Spread hues evenly
+            s, l = 0.7, 0.5  # Fixed saturation and lightness for distinctiveness
+            starting_hsl.append((h, s, l))
+
+    # Convert all HSL colors back to hex
+    result_colors = starting_colors[:]
+    result_colors += [hsl_to_hex(h, s, l) for h, s, l in starting_hsl[len(starting_colors) :]]
+    return result_colors[:n_colors]
