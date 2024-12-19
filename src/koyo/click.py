@@ -543,7 +543,7 @@ def exit_with_error(skip_error: bool = False) -> int | None:
     import sys
 
     if skip_error:
-        return
+        return sys.exit()
     return sys.exit(1)
 
 

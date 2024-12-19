@@ -286,7 +286,7 @@ def find_nearest_index_batch(array: SimpleArrayLike, values: SimpleArrayLike, so
     array = np.asarray(array)
     values = np.asarray(values)
     if not array.size or not values.size:
-        return np.array([])
+        return np.array([], dtype=np.int64)
 
     # get insert positions
     sorter = np.argsort(array) if sort else None
