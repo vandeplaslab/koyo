@@ -645,7 +645,7 @@ def filter_array(
             count += 1
 
     # Allocate an output array of the required size
-    result = np.empty(count, dtype=array.dtype)
+    result = np.zeros(count, dtype=array.dtype)
 
     # Second pass: fill the result with filtered values
     idx = 0
