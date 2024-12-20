@@ -623,7 +623,7 @@ def get_array_mask(array: np.ndarray, min_val: float, max_val: float):
 
 
 @nb.njit(parallel=True)
-def get_array_mask_(array: np.ndarray, min_val: float, max_val: float):
+def get_array_mask_(array: np.ndarray, min_val: int | float, max_val: int | float) -> np.ndarray:
     """Return mask for array."""
     mask = np.empty(array.shape, dtype=np.bool_)
     for i in nb.prange(array.size):
@@ -633,7 +633,9 @@ def get_array_mask_(array: np.ndarray, min_val: float, max_val: float):
 
 
 @nb.njit(parallel=True)
-def filter_array(array: np.ndarray, array_to_mask: np.ndarray, min_val: float, max_val: float):
+def filter_array(
+    array: np.ndarray, array_to_mask: np.ndarray, min_val: int | float, max_val: int | float
+) -> np.ndarray:
     """Filter array based on another array."""
     # First, count how many elements pass the condition
     count = 0
