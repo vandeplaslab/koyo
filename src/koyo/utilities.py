@@ -18,6 +18,28 @@ if ty.TYPE_CHECKING:
     from koyo.fig_mixin import PptxPdfWrapper
 
 
+def human_readable_byte_size(nbytes: int) -> str:
+    """
+
+    Parameters
+    ----------
+    nbytes : int
+        Number of bytes.
+
+    Returns
+    -------
+    Human readable string : str
+
+    """
+    suffixes = ["B", "KB", "MB", "GB", "TB", "PB"]
+    i = 0
+    while nbytes >= 1024 and i < len(suffixes) - 1:
+        nbytes /= 1024.0
+        i += 1
+    f = (f"{nbytes:.2f}").rstrip("0").rstrip(".")
+    return f"{f} {suffixes[i]}"
+
+
 def get_unique_without_sort(seq: list) -> list:
     """Get unique values without sorting."""
     seen = set()

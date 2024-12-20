@@ -11,12 +11,15 @@ from koyo.typing import PathLike
 def submit_sentry_attachment(message: str, path: PathLike):
     """Submit attachment to Sentry."""
     try:
-        from sentry_sdk import capture_message, configure_scope
+        from sentry_sdk import configure_scope, get_current_scope
 
-        configure_scope(lambda scope: scope.add_attachment(path=str(path)))
-        capture_message(message)
+        scope = get_current_scope()
+        scope.add_attachment(path=str(path))
+        scope.capture_message(message)
     except ImportError:
         logger.exception("Failed to submit attachment to Sentry. Please report this issue to the developers.")
+    except Exception:
+        logger.exception("Failed to submit attachment to Sentry.")
 
 
 def install_segfault_handler(output_dir: PathLike) -> None:
