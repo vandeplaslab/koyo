@@ -657,7 +657,7 @@ def filter_array(
     return result
 
 
-def get_array_window(array: np.ndarray, min_val: float, max_val: float, *arrays):
+def get_array_window(array: np.ndarray, min_val: float, max_val: float, *arrays: np.ndarray) -> list[np.ndarray]:
     """Get narrower view of array based on upper and lower limits.
 
     The first array is the one that is used to create mask.
