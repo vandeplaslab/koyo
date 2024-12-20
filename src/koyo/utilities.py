@@ -622,6 +622,39 @@ def get_array_mask(array: np.ndarray, min_val: float, max_val: float):
     return np.logical_and(array >= min_val, array <= max_val)
 
 
+@nb.njit(parallel=True)
+def get_array_mask_(array: np.ndarray, min_val: float, max_val: float):
+    """Return mask for array."""
+    mask = np.empty(array.shape, dtype=np.bool_)
+    for i in nb.prange(array.size):
+        val = array[i]
+        mask[i] = min_val <= val <= max_val
+    return mask
+
+
+@nb.njit(parallel=True)
+def filter_array(array: np.ndarray, array_to_mask: np.ndarray, min_val: float, max_val: float):
+    """Filter array based on another array."""
+    # First, count how many elements pass the condition
+    count = 0
+    for i in nb.prange(array_to_mask.size):
+        val = array_to_mask[i]
+        if min_val <= val <= max_val:
+            count += 1
+
+    # Allocate an output array of the required size
+    result = np.empty(count, dtype=array.dtype)
+
+    # Second pass: fill the result with filtered values
+    idx = 0
+    for i in nb.prange(array_to_mask.size):
+        val = array_to_mask[i]
+        if min_val <= val <= max_val:
+            result[idx] = array[i]
+            idx += 1
+    return result
+
+
 def get_array_window(array: np.ndarray, min_val: float, max_val: float, *arrays):
     """Get narrower view of array based on upper and lower limits.
 
