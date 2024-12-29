@@ -130,27 +130,28 @@ class JSONCache:
             for k, v in data.items():
                 print(f"{pre}{k}: {v}", sep=sep)
 
+    @staticmethod
+    def format_value(v) -> ty.Any:
+        """Format value."""
+        if isinstance(v, str):
+            if v.lower() == "true":
+                return True
+            elif v.lower() == "false":
+                return False
+            elif v.isnumeric():
+                return int(v)
+            try:
+                return float(v)
+            except ValueError:
+                return v
+        return v
+
     def read(self) -> ty.Dict:
         """Read data."""
-
-        def _convert(v):
-            if isinstance(v, str):
-                if v.lower() == "true":
-                    return True
-                elif v.lower() == "false":
-                    return False
-                elif v.isnumeric():
-                    return int(v)
-                try:
-                    return float(v)
-                except ValueError:
-                    return v
-            return v
-
         if self.exists():
             try:
                 data = read_json_data(self.path)
-                data = {k: _convert(v) for k, v in data.items()}
+                data = {k: self.format_value(v) for k, v in data.items()}
                 return data
             except JSONDecodeError:
                 warnings.warn(f"Failed to read JSON file: {self.path}")
