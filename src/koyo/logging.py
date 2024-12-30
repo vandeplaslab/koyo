@@ -182,6 +182,7 @@ class LoggerMixin:
     dataset_name: str
 
     log_dir: Path
+    _module: str
     _log_name: Path | None = None
 
     def is_logging_enabled(self) -> bool:
@@ -192,15 +193,12 @@ class LoggerMixin:
         """Set logging."""
         from loguru import logger
 
-        from koyo.system import who_called_me_stack
-
-        who_called_me_stack()
         if log is None:
             log = self.is_logging_enabled()
 
         global LOGGER_TO_PATH
 
-        logger.enable("qucee")
+        logger.enable(self._module)
         if not log:
             return
         if remove:
