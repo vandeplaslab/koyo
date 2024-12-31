@@ -181,9 +181,10 @@ class LoggerMixin:
 
     dataset_name: str
 
+    # LoggerMixin
     log_dir: Path
-    _module: str
-    _log_name: Path | None = None
+    LOG_MODULE: str
+    LOG_PATH: Path | None = None
 
     def is_logging_enabled(self) -> bool:
         """Check if logging is enabled."""
@@ -198,7 +199,7 @@ class LoggerMixin:
 
         global LOGGER_TO_PATH
 
-        logger.enable(self._module)
+        logger.enable(self.LOG_MODULE)
         if not log:
             return
         if remove:
@@ -218,16 +219,16 @@ class LoggerMixin:
             )
             logger.info("Setup logging to file - 'stderr'")
         # add file logger
-        if not self._log_name:
+        if not self.LOG_PATH:
             filename = "log"
             if self.dataset_name:
                 filename += f"_dataset={self.dataset_name}"
             else:
                 filename += "_main"
-            self._log_name = (self.log_dir / filename).with_suffix(".txt")
-            if self._log_name not in LOGGER_TO_PATH:
-                LOGGER_TO_PATH[self._log_name] = set_loguru_log(
-                    self._log_name,
+            self.LOG_PATH = (self.log_dir / filename).with_suffix(".txt")
+            if self.LOG_PATH not in LOGGER_TO_PATH:
+                LOGGER_TO_PATH[self.LOG_PATH] = set_loguru_log(
+                    self.LOG_PATH,
                     level=level,
                     enqueue=enqueue,
                     colorize=False,
@@ -237,4 +238,4 @@ class LoggerMixin:
                     logger=logger,
                     remove=False,
                 )
-                logger.info(f"Setup logging to file - '{self._log_name!s}'")
+                logger.info(f"Setup logging to file - '{self.LOG_PATH!s}'")
