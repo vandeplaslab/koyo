@@ -58,7 +58,6 @@ def read_json_data(filepath: PathLike):
     """
     with open(filepath) as f_ptr:
         json_data = json.load(f_ptr)
-
     return json_data
 
 
