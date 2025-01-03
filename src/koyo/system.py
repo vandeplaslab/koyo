@@ -1,8 +1,10 @@
 """System utilities."""
 
+import contextlib
 import inspect
 import os
 import platform
+import subprocess
 import sys
 
 IS_WIN = sys.platform == "win32"
@@ -112,3 +114,59 @@ def who_called_me_stack() -> None:
         function_name = frame_info.function
         line_number = frame_info.lineno
         print(f"Caller #{i}: File '{file_name}', Function '{function_name}', Line {line_number}")
+
+
+def _linux_sys_name() -> str:
+    """
+    Try to discover linux system name base on /etc/os-release file or lsb_release command output
+    https://www.freedesktop.org/software/systemd/man/os-release.html.
+    """
+    os_release_path = "/etc/os-release"
+
+    if os.path.exists(os_release_path):
+        with open(os_release_path) as f_p:
+            data = {}
+            for line in f_p:
+                field, value = line.split("=")
+                data[field.strip()] = value.strip().strip('"')
+        if "PRETTY_NAME" in data:
+            return data["PRETTY_NAME"]
+        if "NAME" in data:
+            if "VERSION" in data:
+                return f'{data["NAME"]} {data["VERSION"]}'
+            if "VERSION_ID" in data:
+                return f'{data["NAME"]} {data["VERSION_ID"]}'
+            return f'{data["NAME"]} (no version)'
+    return _linux_sys_name_lsb_release()
+
+
+def _linux_sys_name_lsb_release() -> str:
+    """Try to discover linux system name base on lsb_release command output."""
+    with contextlib.suppress(subprocess.CalledProcessError):
+        res = subprocess.run(["lsb_release", "-d", "-r"], check=True, capture_output=True)
+        text = res.stdout.decode()
+        data = {}
+        for line in text.split("\n"):
+            key, val = line.split(":")
+            data[key.strip()] = val.strip()
+        version_str = data["Description"]
+        if not version_str.endswith(data["Release"]):
+            version_str += " " + data["Release"]
+        return version_str
+    return ""
+
+
+def _sys_name() -> str:
+    """Discover MacOS or Linux Human readable information. For Linux provide information about distribution."""
+    with contextlib.suppress(Exception):
+        if sys.platform == "linux":
+            return _linux_sys_name()
+        if sys.platform == "darwin":
+            with contextlib.suppress(subprocess.CalledProcessError):
+                res = subprocess.run(
+                    ["sw_vers", "-productVersion"],
+                    check=True,
+                    capture_output=True,
+                )
+                return f"MacOS {res.stdout.decode().strip()}"
+    return ""
