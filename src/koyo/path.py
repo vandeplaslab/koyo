@@ -9,6 +9,22 @@ from loguru import logger
 from koyo.typing import PathLike
 
 
+def uri_to_path(uri: str) -> Path:
+    """Convert URI to path."""
+    try:
+        from urllib.parse import unquote, urlparse
+        from urllib.request import url2pathname
+    except ImportError:
+        # backwards compatability
+        from urllib import unquote, url2pathname
+
+        from urlparse import urlparse
+
+    parsed = urlparse(uri)
+    host = f"{os.path.sep}{os.path.sep}{parsed.netloc}{os.path.sep}"
+    return Path(os.path.normpath(os.path.join(host, url2pathname(unquote(parsed.path)))))
+
+
 def get_copy_path(path: PathLike) -> Path:
     """Get copy path."""
     path = Path(path)
@@ -57,6 +73,17 @@ def empty_directory(path: PathLike) -> None:
 
 
 remove_directory = empty_directory
+
+
+def move_directory(src: PathLike, dest: PathLike) -> None:
+    """Move directory."""
+    src = Path(src)
+    dest = Path(dest)
+    try:
+        shutil.move(src, dest)
+        logger.trace(f"Moved '{src}' to '{dest}'")
+    except Exception as e:
+        logger.error(f"Failed to move '{src}' to '{dest}'. Reason: {e}")
 
 
 def open_directory(path: PathLike) -> None:
