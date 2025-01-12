@@ -2,11 +2,18 @@
 
 import os
 import shutil
+import typing as ty
 from pathlib import Path
 
 from loguru import logger
 
 from koyo.typing import PathLike
+
+
+def mglob(path: Path, *patterns: str) -> ty.Generator[Path, None, None]:
+    """Glob multiple patterns."""
+    for pattern in patterns:
+        yield from path.glob(pattern)
 
 
 def uri_to_path(uri: str) -> Path:
