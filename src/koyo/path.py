@@ -79,6 +79,10 @@ def move_directory(src: PathLike, dest: PathLike) -> None:
     """Move directory."""
     src = Path(src)
     dest = Path(dest)
+
+    if src == dest:
+        return
+
     try:
         shutil.move(src, dest)
         logger.trace(f"Moved '{src}' to '{dest}'")
