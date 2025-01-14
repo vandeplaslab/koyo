@@ -20,3 +20,13 @@ def test_read_write_gzip(tmpdir_factory, data):
 
     _data = read_gzip(path)
     assert _data == data
+
+
+def test_check_gzip_size(tmpdir_factory):
+    path_json = str(tmpdir_factory.mktemp("json") / "test.json")
+    path_gz = str(tmpdir_factory.mktemp("json") / "test-gz.json")
+    # create large dictionary
+    data = {str(i): i for i in range(1000)}
+    path_json = write_json_data(path_json, data)
+    path_gz = write_gzip(path_gz, data)
+    assert path_json.stat().st_size > path_gz.stat().st_size

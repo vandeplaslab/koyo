@@ -101,19 +101,21 @@ def write(filepath: PathLike, obj, indent: int = 4, check_existing: bool = False
     return filepath
 
 
-def write_gzip(filepath: PathLike, obj: ty.Any):
+def write_gzip(filepath: PathLike, obj: ty.Any) -> Path:
     """Write gzip compressed JSON data."""
     import gzip
 
-    with gzip.open(filepath, "w", encoding="utf-8") as f_ptr:
+    filepath = Path(filepath)
+    with gzip.open(filepath, "w") as f_ptr:
         f_ptr.write(json.dumps(obj, default=default).encode("utf-8"))
+    return filepath
 
 
 def read_gzip(filepath: PathLike) -> ty.Any:
     """Read gzip compressed JSON data."""
     import gzip
 
-    with gzip.open(filepath, "r", encoding="utf-8") as f_ptr:
+    with gzip.open(filepath, "r") as f_ptr:
         return json.loads(f_ptr.read().decode("utf-8"))
 
 
