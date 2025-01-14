@@ -1,6 +1,6 @@
 """All utility functions that deal with JSON files."""
 
-import os
+import typing as ty
 from pathlib import Path
 
 import numpy as np
@@ -44,7 +44,7 @@ def default(o):
     raise TypeError("Could not convert {} of type {}".format(*o), type(o))
 
 
-def read_json_data(filepath: PathLike):
+def read(filepath: PathLike) -> ty.Any:
     """Read JSON data and metadata.
 
     Parameters
@@ -57,11 +57,11 @@ def read_json_data(filepath: PathLike):
     loaded json data
     """
     with open(filepath) as f_ptr:
-        json_data = json.load(f_ptr)
-    return json_data
+        obj = json.load(f_ptr)
+    return obj
 
 
-def write_json_data(filepath: PathLike, obj, indent=4, check_existing=False, compress: bool = False):
+def write(filepath: PathLike, obj, indent: int = 4, check_existing: bool = False, compress: bool = False) -> Path:
     """Write data to JSON file.
 
     Parameters
@@ -79,7 +79,8 @@ def write_json_data(filepath: PathLike, obj, indent=4, check_existing=False, com
     kws = {} if not compress else {"separators": (",", ":")}
     indent = 1 if compress else indent
 
-    if not check_existing or not os.path.exists(filepath):
+    filepath = Path(filepath)
+    if not check_existing or not filepath.exists():
         with open(filepath, "w") as f_ptr:
             json.dump(obj, f_ptr, indent=indent, default=default, **kws)
     else:
@@ -98,3 +99,24 @@ def write_json_data(filepath: PathLike, obj, indent=4, check_existing=False, com
             json.dump(data, f_ptr, indent=indent, default=default, **kws)
             f_ptr.truncate()
     return filepath
+
+
+def write_gzip(filepath: PathLike, obj: ty.Any):
+    """Write gzip compressed JSON data."""
+    import gzip
+
+    with gzip.open(filepath, "w", encoding="utf-8") as f_ptr:
+        f_ptr.write(json.dumps(obj, default=default).encode("utf-8"))
+
+
+def read_gzip(filepath: PathLike) -> ty.Any:
+    """Read gzip compressed JSON data."""
+    import gzip
+
+    with gzip.open(filepath, "r", encoding="utf-8") as f_ptr:
+        return json.loads(f_ptr.read().decode("utf-8"))
+
+
+# compatibility
+read_json_data = read
+write_json_data = write
