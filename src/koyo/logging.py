@@ -36,6 +36,24 @@ def timed_call(log_func: ty.Callable, message: str, *args: ty.Any, **kwargs: ty.
     log_func(message + f" in {timer()}", *args, **kwargs)
 
 
+def get_stdout() -> ty.TextIO:
+    """Get stdout."""
+    if sys.stdout is None:
+        sys.stdout = sys.stderr
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w")
+    return sys.stdout
+
+
+def get_stderr() -> ty.TextIO:
+    """Get stderr."""
+    if sys.stderr is None:
+        sys.stderr = sys.stdout
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")
+    return sys.stderr
+
+
 def set_logger(
     verbosity: int,
     no_color: bool,
@@ -132,15 +150,6 @@ def get_loguru_config(
     colorize = not no_color
     fmt = fmt if no_color else color_fmt
     return level.upper(), fmt, colorize, enqueue
-
-
-def get_stderr() -> ty.TextIO:
-    """Get stderr."""
-    if sys.stderr is None:
-        sys.stderr = sys.stdout
-    if sys.stderr is None:
-        sys.stderr = open(os.devnull, "w")
-    return sys.stderr
 
 
 def set_loguru_log(

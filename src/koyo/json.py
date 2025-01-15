@@ -14,7 +14,7 @@ except ImportError:
     import json
 
 
-def default(o):
+def default(o: ty.Any) -> ty.Any:
     """Fixes writing of objects containing numpy dtypes.
 
     Parameters
@@ -44,7 +44,7 @@ def default(o):
     raise TypeError("Could not convert {} of type {}".format(*o), type(o))
 
 
-def read(filepath: PathLike) -> ty.Any:
+def read_json(filepath: PathLike) -> ty.Any:
     """Read JSON data and metadata.
 
     Parameters
@@ -61,7 +61,7 @@ def read(filepath: PathLike) -> ty.Any:
     return obj
 
 
-def write(filepath: PathLike, obj, indent: int = 4, check_existing: bool = False, compress: bool = False) -> Path:
+def write_json(filepath: PathLike, obj, indent: int = 4, check_existing: bool = False, compress: bool = False) -> Path:
     """Write data to JSON file.
 
     Parameters
@@ -101,17 +101,19 @@ def write(filepath: PathLike, obj, indent: int = 4, check_existing: bool = False
     return filepath
 
 
-def write_gzip(filepath: PathLike, obj: ty.Any) -> Path:
+def write_json_gzip(filepath: PathLike, obj: ty.Any) -> Path:
     """Write gzip compressed JSON data."""
     import gzip
 
     filepath = Path(filepath)
+    if not filepath.with_suffix(".gz"):
+        filepath = filepath.with_suffix(".gz")
     with gzip.open(filepath, "w") as f_ptr:
         f_ptr.write(json.dumps(obj, default=default).encode("utf-8"))
     return filepath
 
 
-def read_gzip(filepath: PathLike) -> ty.Any:
+def read_json_gzip(filepath: PathLike) -> ty.Any:
     """Read gzip compressed JSON data."""
     import gzip
 
@@ -120,5 +122,5 @@ def read_gzip(filepath: PathLike) -> ty.Any:
 
 
 # compatibility
-read_json_data = read
-write_json_data = write
+read_json_data = read_json
+write_json_data = write_json
