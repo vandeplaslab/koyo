@@ -20,11 +20,9 @@ TIME_FORMAT = "{time:YYYY-MM-DD HH:mm:ss:SSS}"
 LOG_FMT = "[LEVEL_FORMAT][TIME_FORMAT][{process}] {message}".replace("TIME_FORMAT", TIME_FORMAT).replace(
     "LEVEL_FORMAT", LEVEL_FORMAT
 )
-COLOR_LOG_FMT = (
-    "<green>[LEVEL_FORMAT]</green>" "<cyan>[TIME_FORMAT]</cyan>" "<red>[{process}]</red>" " {message}".replace(
-        "TIME_FORMAT", TIME_FORMAT
-    ).replace("LEVEL_FORMAT", LEVEL_FORMAT)
-)
+COLOR_LOG_FMT = "<green>[LEVEL_FORMAT]</green><cyan>[TIME_FORMAT]</cyan><red>[{process}]</red> {message}".replace(
+    "TIME_FORMAT", TIME_FORMAT
+).replace("LEVEL_FORMAT", LEVEL_FORMAT)
 
 
 def timed_call(log_func: ty.Callable, message: str, *args: ty.Any, **kwargs: ty.Any) -> ty.Any:
