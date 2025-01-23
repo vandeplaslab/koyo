@@ -549,6 +549,7 @@ def add_label(
     va: str = "top",
     ha: str = "left",
     bbox: dict[str, ty.Any] | None = None,
+    zorder: int = 10,
 ):
     """Add label to the image."""
     ax.text(
@@ -562,6 +563,7 @@ def add_label(
         horizontalalignment=ha,
         color=label_color,
         bbox=bbox,
+        zorder=zorder,
     )
 
 
