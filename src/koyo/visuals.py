@@ -224,17 +224,29 @@ def add_contours(
         ax.plot(contour[:, 0], contour[:, 1], lw=line_width, color=color)
 
 
+def _sort_contour_order(contours: dict[str, np.ndarray]) -> tuple[dict[str, tuple[int, int]], dict[str, np.ndarray]]:
+    # get min x, y for each contour
+    order = {}
+    for key, contour in contours.items():
+        order[key] = (np.min(contour[:, 1]), np.min(contour[:, 0]))
+    contours = dict(sorted(contours.items(), key=lambda x: order[x[0]]))
+    return order, contours
+
+
 def add_contour_labels(
     ax: plt.Axes,
     contours: np.ndarray | dict[str, np.ndarray],
     labels: str | dict[str, str],
     font_size: int = 12,
     color: str | None = None,
-    where: ty.Literal["top", "bottom"] = "bottom",
+    where: ty.Literal["top", "bottom", "alternate"] = "alternate",
 ) -> None:
     """Add labels to the contours."""
     y_offset = font_size
     is_top = where == "top"
+    is_alt = where == "alternate"
+    if is_alt:
+        is_top = True
 
     if contours is None:
         return
@@ -242,6 +254,10 @@ def add_contour_labels(
         contours = {"": contours}
     if isinstance(labels, str):
         labels = {"": labels}
+
+    # get min x, y for each contour
+    if where == "alternate":
+        _, contours = _sort_contour_order(contours)
 
     color = color if color is not None else plt.rcParams["text.color"]
     new_y_ax = 0
@@ -255,14 +271,22 @@ def add_contour_labels(
             y = np.min(contour[:, 1])
         else:
             y = np.max(contour[:, 1]) + y_offset
-        new_y_ax = min(y, new_y_ax)  # if is_top else min(y, new_y_ax)
         ax.text(x, y, labels[key], fontsize=font_size, color=color, va="bottom" if is_top else "top", ha="center")
+        new_y_ax = min(y, new_y_ax)  # if is_top else min(y, new_y_ax)
+        if is_alt:
+            is_top = not is_top
     # set y limit to the maximum y value
     ax_y_lim = ax.get_ylim()
-    if is_top:
-        ax_y_lim = (ax_y_lim[0], ax_y_lim[1] - y_offset * 4)
+    y_min, y_max = np.min(ax_y_lim), np.max(ax_y_lim)
+    y_min = min(y_min, new_y_ax)
+    padding = y_offset * 8
+    if where == "top":
+        ax_y_lim = (y_max + padding / 2, y_min - padding)
+    elif where == "bottom":
+        ax_y_lim = (y_max + padding, y_min - padding / 2)
     else:
-        ax_y_lim = (ax_y_lim[0] + y_offset * 4, new_y_ax)
+        ax_y_lim = (y_max + padding, y_min - padding)
+    print(ax_y_lim)
     ax.set_ylim(ax_y_lim)
 
 
