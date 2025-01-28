@@ -12,6 +12,8 @@ from koyo.typing import PathLike
 
 def mglob(path: Path, *patterns: str) -> ty.Generator[Path, None, None]:
     """Glob multiple patterns."""
+    if not path.exists():
+        return
     for pattern in patterns:
         yield from path.glob(pattern)
 
