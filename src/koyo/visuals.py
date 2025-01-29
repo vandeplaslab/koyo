@@ -286,7 +286,6 @@ def add_contour_labels(
         ax_y_lim = (y_max + padding, y_min - padding / 2)
     else:
         ax_y_lim = (y_max + padding, y_min - padding)
-    print(ax_y_lim)
     ax.set_ylim(ax_y_lim)
 
 
