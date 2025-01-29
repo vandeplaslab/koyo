@@ -90,6 +90,17 @@ def is_installed(module: str) -> bool:
     return loader is not None
 
 
+def get_version(module: str) -> str:
+    """Get current version of package."""
+    import importlib.metadata
+
+    try:
+        installed_version = importlib.metadata.version(module)
+    except importlib.metadata.PackageNotFoundError:
+        return "N/A"
+    return installed_version
+
+
 def is_above_version(module: str, version: str) -> bool:
     """Check whether the module is above a certain version."""
     import importlib.metadata
@@ -364,10 +375,10 @@ def format_count(value: float) -> str:
     if value < 1e3:
         return f"{value:.0f}"
     elif value < 1e6:
-        return f"{value/1e3:.1f}K"
+        return f"{value / 1e3:.1f}K"
     elif value < 1e9:
-        return f"{value/1e6:.1f}M"
-    return f"{value/1e9:.1f}B"
+        return f"{value / 1e6:.1f}M"
+    return f"{value / 1e9:.1f}B"
 
 
 def format_size(size: int) -> str:
