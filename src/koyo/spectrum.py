@@ -77,7 +77,7 @@ def ppm_error(
 
 def select_nearest_index(values: np.ndarray, values_to_find: np.ndarray, ppm: float = 3.0) -> np.ndarray:
     """Find nearest values within a specified window."""
-    indices = find_nearest_index_batch(values, values_to_find)
+    indices = find_nearest_index(values, values_to_find)
     found_values = values[indices]
     mask = np.abs(ppm_error(found_values, values_to_find)) <= ppm
     return indices[mask]
@@ -176,7 +176,7 @@ def get_peaklist_window_for_da(peaklist: np.ndarray, da: float) -> ty.List[ty.Tu
 
 def get_mzs_for_tol(mzs: np.ndarray, tol: ty.Optional[float] = None, ppm: ty.Optional[float] = None):
     """Get min/max values for specified tolerance or ppm."""
-    if tol is None and ppm is None or tol == 0 and ppm == 0:
+    if (tol is None and ppm is None) or (tol == 0 and ppm == 0):
         raise ValueError("Please specify `tol` or `ppm`.")
     elif tol is not None and ppm is not None:
         raise ValueError("Please only specify `tol` or `ppm`.")
