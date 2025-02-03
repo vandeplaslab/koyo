@@ -75,6 +75,20 @@ def ppm_error(
     return ((measured_mz - theoretical_mz) / theoretical_mz) * 1e6
 
 
+def select_nearest_index(values: np.ndarray, values_to_find: np.ndarray, ppm: float = 3.0) -> np.ndarray:
+    """Find nearest values within a specified window."""
+    indices = find_nearest_index_batch(values, values_to_find)
+    found_values = values[indices]
+    mask = np.abs(ppm_error(found_values, values_to_find)) <= ppm
+    return indices[mask]
+
+
+def select_nearest(values: np.ndarray, values_to_find: np.ndarray, ppm: float = 3.0) -> np.ndarray:
+    """Find nearest values within a specified window."""
+    indices = select_nearest_index(values, values_to_find, ppm)
+    return values[indices]
+
+
 @numba.njit(fastmath=True, cache=True)
 def get_window_for_ppm(mz: float, ppm: float) -> float:
     """Calculate window size for specified peak at specified ppm."""
