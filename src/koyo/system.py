@@ -133,10 +133,10 @@ def _linux_sys_name() -> str:
             return data["PRETTY_NAME"]
         if "NAME" in data:
             if "VERSION" in data:
-                return f'{data["NAME"]} {data["VERSION"]}'
+                return f"{data['NAME']} {data['VERSION']}"
             if "VERSION_ID" in data:
-                return f'{data["NAME"]} {data["VERSION_ID"]}'
-            return f'{data["NAME"]} (no version)'
+                return f"{data['NAME']} {data['VERSION_ID']}"
+            return f"{data['NAME']} (no version)"
     return _linux_sys_name_lsb_release()
 
 
