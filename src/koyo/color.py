@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import colorsys
 import random
+import typing as ty
 from ast import literal_eval
 
 import numpy as np
+
+if ty.TYPE_CHECKING:
+    from matplotlib.colors import Colormap as MplColormap
 
 
 def mpl_to_rgba_255(color: str | tuple | list) -> tuple[int, int, int, int]:
@@ -69,8 +73,26 @@ def hex_to_rgb_255(hex_str):
     hex_color = hex_str.lstrip("#")
     hlen = len(hex_color)
     rgb = [int(hex_color[i : i + int(hlen / 3)], 16) for i in range(0, int(hlen), int(hlen / 3))]
-
     return rgb
+
+
+def rgb_to_hex(colors, multiplier: int = 255) -> str:
+    """Convert list/tuple of colors to hex."""
+    return f"#{int(colors[0] * multiplier):02x}{int(colors[1] * multiplier):02x}{int(colors[2] * multiplier):02x}"
+
+
+def hex_to_rgb(hex_str, decimals=3, alpha: float | None = None):
+    """Convert hex color to numpy array."""
+    hex_color = hex_str.lstrip("#")
+    hex_len = len(hex_color)
+    rgb = [int(hex_color[i : i + int(hex_len / 3)], 16) for i in range(0, int(hex_len), int(hex_len / 3))]
+    if alpha is not None:
+        if alpha == 1:
+            warnings.warn(
+                "The provided alpha value is equal to 1 - this function accepts values in 0-255 range.", stacklevel=2
+            )
+        rgb.append(alpha)
+    return np.round(np.asarray(rgb) / 255, decimals)
 
 
 def get_random_hex_color() -> str:
@@ -170,3 +192,69 @@ def generate_distinct_colors(starting_colors: list[str], n_colors: int) -> list[
     result_colors = starting_colors[:]
     result_colors += [hsl_to_hex(h, s, l) for h, s, l in starting_hsl[len(starting_colors) :]]
     return result_colors[:n_colors]
+
+
+def colormap_to_hex(colormap: MplColormap) -> list[str]:
+    """Convert mpl colormap to hex."""
+    return [rgb_to_hex(colormap(i)) for i in range(colormap.N)]
+
+
+def get_colors_from_colormap(colormap: str, n_colors: int, is_reversed: bool = False) -> list[str]:
+    """Get list of colors from colormap."""
+    import matplotlib.cm
+
+    if is_reversed and not colormap.endswith("_r"):
+        colormap += "_r"
+
+    return colormap_to_hex(matplotlib.cm.get_cmap(colormap, n_colors))
+
+
+def find_text_color(base_color, dark_color="black", light_color="white", coef_choice=0):
+    """
+    Takes a background color and returns the appropriate light or dark text color.
+    Users can specify the dark and light text color, or accept the defaults of 'black' and 'white'
+    base_color: The color of the background. This must be
+        specified in RGBA with values between 0 and 1 (note, this is the default
+        return value format of a call to base_color = cmap(number) to get the
+        color corresponding to a desired number). Note, the value of `A` in RGBA
+        is not considered in determining light/dark.
+    dark_color: Any valid matplotlib color value.
+        Function will return this value if the text should be colored dark
+    light_color: Any valid matplotlib color value.
+        Function will return this value if thet text should be colored light.
+    coef_choice: slightly different approaches to calculating brightness. Currently two options in
+        a list, user can enter 0 or 1 as list index. 0 is default.
+    """
+    # Coefficients:
+    # option 0: http://www.nbdtech.com/Blog/archive/2008/04/27/Calculating-the-Perceived-Brightness-of-a-Color.aspx
+    # option 1: http://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color
+    coef_options = [
+        np.array((0.241, 0.691, 0.068, 0)),
+        np.array((0.299, 0.587, 0.114, 0)),
+    ]
+
+    coefs = coef_options[coef_choice]
+    rgb = np.array(base_color) * 255
+    brightness = np.sqrt(np.dot(coefs, rgb**2))
+
+    # Threshold from option 0 link; determined by trial and error.
+    # base is light
+    if brightness > 130:
+        return dark_color
+    return light_color
+
+
+def make_listed_colormap(colors: list[str], is_vispy: bool = False) -> MplColormap:
+    """Make listed colormap."""
+    from matplotlib.colors import LinearSegmentedColormap
+    from vispy.color.colormap import Colormap
+
+    if is_vispy:
+        colors.insert(0, "#FFFFFF")
+
+    colormap = LinearSegmentedColormap.from_list("colormap", colors, len(colors))
+    if is_vispy:
+        mpl_colors = colormap(np.linspace(0, 1, len(colors)))
+        mpl_colors[0][-1] = 0  # first color is white with alpha=0
+        return Colormap(mpl_colors)
+    return colormap

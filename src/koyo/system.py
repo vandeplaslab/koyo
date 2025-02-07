@@ -170,3 +170,14 @@ def _sys_name() -> str:
                 )
                 return f"MacOS {res.stdout.decode().strip()}"
     return ""
+
+
+def get_module_path(module: str, filename: str) -> str:
+    """Get module path."""
+    import importlib.resources
+
+    if not filename.endswith(".py"):
+        filename += ".py"
+
+    path = str(importlib.resources.files(module).joinpath(filename))
+    return path
