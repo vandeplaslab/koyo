@@ -221,7 +221,7 @@ def add_contours(
         contours = {"": contours}
     color = color if color is not None else plt.rcParams["text.color"]
     for _key, contour in contours.items():
-        ax.plot(contour[:, 0], contour[:, 1], lw=line_width, color=color)
+        ax.plot(contour[:, 0], contour[:, 1], lw=line_width, color=color, zorder=100)
 
 
 def _sort_contour_order(contours: dict[str, np.ndarray]) -> tuple[dict[str, tuple[int, int]], dict[str, np.ndarray]]:
@@ -271,7 +271,16 @@ def add_contour_labels(
             y = np.min(contour[:, 1])
         else:
             y = np.max(contour[:, 1]) + y_offset
-        ax.text(x, y, labels[key], fontsize=font_size, color=color, va="bottom" if is_top else "top", ha="center")
+        ax.text(
+            x,
+            y,
+            labels[key],
+            fontsize=font_size,
+            color=color,
+            va="bottom" if is_top else "top",
+            ha="center",
+            zorder=100,
+        )
         new_y_ax = min(y, new_y_ax)  # if is_top else min(y, new_y_ax)
         if is_alt:
             is_top = not is_top
