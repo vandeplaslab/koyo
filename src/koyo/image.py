@@ -139,14 +139,14 @@ def reshape_array_batch_from_coordinates(
     """
     if array.ndim != 2:
         raise ValueError("Expected 2-D array.")
-    n = array.shape[1]
+    n_features = array.shape[1]
     dtype = np.float32 if np.isnan(fill_value) else array.dtype
-    im = np.full((n, *image_shape), fill_value=fill_value, dtype=dtype)
+    im = np.full((n_features, *image_shape), fill_value=fill_value, dtype=dtype)
     try:
-        for i in range(n):
+        for i in range(n_features):
             im[i, coordinates[:, 1] - offset, coordinates[:, 0] - offset] = array[:, i]
     except IndexError:
-        for i in range(n):
+        for i in range(n_features):
             im[i, coordinates[:, 0] - offset, coordinates[:, 1] - offset] = array[:, i]
     return im
 
