@@ -483,7 +483,7 @@ def _get_mosaic_dims(n: int, width: int, height: int, n_cols: int = 0) -> tuple[
         if n_cols > n:
             n_cols = n
         n_rows = ceil(n / n_cols)
-    if n_rows > ceil(n / n_cols):
+    while n_rows > ceil(n / n_cols):
         n_rows -= 1
     return n_rows, n_cols, _width, _height
 
