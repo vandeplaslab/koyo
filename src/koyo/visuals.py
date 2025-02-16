@@ -233,6 +233,17 @@ def _sort_contour_order(contours: dict[str, np.ndarray]) -> tuple[dict[str, tupl
     return order, contours
 
 
+def _get_alternate_locations(contours: dict[str, np.ndarray]) -> dict[str, str]:
+    """Get alternative locations."""
+    _, contours = _sort_contour_order(contours)
+    locations = {}
+    is_top = True
+    for key in contours:
+        locations[key] = "top" if is_top else "bottom"
+        is_top = not is_top
+    return locations
+
+
 def add_contour_labels(
     ax: plt.Axes,
     contours: np.ndarray | dict[str, np.ndarray],
