@@ -13,6 +13,7 @@ from tqdm import tqdm
 
 from koyo.pdf_mixin import PDFMixin
 from koyo.pptx_mixin import PPTXMixin
+from koyo.system import IS_WIN
 from koyo.typing import PathLike
 
 if ty.TYPE_CHECKING:
@@ -341,6 +342,27 @@ class PptxPdfWrapper:
             )
         elif override or not Path(filename).exists():
             face_color = face_color if face_color is not None else fig.get_facecolor()
+            filename = _ensure_filename_is_not_too_long(filename)
             fig.savefig(filename, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
             if close:
                 plt.close(fig)
+
+
+def _ensure_filename_is_not_too_long(filenme: PathLike) -> Path:
+    """Ensures on Windows that filename is not too long."""
+    if not IS_WIN:
+        return Path(filenme)
+    filename = Path(filenme)
+    n = len(str(filename))
+    if n > 250:
+        parent = filename.parent
+        suffix = filename.suffix
+        if n - len(str(parent)) > 250:
+            raise ValueError("Filename is too long")
+        max_length = 250 - len(str(parent)) - len(suffix)
+        if max_length > len(filename.stem):
+            max_length = len(filename.stem)
+        filename_ = filename.stem[0:max_length] + suffix
+        logger.trace(f"Filename is too long, truncating to {filename_} from {filename.name}")
+        return parent / filename_
+    return filename
