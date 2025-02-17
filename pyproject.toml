@@ -42,7 +42,7 @@ dependencies = [
     "tabulate",
     "matplotlib",
     "psutil",
-    "click-groups"
+    "click-groups",
 ]
 
 # extras

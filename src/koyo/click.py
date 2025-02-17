@@ -100,7 +100,7 @@ class BrokenCommand(click.Command):
         """Define the special help messages after instantiating a `click.Command()`."""
         click.Command.__init__(self, name)
 
-        util_name = os.path.basename(sys.argv and sys.argv[0] or __file__)
+        util_name = os.path.basename((sys.argv and sys.argv[0]) or __file__)
 
         if os.environ.get("CLICK_PLUGINS_HONESTLY"):  # pragma no cover
             icon = "\U0001f4a9"
@@ -108,8 +108,7 @@ class BrokenCommand(click.Command):
             icon = "\u2020"
 
         self.help = (
-            "\nWarning: entry point could not be loaded. Contact "
-            "its author for help.\n\n\b\n" + traceback.format_exc()
+            "\nWarning: entry point could not be loaded. Contact its author for help.\n\n\b\n" + traceback.format_exc()
         )
         self.short_help = icon + f" Warning: could not load plugin. See `{util_name} {self.name} --help`."
 
@@ -240,7 +239,7 @@ def get_args_from_option(option: ty.Callable) -> str:
 class Parameter:
     """Parameter object."""
 
-    __slots__ = ["description", "args", "value"]
+    __slots__ = ["args", "description", "value"]
 
     def __init__(self, description: str, args: str | ty.Callable | None, value: ty.Any | None = None):
         self.description = description
@@ -466,6 +465,8 @@ def parse_extra_args(extra_args: tuple[str, ...] | None) -> dict[str, ty.Any]:
             continue
         name, value = parse_arg(arg, "")
         if name in kwargs:
+            if name in kwargs and not isinstance(kwargs[name], list):
+                kwargs[name] = [kwargs[name]]
             if isinstance(kwargs[name], list):
                 kwargs[name].append(value)
             elif isinstance(kwargs[name], (str, int, float, bool)):
@@ -530,7 +531,7 @@ def set_env_args(**kwargs: ty.Any) -> None:
 
     for name, value in kwargs.items():
         os.environ[name] = str(value)
-        logger.trace(f"Set environment variable: {name}={value}")
+        logger.info(f"Set environment variable: {name}={value}")
 
 
 def filter_kwargs(*allowed: str, **kwargs: ty.Any) -> dict[str, ty.Any]:

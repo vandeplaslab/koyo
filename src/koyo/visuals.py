@@ -221,7 +221,7 @@ def add_contours(
         contours = {"": contours}
     color = color if color is not None else plt.rcParams["text.color"]
     for _key, contour in contours.items():
-        ax.plot(contour[:, 0], contour[:, 1], lw=line_width, color=color)
+        ax.plot(contour[:, 0], contour[:, 1], lw=line_width, color=color, zorder=100)
 
 
 def _sort_contour_order(contours: dict[str, np.ndarray]) -> tuple[dict[str, tuple[int, int]], dict[str, np.ndarray]]:
@@ -233,6 +233,17 @@ def _sort_contour_order(contours: dict[str, np.ndarray]) -> tuple[dict[str, tupl
     return order, contours
 
 
+def _get_alternate_locations(contours: dict[str, np.ndarray]) -> dict[str, str]:
+    """Get alternative locations."""
+    _, contours = _sort_contour_order(contours)
+    locations = {}
+    is_top = True
+    for key in contours:
+        locations[key] = "top" if is_top else "bottom"
+        is_top = not is_top
+    return locations
+
+
 def add_contour_labels(
     ax: plt.Axes,
     contours: np.ndarray | dict[str, np.ndarray],
@@ -240,20 +251,25 @@ def add_contour_labels(
     font_size: int = 12,
     color: str | None = None,
     where: ty.Literal["top", "bottom", "alternate"] = "alternate",
+    locations: dict[str, str] | None = None,
 ) -> None:
     """Add labels to the contours."""
+    if contours is None:
+        return
+
     y_offset = font_size
     is_top = where == "top"
     is_alt = where == "alternate"
     if is_alt:
         is_top = True
 
-    if contours is None:
-        return
+    locations = locations or {}
     if isinstance(contours, np.ndarray):
         contours = {"": contours}
     if isinstance(labels, str):
         labels = {"": labels}
+    if isinstance(locations, str):
+        locations = {"": locations}
 
     # get min x, y for each contour
     if where == "alternate":
@@ -266,12 +282,22 @@ def add_contour_labels(
         xs = contour[:, 0]
         xmin, xmax = xs.min(), xs.max()
         x = xmin + (xmax - xmin) / 2
+        is_top = locations.get(key, "top" if is_top else "bottom") == "top"
         # find vertical top of the contour
         if is_top:
             y = np.min(contour[:, 1])
         else:
             y = np.max(contour[:, 1]) + y_offset
-        ax.text(x, y, labels[key], fontsize=font_size, color=color, va="bottom" if is_top else "top", ha="center")
+        ax.text(
+            x,
+            y,
+            labels[key],
+            fontsize=font_size,
+            color=color,
+            va="bottom" if is_top else "top",
+            ha="center",
+            zorder=100,
+        )
         new_y_ax = min(y, new_y_ax)  # if is_top else min(y, new_y_ax)
         if is_alt:
             is_top = not is_top
@@ -617,6 +643,15 @@ def fix_style(style: str) -> str:
             style = style.replace("seaborn", "seaborn-v0_8")
     if style != "default":
         assert style in available, f"Style '{style}' not available. Available styles: {available}"
+    return style
+
+
+def shorten_style(style: str) -> str:
+    """Shorten style name."""
+    style = style.replace("seaborn-v0_8-", "s-")  # seaborn style is too long
+    style = style.replace("seaborn-", "s-")
+    style = style.replace("seaborn", "s")
+    style = style.replace("dark_background", "dark")
     return style
 
 
