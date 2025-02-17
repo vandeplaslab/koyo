@@ -465,6 +465,8 @@ def parse_extra_args(extra_args: tuple[str, ...] | None) -> dict[str, ty.Any]:
             continue
         name, value = parse_arg(arg, "")
         if name in kwargs:
+            if name in kwargs and not isinstance(kwargs[name], list):
+                kwargs[name] = [kwargs[name]]
             if isinstance(kwargs[name], list):
                 kwargs[name].append(value)
             elif isinstance(kwargs[name], (str, int, float, bool)):

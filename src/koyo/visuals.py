@@ -646,6 +646,15 @@ def fix_style(style: str) -> str:
     return style
 
 
+def shorten_style(style: str) -> str:
+    """Shorten style name."""
+    style = style.replace("seaborn-v0_8-", "s-")  # seaborn style is too long
+    style = style.replace("seaborn-", "s-")
+    style = style.replace("seaborn", "s")
+    style = style.replace("dark_background", "dark")
+    return style
+
+
 def _override_seaborn_heatmap_annotations():
     from seaborn.matrix import _HeatMapper
 
