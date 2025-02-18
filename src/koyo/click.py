@@ -284,6 +284,11 @@ def print_parameters(*parameters: Parameter, log: bool = True, silent: bool = Fa
             logger.info(line)
 
 
+def exception_msg(msg: str):
+    """Display error message."""
+    logger.exception(msg)
+
+
 def error_msg(msg: str):
     """Display error message."""
     logger.error(msg)
