@@ -493,12 +493,15 @@ def parse_args_with_keys(
         return extra_kwargs
     extra_args_ = []
     for arg in extra_args:
-        for k in fields:
-            if arg.startswith(k):
-                name, value = parse_arg(arg, k)
-                extra_kwargs[name] = value
-            else:
-                extra_args_.append(arg)
+        print(arg)
+        if any(arg.startswith(k) for k in fields):
+            for k in fields:
+                if arg.startswith(k):
+                    name, value = parse_arg(arg, k)
+                    extra_kwargs[name] = value
+                    break
+        else:
+            extra_args_.append(arg)
     if clean:
         return extra_kwargs, extra_args_
     return extra_kwargs
