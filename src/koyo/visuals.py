@@ -250,7 +250,7 @@ def add_contour_labels(
     labels: str | dict[str, str],
     font_size: int = 12,
     color: str | None = None,
-    where: ty.Literal["top", "bottom", "alternate"] = "alternate",
+    where: ty.Literal["top", "bottom", "alternate"] | tuple[int, int] = "alternate",
     locations: dict[str, str] | None = None,
 ) -> None:
     """Add labels to the contours."""
@@ -282,15 +282,26 @@ def add_contour_labels(
         xs = contour[:, 0]
         xmin, xmax = xs.min(), xs.max()
         x = xmin + (xmax - xmin) / 2
-        is_top = locations.get(key, "top" if is_top else "bottom") == "top"
+        location = locations.get(key, "top" if is_top else "bottom")
+        is_top = location == "top"
+
         # find vertical top of the contour
-        if is_top:
-            y = np.min(contour[:, 1])
+        y_min = np.min(contour[:, 1])
+        y_max = np.max(contour[:, 1])
+        y = y_min if is_top else y_max + y_offset
+        if not isinstance(location, str):
+            if len(location) == 2:
+                x_, y_ = location
+            elif len(location) == 3:
+                where, x_offset_, y_offset_ = location
+                y_ = y_min if where == "top" else y_max + y_offset
+                x_ = x + x_offset_
+                y_ += y_offset_
         else:
-            y = np.max(contour[:, 1]) + y_offset
+            x_, y_ = x, y
         ax.text(
-            x,
-            y,
+            x_,
+            y_,
             labels[key],
             fontsize=font_size,
             color=color,
