@@ -102,9 +102,8 @@ class PDFMixin:
         """Save PPTX."""
         if pdf and hasattr(pdf, "close"):
             pdf.close()
-        filename = self.pdf_filename
         if pdf and hasattr(pdf, "filename"):
-            filename = Path(pdf.filename)
+            Path(pdf.filename)
         logger.debug(f"Saved PDF to {self.pdf_filename}")
         if reset:
             self._pdf = None
@@ -183,12 +182,13 @@ def add_mpl_figure_to_pdf(
     dpi: int = 150,
     override: bool = False,
     close: bool = False,
+    format: str = "jpg",
     **kwargs: ty.Any,
 ) -> None:
     """Export figure to file."""
     face_color = face_color if face_color is not None else fig.get_facecolor()
     if pdf is not None:
-        pdf.savefig(dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
+        pdf.savefig(dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, format=format, **kwargs)
     else:
         if override or not Path(filename).exists():
             fig.savefig(filename, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)

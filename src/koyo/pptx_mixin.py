@@ -215,13 +215,14 @@ def add_mpl_figure_to_pptx(
     override: bool = False,
     close: bool = False,
     title: str = "",
+    format: str = "jpg",
     **kwargs: ty.Any,
 ) -> None:
     """Export figure to file."""
     face_color = face_color if face_color is not None else fig.get_facecolor()
     if pptx is not None:
         with io.BytesIO() as image_stream:
-            fig.savefig(image_stream, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
+            fig.savefig(image_stream, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, format=format, **kwargs)
             slide, left, top = _insert_slide(pptx, title=title)
             slide.shapes.add_picture(image_stream, left, top)  # , width=pptx.slide_width, height=pptx.slide_height)
     else:

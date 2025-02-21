@@ -603,12 +603,46 @@ def add_label(
     )
 
 
-def get_ticks_with_unit(min_val: float, max_val: float, unit: str | None = None) -> tuple[list[float], list[str]]:
+def get_ticks_with_unit(
+    min_val: float, max_val: float, unit: str | None = None, n: int | None = None
+) -> tuple[list[float], list[str]]:
     """Get ticks for specified min/max range."""
     if not unit:
-        return [min_val, max_val], [y_tick_fmt(min_val), y_tick_fmt(max_val)]
-    between = np.linspace(min_val, max_val, 3)
-    return between.tolist(), [y_tick_fmt(min_val), unit, y_tick_fmt(max_val)]
+        if n is None:
+            ticks, tick_labels = [min_val, max_val], [y_tick_fmt(min_val), y_tick_fmt(max_val)]
+        else:
+            between = np.linspace(min_val, max_val, n)
+            ticks = between.tolist()
+            tick_labels = [y_tick_fmt(t) for t in between]
+    else:
+        # if n is even, let's add one more tick
+        if n is None:
+            n = 3
+        if n % 2 == 0:
+            n += 1
+        between = np.linspace(min_val, max_val, n)
+        ticks = between.tolist()
+        tick_labels = [y_tick_fmt(t) for t in between]
+        # in the middle insert the unit
+        middle = n // 2
+        ticks[middle] = unit
+    return ticks, tick_labels
+
+
+def update_colorbar(
+    cbar: Colorbar,
+    max_val: float,
+    min_val: float = 0.0,
+    ticks: ty.Sequence[float] | None = None,
+    ticklabels: ty.Sequence[str] | None = None,
+) -> None:
+    """Update colorbar."""
+    if not cbar:
+        return
+    cbar.mappable.set_clim(min_val, max_val)
+    cbar.set_ticks(ticks)
+    if ticklabels:
+        cbar.set_ticklabels(ticklabels)
 
 
 def inset_colorbar(
@@ -618,9 +652,14 @@ def inset_colorbar(
     ticklabels: ty.Sequence[str] | None = None,
     xpos: float = 0.03,
     ypos: float = 0.05,
-    labelcolor: str = "white",
-    edgecolor: str = "white",
-    **kwargs: ty.Any,
+    labelcolor: str = "auto",
+    edgecolor: str = "auto",
+    width: str = "30%",
+    height: str = "4%",
+    orientation: str = "horizontal",
+    labelsize: int = 16,
+    label: str = "",
+    **_kwargs: ty.Any,
 ):
     """Add colorbar to axes."""
 
@@ -629,15 +668,22 @@ def inset_colorbar(
             return float(value.replace("%", "")) / 100
         return float(value)
 
-    width = _parse_perc(kwargs.get("width", "30%"))
-    height = _parse_perc(kwargs.get("height", "4%"))
+    if labelcolor == "auto":
+        labelcolor = plt.rcParams["text.color"]
+    if edgecolor == "auto":
+        edgecolor = plt.rcParams["text.color"]
+
+    width = _parse_perc(width)
+    height = _parse_perc(height)
     cax = ax.inset_axes([xpos, ypos, width, height])
-    cax.tick_params(labelcolor=labelcolor, labelsize=16)
-    cbar = plt.colorbar(im, cax=cax, orientation=kwargs.get("orientation", "horizontal"), pad=0.1, ticks=ticks)
+    cax.tick_params(labelcolor=labelcolor, labelsize=labelsize)
+    cbar = plt.colorbar(im, cax=cax, orientation=orientation, pad=0.1, ticks=ticks)
     cbar.outline.set_edgecolor(edgecolor)
     cbar.outline.set_linewidth(1)
     if ticklabels:
         cbar.set_ticklabels(ticklabels)
+    if label:
+        cbar.set_label(label, size=labelsize + 2)
     return ax, cax, cbar
 
 
