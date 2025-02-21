@@ -396,6 +396,7 @@ def _merge_mosaic(
     y_pad: int = 0,
     add_title_to_images: bool = False,
     text_color: str | tuple[int, int, int, int] = (255, 255, 255, 255),
+    align_to: ty.Literal["top", "center", "bottom"] = "center",
 ) -> Image:
     from PIL import Image
 
@@ -414,20 +415,32 @@ def _merge_mosaic(
     k = 0  # image counter
     with tqdm(desc="Merging images...", total=len(filelist), disable=silent) as pbar:
         for i in range(n_rows):  # iterate over rows
-            y = height * i + y_offset + y_pad
             for j in range(n_cols):  # iterate over columns
-                # load image
                 try:
                     filename = filelist[k]
+                    im = None
                     if filename:
-                        with Image.open(filename) as im:
-                            x = width * j + x_pad
-                            dst.paste(im, (x, y))
-                        if add_title_to_images:
-                            _add_text_to_pil_image(dst, str(names[k]), (x, y), text_color)
+                        im = Image.open(filename)
                     elif filename is None and allow_placeholder:
+                        im = Image.new("RGB", (width, height), color=placeholder_color)
+
+                    try:
+                        if align_to == "top":
+                            y = height * i + y_offset + y_pad
+                        elif align_to == "center":
+                            y = height * i + y_offset + (height - im.height) // 2
+                        elif align_to == "bottom":
+                            y = height * i + y_offset + height - im.height - y_pad
+                    except AttributeError:
+                        y = height * i + y_offset + y_pad
+
+                    if im:
+                        # load image
                         x = width * j + x_pad
-                        dst.paste(Image.new("RGB", (width, height), color=placeholder_color), (x, y))
+                        dst.paste(im, (x, y))
+                        if add_title_to_images and filename:
+                            _add_text_to_pil_image(dst, str(names[k]), (x, y), text_color)
+                        im.close()
                     k += 1  # increment image counter
                     pbar.update(1)
                 except IndexError:
