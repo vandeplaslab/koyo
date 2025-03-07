@@ -67,18 +67,25 @@ def empty_directory(path: PathLike) -> None:
     path = Path(path)
     if not path.exists():
         return
-    for filename in os.listdir(path):
-        file_path = os.path.join(path, filename)
-        try:
-            if os.path.isfile(file_path) or os.path.islink(file_path):
-                os.unlink(file_path)
-                logger.trace(f"Deleted '{file_path}'")
-            elif os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-                logger.trace(f"Deleted '{file_path}'")
-        except Exception as e:
-            logger.warning(f"Failed to delete {file_path}. Reason: {e}")
-    shutil.rmtree(path, ignore_errors=True)
+    try:
+        for filename in os.listdir(path):
+            file_path = os.path.join(path, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                    logger.trace(f"Deleted '{file_path}'")
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+                    logger.trace(f"Deleted '{file_path}'")
+            except Exception as e:
+                logger.warning(f"Failed to delete {file_path}. Reason: {e}")
+    except Exception as e:
+        logger.error(f"Failed to empty directory '{path}'. Reason: {e}")
+    try:
+        shutil.rmtree(path, ignore_errors=True)
+        logger.trace(f"Deleted '{path}'")
+    except Exception as e:
+        logger.error(f"Failed to delete '{path}'. Reason: {e}")
 
 
 remove_directory = empty_directory
