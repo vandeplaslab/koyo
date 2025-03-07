@@ -129,9 +129,12 @@ def open_directory_alt(path: PathLike, *which: str) -> None:
         else:
             subprocess.call(["explorer", os.path.dirname(path)])
     elif platform.system() == "Darwin":
-        subprocess.Popen(["open", path])
+        if path.is_file():
+            subprocess.call(["open", "-R", str(path)])
+        else:
+            subprocess.Popen(["open", str(path)])
     else:
-        subprocess.Popen(["xdg-open", path])
+        subprocess.Popen(["xdg-open", str(path)])
 
 
 def create_directory(*path: str) -> Path:

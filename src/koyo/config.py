@@ -14,7 +14,7 @@ class BaseConfig(BaseModel):
     USER_CONFIG_DIR: ty.ClassVar[Path]
     USER_CONFIG_FILENAME: ty.ClassVar[str] = "config.json"
 
-    def __init__(self, _auto_load: bool = False, **kwargs):
+    def __init__(self, _auto_load: bool = False, **kwargs: ty.Any):
         super().__init__(**kwargs)
         if _auto_load:
             self.load()
@@ -46,15 +46,19 @@ class BaseConfig(BaseModel):
     def get_exclude_fields(self) -> set[str]:
         """Get fields to exclude from saving."""
         exclude = []
-        for field in self.__fields__.values():
-            if not field.field_info.extra.get("save", True):
-                exclude.append(field.name)
+        schema = self.model_json_schema()["properties"]
+        for field_name, _field in self.model_fields.items():
+            field_schema = schema[field_name]
+            if not field_schema.get("save", True):
+                exclude.append(field_name)
         return set(exclude)
 
     def save(self) -> None:
         """Export configuration to file."""
         try:
-            self.output_path.write_text(self.json(indent=4, exclude_unset=True, exclude=self.get_exclude_fields()))
+            self.output_path.write_text(
+                self.model_dump_json(indent=4, exclude_unset=True, exclude=self.get_exclude_fields())
+            )
             logger.info(f"Saved configuration to {self.output_path}")
         except Exception as e:
             logger.warning(f"Failed to save configuration to {self.output_path}: {e}")
@@ -80,7 +84,7 @@ class BaseConfig(BaseModel):
                 logger.exception(e)
 
     @contextmanager
-    def temporary_overwrite(self, **kwargs):
+    def temporary_overwrite(self, **kwargs: ty.Any) -> ty.Generator[None, None, None]:
         """Temporarily overwrite configuration and then revert back."""
         original = {key: getattr(self, key) for key in kwargs}
         for key, value in kwargs.items():
