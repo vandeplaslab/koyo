@@ -7,6 +7,7 @@ import typing as ty
 from collections.abc import Iterable
 from math import ceil, floor
 from pathlib import Path
+from random import shuffle
 
 import numba as nb
 import numpy as np
@@ -523,7 +524,7 @@ def rescale_value(
     return ((value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
 
 
-def chunks(item_list, n_items: int = 0, n_tasks: int = 0):
+def chunks(item_list: ty.Iterable[ty.Any], n_items: int = 0, n_tasks: int = 0) -> ty.Generator:
     """Yield successive n-sized chunks from `item_list`.
 
     Parameters
@@ -544,6 +545,20 @@ def chunks(item_list, n_items: int = 0, n_tasks: int = 0):
         raise ValueError("You must specified either 'n_items' or 'n_tasks'.")
     if n_tasks:
         n_items = ceil(len(item_list) / n_tasks)
+    for i in range(0, len(item_list), n_items):
+        yield item_list[i : i + n_items]
+
+
+def random_chunks(item_list: ty.Iterable[ty.Any], n_items: int = 0, n_tasks: int = 0) -> ty.Generator:
+    """Randomly yield successive n-sized chunks from `item_list`.
+
+    Warning: This function will shuffle the list ahead of time.
+    """
+    if n_items == 0 and n_tasks == 0:
+        raise ValueError("You must specified either 'n_items' or 'n_tasks'.")
+    if n_tasks:
+        n_items = ceil(len(item_list) / n_tasks)
+    shuffle(item_list)
     for i in range(0, len(item_list), n_items):
         yield item_list[i : i + n_items]
 
