@@ -25,24 +25,6 @@ class BaseConfig(BaseModel):
         self.USER_CONFIG_DIR.mkdir(parents=True, exist_ok=True)
         return self.USER_CONFIG_DIR / self.USER_CONFIG_FILENAME
 
-    def update(self, save: bool = True, **kwargs: ty.Any) -> None:
-        """Update configuration and save to file."""
-        changed = False
-        for key, value in kwargs.items():
-            if hasattr(self, key):
-                old_value = getattr(self, key)
-                try:
-                    setattr(self, key, value)
-                    if old_value != getattr(self, key):
-                        changed = True
-                except Exception as e:
-                    logger.warning(f"Failed to set {key}={value}: {e}")
-            else:
-                logger.warning(f"Unknown key {key}={value} - perhaps it was deprecated?")
-        if save and changed:
-            with suppress(OSError, PermissionError):
-                self.save()
-
     def get_exclude_fields(self) -> set[str]:
         """Get fields to exclude from saving."""
         exclude = []
@@ -59,6 +41,28 @@ class BaseConfig(BaseModel):
         except Exception as e:
             logger.warning(f"Failed to save configuration to {self.output_path}: {e}")
 
+    def _set_values(self, **kwargs: ty.Any) -> bool:
+        changed = False
+        for key, value in kwargs.items():
+            if hasattr(self, key):
+                old_value = getattr(self, key)
+                try:
+                    setattr(self, key, value)
+                    if old_value != getattr(self, key):
+                        changed = True
+                except Exception as e:
+                    logger.warning(f"Failed to set {key}={value}: {e}")
+            else:
+                logger.warning(f"[{self.__class__.__name__}] Unknown key {key}={value} - perhaps it was deprecated?")
+        return changed
+
+    def update(self, save: bool = True, **kwargs: ty.Any) -> None:
+        """Update configuration and save to file."""
+        changed = self._set_values(**kwargs)
+        if save and changed:
+            with suppress(OSError, PermissionError):
+                self.save()
+
     def load(self) -> None:
         """Load configuration from file."""
         from koyo.json import read_json_data
@@ -66,14 +70,7 @@ class BaseConfig(BaseModel):
         if self.output_path.exists():
             try:
                 data = read_json_data(self.output_path)
-                for key, value in data.items():
-                    if hasattr(self, key):
-                        try:
-                            setattr(self, key, value)
-                        except Exception as e:
-                            logger.warning(f"Failed to set {key}={value}: {e}")
-                    else:
-                        logger.warning(f"Unknown key {key}={value} - perhaps it was deprecated?")
+                self._set_values(**data)
                 logger.info(f"Loaded configuration from {self.output_path}")
             except Exception as e:
                 logger.warning(f"Failed to load configuration from {self.output_path}: {e}")
