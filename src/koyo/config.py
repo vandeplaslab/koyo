@@ -35,16 +35,6 @@ class BaseConfig(BaseModel):
                 exclude.append(field_name)
         return set(exclude)
 
-    def save(self) -> None:
-        """Export configuration to file."""
-        try:
-            self.output_path.write_text(
-                self.model_dump_json(indent=4, exclude_unset=True, exclude=self.get_exclude_fields())
-            )
-            logger.info(f"Saved configuration to {self.output_path}")
-        except Exception as e:
-            logger.warning(f"Failed to save configuration to {self.output_path}: {e}")
-
     def _set_values(self, **kwargs: ty.Any) -> bool:
         changed = False
         for key, value in kwargs.items():
@@ -79,6 +69,16 @@ class BaseConfig(BaseModel):
             except Exception as e:
                 logger.warning(f"Failed to load configuration from {self.output_path}: {e}")
                 logger.exception(e)
+
+    def save(self) -> None:
+        """Export configuration to file."""
+        try:
+            self.output_path.write_text(
+                self.model_dump_json(indent=4, exclude_unset=True, exclude=self.get_exclude_fields())
+            )
+            logger.info(f"Saved configuration to {self.output_path}")
+        except Exception as e:
+            logger.warning(f"Failed to save configuration to {self.output_path}: {e}")
 
     @contextmanager
     def temporary_overwrite(self, **kwargs: ty.Any) -> ty.Generator[None, None, None]:
