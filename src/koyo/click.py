@@ -20,7 +20,7 @@ from koyo.typing import PathLike
 def expand_data_dirs(input_dir: str) -> list[str]:
     """Expand data directory."""
     if "*" in input_dir:
-        return glob.glob(input_dir)
+        return list(glob.glob(input_dir))
     return [input_dir]
 
 
