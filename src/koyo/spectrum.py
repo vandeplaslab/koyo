@@ -218,34 +218,38 @@ def parabolic_centroid(
 
     This function was taken from msiwarp package available on GitHub
     """
-    peak_indices, _ = scipy.signal.find_peaks(intensities, height=peak_threshold)
-    peak_left = peak_indices - 1
-    peak_right = peak_indices + 1
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", RuntimeWarning)
+        peak_indices, _ = scipy.signal.find_peaks(intensities, height=peak_threshold)
+        peak_left = peak_indices - 1
+        peak_right = peak_indices + 1
 
-    n = len(peak_indices)
+        n = len(peak_indices)
 
-    x = np.zeros((n, 3))
-    y = np.zeros((n, 3))
+        x = np.zeros((n, 3))
+        y = np.zeros((n, 3))
 
-    x[:, 0] = mzs[peak_left]
-    x[:, 1] = mzs[peak_indices]
-    x[:, 2] = mzs[peak_right]
+        x[:, 0] = mzs[peak_left]
+        x[:, 1] = mzs[peak_indices]
+        x[:, 2] = mzs[peak_right]
 
-    y[:, 0] = intensities[peak_left]
-    y[:, 1] = intensities[peak_indices]
-    y[:, 2] = intensities[peak_right]
+        y[:, 0] = intensities[peak_left]
+        y[:, 1] = intensities[peak_indices]
+        y[:, 2] = intensities[peak_right]
 
-    a = ((y[:, 2] - y[:, 1]) / (x[:, 2] - x[:, 1]) - (y[:, 1] - y[:, 0]) / (x[:, 1] - x[:, 0])) / (x[:, 2] - x[:, 0])
+        a = ((y[:, 2] - y[:, 1]) / (x[:, 2] - x[:, 1]) - (y[:, 1] - y[:, 0]) / (x[:, 1] - x[:, 0])) / (
+            x[:, 2] - x[:, 0]
+        )
 
-    b = (
-        (y[:, 2] - y[:, 1]) / (x[:, 2] - x[:, 1]) * (x[:, 1] - x[:, 0])
-        + (y[:, 1] - y[:, 0]) / (x[:, 1] - x[:, 0]) * (x[:, 2] - x[:, 1])
-    ) / (x[:, 2] - x[:, 0])
+        b = (
+            (y[:, 2] - y[:, 1]) / (x[:, 2] - x[:, 1]) * (x[:, 1] - x[:, 0])
+            + (y[:, 1] - y[:, 0]) / (x[:, 1] - x[:, 0]) * (x[:, 2] - x[:, 1])
+        ) / (x[:, 2] - x[:, 0])
 
-    mzs_parabolic = (1 / 2) * (-b + 2 * a * x[:, 1]) / a
-    intensities_parabolic = a * (mzs_parabolic - x[:, 1]) ** 2 + b * (mzs_parabolic - x[:, 1]) + y[:, 1]
-    mask = ~np.isnan(mzs_parabolic)
-    return mzs_parabolic[mask], intensities_parabolic[mask]
+        mzs_parabolic = (1 / 2) * (-b + 2 * a * x[:, 1]) / a
+        intensities_parabolic = a * (mzs_parabolic - x[:, 1]) ** 2 + b * (mzs_parabolic - x[:, 1]) + y[:, 1]
+        mask = ~np.isnan(mzs_parabolic)
+        return mzs_parabolic[mask], intensities_parabolic[mask]
 
 
 def get_ppm_axis(mz_start: float, mz_end: float, ppm: float):
