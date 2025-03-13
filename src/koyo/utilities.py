@@ -19,12 +19,12 @@ if ty.TYPE_CHECKING:
     from koyo.fig_mixin import PptxPdfWrapper
 
 
-def human_readable_byte_size(nbytes: int) -> str:
+def human_readable_byte_size(n_bytes: int) -> str:
     """
 
     Parameters
     ----------
-    nbytes : int
+    n_bytes : int
         Number of bytes.
 
     Returns
@@ -34,10 +34,10 @@ def human_readable_byte_size(nbytes: int) -> str:
     """
     suffixes = ["B", "KB", "MB", "GB", "TB", "PB"]
     i = 0
-    while nbytes >= 1024 and i < len(suffixes) - 1:
-        nbytes /= 1024.0
+    while n_bytes >= 1024 and i < len(suffixes) - 1:
+        n_bytes /= 1024.0
         i += 1
-    f = (f"{nbytes:.2f}").rstrip("0").rstrip(".")
+    f = (f"{n_bytes:.2f}").rstrip("0").rstrip(".")
     return f"{f} {suffixes[i]}"
 
 
