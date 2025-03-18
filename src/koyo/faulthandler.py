@@ -8,7 +8,7 @@ from loguru import logger
 from koyo.typing import PathLike
 
 
-def submit_sentry_attachment(message: str, path: PathLike):
+def submit_sentry_attachment(message: str, path: PathLike) -> None:
     """Submit attachment to Sentry."""
     try:
         from sentry_sdk import configure_scope, get_current_scope
@@ -22,22 +22,22 @@ def submit_sentry_attachment(message: str, path: PathLike):
         logger.exception("Failed to submit attachment to Sentry.")
 
 
-def install_segfault_handler(output_dir: PathLike) -> None:
+def install_segfault_handler(output_dir: PathLike, filename: str = "segfault.log") -> None:
     """Install segfault handler."""
     import faulthandler
 
-    segfault_path = Path(output_dir) / "segfault.log"
+    segfault_path = Path(output_dir) / filename
     segfault_file = open(segfault_path, "w+")
     faulthandler.enable(segfault_file, all_threads=True)
     logger.trace(f"Enabled fault handler - logging to '{segfault_path}'")
 
 
 # noinspection PyBroadException
-def maybe_submit_segfault(output_dir: PathLike) -> None:
+def maybe_submit_segfault(output_dir: PathLike, filename: str = "segfault.log") -> None:
     """Submit segfault to Sentry if there is an existing segfault file."""
     from datetime import datetime
 
-    segfault_path = Path(output_dir) / "segfault.log"
+    segfault_path = Path(output_dir) / filename
     if not segfault_path.exists():
         return
 

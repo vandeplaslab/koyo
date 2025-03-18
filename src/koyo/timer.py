@@ -161,7 +161,7 @@ class MeasureTimer:
         """Return nicely formatted execution time."""
         return self()
 
-    def __enter__(self):
+    def __enter__(self) -> MeasureTimer:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
