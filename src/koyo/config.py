@@ -51,7 +51,7 @@ class BaseConfig(BaseModel):
         return changed
 
     def update(self, save: bool = True, **kwargs: ty.Any) -> None:
-        """Update configuration and save to file."""
+        """Update configuration and  pip install save to file."""
         changed = self._set_values(**kwargs)
         if save and changed:
             with suppress(OSError, PermissionError):
