@@ -1,5 +1,6 @@
 """Fault handler."""
 
+import atexit
 from contextlib import suppress
 from pathlib import Path
 
@@ -29,6 +30,7 @@ def install_segfault_handler(output_dir: PathLike, filename: str = "segfault.log
     segfault_path = Path(output_dir) / filename
     segfault_file = open(segfault_path, "w+")
     faulthandler.enable(segfault_file, all_threads=True)
+    atexit.register(segfault_file.close)
     logger.trace(f"Enabled fault handler - logging to '{segfault_path}'")
 
 
