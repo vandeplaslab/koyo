@@ -116,6 +116,11 @@ class MeasureTimer:
         self.start: float = float(time.perf_counter_ns() if human else time.perf_counter())
         self.end: float | None = None
         self.last: float | None = None
+        self.steps: list[str] = []
+
+    def stopwatch(self, name: str = "") -> None:
+        """Add a step to the timer."""
+        self.steps.append(self(since_last=True, name=name, with_steps=False))
 
     def finish(self) -> MeasureTimer:
         """Finish the timer."""
@@ -143,19 +148,30 @@ class MeasureTimer:
         """Format time."""
         return format_human_time(elapsed) if self.human else format_time(elapsed)
 
-    def __call__(self, n: int = 1, current: int = 1, start: float | None = None, since_last: bool = False) -> str:
+    def __call__(
+        self,
+        n: int = 1,
+        current: int = 1,
+        start: float | None = None,
+        since_last: bool = False,
+        with_steps: bool = True,
+        name: str = "",
+    ) -> str:
         if since_last:
             start = self.last
         elapsed = self.elapsed(n, start)
         formatted = format_human_time(elapsed) if self.human else format_time(elapsed)
         if n > 1:
             formatted = f"{formatted} [{current}/{n}]"
+        if name:
+            formatted = f"{formatted} ({name})"
+        if with_steps and self.steps:
+            formatted += f" | {', '.join(self.steps)}"
         return formatted
 
     def __repr__(self) -> str:
         """Return nicely formatted execution time."""
         return self()
-        # return f"{self.__class__.__name__}<total={self()}"
 
     def __str__(self) -> str:
         """Return nicely formatted execution time."""

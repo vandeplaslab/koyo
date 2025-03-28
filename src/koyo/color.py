@@ -138,7 +138,7 @@ def get_next_color(n: int, other_colors: list[str] | None = None) -> str:
 
     # Extend colors if `n` exceeds predefined list
     if n >= len(colors):
-        additional_count = n - len(colors) + 1
+        additional_count = n - len(colors) + 50
         hue_step = 1 / (additional_count + 1)
         for i in range(additional_count):
             h = (i + 1) * hue_step
