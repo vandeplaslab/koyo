@@ -61,10 +61,14 @@ def _natsort_if_iterable(value: ty.Any) -> ty.Any:
     return value
 
 
-def hash_parameters(n_in_hash: int = 0, **kwargs: ty.Any) -> str:
+def hash_parameters(n_in_hash: int = 0, exclude_keys: tuple[str, ...] = (), **kwargs: ty.Any) -> str:
     """Hash parameters."""
+    if exclude_keys is None:
+        exclude_keys = ()
     hash_id = hashlib.md5()
     for key in natsorted(kwargs.keys()):
+        if key in exclude_keys:
+            continue
         hash_id.update(repr(_natsort_if_iterable(kwargs[key])).encode("utf-8"))
     value = hash_id.hexdigest()
     return value[0:n_in_hash] if n_in_hash else value
