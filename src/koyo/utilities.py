@@ -314,6 +314,12 @@ def find_nearest_value_single(data: SimpleArrayLike, value: int | float) -> int 
     return data[idx]
 
 
+def find_nearest_value_in_dict(data: dict[float, ty.Any], value: int | float) -> ty.Any:
+    """Find nearest value in dictionary."""
+    key = find_nearest_value(list(data.keys()), value)
+    return data[key]
+
+
 def find_nearest_index_batch(array: SimpleArrayLike, values: SimpleArrayLike, sort: bool = False) -> np.ndarray:
     """Find nearest index."""
     # make sure array is a numpy array
