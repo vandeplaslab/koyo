@@ -188,10 +188,10 @@ def add_mpl_figure_to_pdf(
     """Export figure to file."""
     face_color = face_color if face_color is not None else fig.get_facecolor()
     if pdf is not None:
-        pdf.savefig(dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, format=format, **kwargs)
+        pdf.savefig(dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
     else:
         if override or not Path(filename).exists():
-            fig.savefig(filename, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
+            fig.savefig(filename, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, format=format, **kwargs)
     if close:
         plt.close(fig)
 
