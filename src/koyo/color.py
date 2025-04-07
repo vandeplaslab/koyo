@@ -5,6 +5,7 @@ from __future__ import annotations
 import colorsys
 import random
 import typing as ty
+import warnings
 from ast import literal_eval
 
 import numpy as np
@@ -64,12 +65,15 @@ def rgb_255_to_1(color: tuple | list, decimals: int = 3):
     return list(color)
 
 
-def hex_to_rgb_1(hex_str, decimals=3):
+def hex_to_rgb_1(hex_str, decimals: int = 3, with_alpha: bool = False):
     """Convert hex color to rgb color in 1-scale."""
     hex_color = hex_str.lstrip("#")
     hlen = len(hex_color)
     rgb = tuple(int(hex_color[i : i + int(hlen / 3)], 16) for i in range(0, int(hlen), int(hlen / 3)))
-    return [np.round(rgb[0] / 255.0, decimals), np.round(rgb[1] / 255.0, decimals), np.round(rgb[2] / 255.0, decimals)]
+    rgb = [np.round(rgb[0] / 255.0, decimals), np.round(rgb[1] / 255.0, decimals), np.round(rgb[2] / 255.0, decimals)]
+    if with_alpha:
+        return rgb + [1.0]
+    return rgb
 
 
 def hex_to_rgb_255(hex_str):
@@ -312,3 +316,33 @@ def rgbs_to_hex(rgbs: ty.Sequence) -> np.ndarray:
         [f"#{'%02x' * 4}" % tuple((255 * rgb).astype(np.uint8)) for rgb in rgbs],
         "|U9",
     )
+
+
+def transform_color(color: ColorType) -> np.ndarray:
+    """Transform color."""
+    if isinstance(color, str):
+        if color.startswith("#"):
+            return np.atleast_2d(hex_to_rgb_1(color, with_alpha=True))
+        if color.startswith("0x"):
+            return np.atleast_2d(hex_to_rgb_1(color[2:], with_alpha=True))
+        if color.startswith("rgb"):
+            return np.atleast_2d(literal_eval(color))
+        if color.startswith("rgba"):
+            return np.atleast_2d(literal_eval(color))
+        raise ValueError(f"Invalid color string: {color}")
+    if isinstance(color, (list, tuple)):
+        color = np.atleast_2d(color)
+        if color.max() > 1:
+            color = color / 255.0
+        if color.shape[1] == 4:
+            return color
+        if color.shape[1] == 3:
+            return np.concatenate((color, np.ones((color.shape[0], 1))), axis=1)
+        raise ValueError(f"Invalid color list/tuple: {color}")
+    if isinstance(color, np.ndarray):
+        if color.ndim == 1:
+            if color.shape[0] == 3:
+                return np.concatenate((color, [1]))
+            if color.shape[0] == 4:
+                return color
+        raise ValueError(f"Invalid color array: {color}")
