@@ -13,6 +13,10 @@ if ty.TYPE_CHECKING:
     from matplotlib.colors import Colormap as MplColormap
 
 
+# All parsable input color types that a user can provide
+ColorType = ty.Union[list, tuple, np.ndarray, str]
+
+
 def mpl_to_rgba_255(color: str | tuple | list) -> tuple[int, int, int, int]:
     """Convert color from matplotlib to RGBA 255-scale."""
     from matplotlib.colors import to_rgba_array
@@ -258,3 +262,53 @@ def make_listed_colormap(colors: list[str], is_vispy: bool = False) -> MplColorm
         mpl_colors[0][-1] = 0  # first color is white with alpha=0
         return Colormap(mpl_colors)
     return colormap
+
+
+def _check_color_dim(val):
+    """Ensures input is Nx4.
+
+    Parameters
+    ----------
+    val : np.ndarray
+        A color array of possibly less than 4 columns
+
+    Returns
+    -------
+    val : np.ndarray
+        A four columns version of the input array. If the original array
+        was a missing the fourth channel, it's added as 1.0 values.
+    """
+    val = np.atleast_2d(val)
+    if val.shape[1] not in (3, 4):
+        strval = str(val)
+        if len(strval) > 100:
+            strval = strval[:97] + "..."
+        raise RuntimeError(f"Value must have second dimension of size 3 or 4. Got `{strval}`, shape={val.shape}")
+
+    if val.shape[1] == 3:
+        val = np.column_stack([val, np.float32(1.0)])
+    return val
+
+
+def rgbs_to_hex(rgbs: ty.Sequence) -> np.ndarray:
+    """Convert RGB to hex quadruplet.
+
+    Taken from vispy with slight modifications.
+
+    Parameters
+    ----------
+    rgbs : Sequence
+        A list-like container of colors in RGBA format with values
+        between [0, 1]
+
+    Returns
+    -------
+    arr : np.ndarray
+        An array of the hex representation of the input colors
+
+    """
+    rgbs = _check_color_dim(rgbs)
+    return np.array(
+        [f"#{'%02x' * 4}" % tuple((255 * rgb).astype(np.uint8)) for rgb in rgbs],
+        "|U9",
+    )
