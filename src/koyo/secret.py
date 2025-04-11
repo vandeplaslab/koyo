@@ -7,7 +7,7 @@ import numpy as np
 from natsort import natsorted
 
 
-def get_unique_str():
+def get_unique_str() -> str:
     """Gives random, unique name."""
     return str(uuid.uuid4().hex)
 
