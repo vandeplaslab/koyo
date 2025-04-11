@@ -72,7 +72,7 @@ def hex_to_rgb_1(hex_str, decimals: int = 3, with_alpha: bool = False):
     rgb = tuple(int(hex_color[i : i + int(hlen / 3)], 16) for i in range(0, int(hlen), int(hlen / 3)))
     rgb = [np.round(rgb[0] / 255.0, decimals), np.round(rgb[1] / 255.0, decimals), np.round(rgb[2] / 255.0, decimals)]
     if with_alpha:
-        return rgb + [1.0]
+        return [*rgb, 1.0]
     return rgb
 
 
