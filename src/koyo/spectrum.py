@@ -219,7 +219,7 @@ def parabolic_centroid(
     This function was taken from msiwarp package available on GitHub
     """
     with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", RuntimeWarning)
+        warnings.simplefilter("ignore", RuntimeWarning)
         peak_indices, _ = scipy.signal.find_peaks(intensities, height=peak_threshold)
         peak_left = peak_indices - 1
         peak_right = peak_indices + 1
