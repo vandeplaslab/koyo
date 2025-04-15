@@ -893,7 +893,7 @@ def _plot_line(
     ax.plot(x, y)
     if marker:
         ax.axvline(marker, color=marker_color, linestyle="--", linewidth=2)
-    ax.set_title(title)
+    ax.set_title(title, weight="bold", fontsize=16)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     ax.set_xlim(x[0], x[-1])

@@ -9,6 +9,7 @@ from math import ceil
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.colors import to_rgba_array
 from tqdm import tqdm
 
 from koyo.typing import PathLike
@@ -400,6 +401,15 @@ def _merge_mosaic(
 ) -> Image:
     from PIL import Image
 
+    if isinstance(color, tuple):
+        assert len(color) in [3, 4], f"Color must be a tuple of 3 or 4 integers, not {color}."
+    color = (*tuple(color), 255) if len(color) == 3 else color
+    if isinstance(placeholder_color, tuple):
+        assert len(placeholder_color) in [3, 4], (
+            f"Placeholder color must be a tuple of 3 or 4 integers, not {placeholder_color}."
+        )
+    placeholder_color = (*tuple(placeholder_color), 255) if len(placeholder_color) == 3 else placeholder_color
+
     names = list(items.keys())
     filelist = list(items.values())
     if title_buf is not None:
@@ -512,8 +522,8 @@ def plot_mosaic(
     figsize: tuple[float, float] = (6, 6),
     n_cols: int | None = None,
     style: str = "dark_background",
-    color: tuple[int, int, int, int] = (0, 0, 0, 0),
-    placeholder_color: tuple[int, int, int, int] = (0, 0, 0, 255),
+    color: tuple[int, int, int, int] | None = None,
+    placeholder_color: tuple[int, int, int, int] | None = None,
     highlight: str | None = None,
     auto_rotate: bool = False,
     **kwargs: ty.Any,
@@ -524,6 +534,11 @@ def plot_mosaic(
     img, cbar = None, None
     figures = {}
     with plt.style.context(fix_style(style)):
+        if color is None:
+            color = _get_color_rgba255(plt.rcParams["axes.facecolor"])
+        if placeholder_color is None:
+            placeholder_color = _get_color_rgba255(plt.rcParams["axes.facecolor"])
+
         fig, ax = plt.subplots(figsize=figsize)
         ax.axis("off")
 
@@ -546,7 +561,13 @@ def plot_mosaic(
                 ax.title.set_color(plt.rcParams["text.color"])
             figures[key] = fig_to_bytes(fig, close=False, dpi=dpi)
         plt.close(fig)
-        image = merge_mosaic(figures, title=title, n_cols=n_cols, placeholder_color=placeholder_color, color=color)
+        image = merge_mosaic(
+            figures,
+            title=title,
+            n_cols=n_cols,
+            placeholder_color=placeholder_color,
+            color=color,
+        )
     return image
 
 
@@ -559,13 +580,17 @@ def plot_mosaic_no_colorbar(
     auto_rotate: bool = False,
     n_cols: int | None = None,
     style: str = "dark_background",
-    color: tuple[int, int, int, int] = (0, 0, 0, 0),
-    placeholder_color: tuple[int, int, int, int] = (0, 0, 0, 255),
+    color: tuple[int, int, int, int] | None = None,
+    placeholder_color: tuple[int, int, int, int] | None = None,
     **kwargs: ty.Any,
 ) -> Image:
     """Plot mosaic without colorbar."""
     images = {}
     with plt.style.context(style):
+        if color is None:
+            color = _get_color_rgba255(plt.rcParams["axes.facecolor"])
+        if placeholder_color is None:
+            placeholder_color = _get_color_rgba255(plt.rcParams["axes.facecolor"])
         for key in data:
             images[key] = fig_to_bytes(
                 convert_array_to_image(
@@ -602,8 +627,8 @@ def plot_mosaic_individual(
     n_cols: int | None = None,
     border_color: dict[str, str] | None = None,
     title_color: dict[str, str] | None = None,
-    color: tuple[int, int, int, int] = (0, 0, 0, 0),
-    placeholder_color: tuple[int, int, int, int] = (0, 0, 0, 255),
+    color: tuple[int, int, int, int] | None = None,
+    placeholder_color: tuple[int, int, int, int] | None = None,
     auto_rotate: bool = False,
     **kwargs: ty.Any,
 ) -> Image:
@@ -615,6 +640,11 @@ def plot_mosaic_individual(
 
     figures = {}
     with plt.style.context(fix_style(style)):
+        if color is None:
+            color = _get_color_rgba255(plt.rcParams["axes.facecolor"])
+        if placeholder_color is None:
+            placeholder_color = _get_color_rgba255(plt.rcParams["axes.facecolor"])
+
         for key in data:
             fig, ax = _plot_image(
                 rotate(data[key], auto_rotate),
@@ -629,7 +659,13 @@ def plot_mosaic_individual(
             )
             ax.axis("off")
             figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
-        image = merge_mosaic(figures, title=title, n_cols=n_cols, placeholder_color=placeholder_color, color=color)
+        image = merge_mosaic(
+            figures,
+            title=title,
+            n_cols=n_cols,
+            placeholder_color=placeholder_color,
+            color=color,
+        )
     return image
 
 
@@ -645,6 +681,8 @@ def plot_mosaic_line_individual(
     n_cols: int | None = None,
     border_color: dict[str, str] | None = None,
     title_color: dict[str, str] | None = None,
+    color: tuple[int, int, int, int] | None = None,
+    placeholder_color: tuple[int, int, int, int] | None = None,
 ) -> Image:
     """Plot mosaic."""
     from koyo.visuals import _plot_line
@@ -654,6 +692,10 @@ def plot_mosaic_line_individual(
 
     figures = {}
     with plt.style.context(fix_style(style)):
+        if color is None:
+            color = _get_color_rgba255(plt.rcParams["axes.facecolor"])
+        if placeholder_color is None:
+            placeholder_color = _get_color_rgba255(plt.rcParams["axes.facecolor"])
         for key in data:
             fig, ax = _plot_line(
                 data[key][0],
@@ -667,8 +709,22 @@ def plot_mosaic_line_individual(
                 title_color=title_color.get(key, None),
             )
             figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
-        image = merge_mosaic(figures, title=title, n_cols=n_cols)
+        image = merge_mosaic(
+            figures,
+            title=title,
+            n_cols=n_cols,
+            color=color,
+            placeholder_color=placeholder_color,
+        )
     return image
+
+
+def _get_color_rgba255(color) -> tuple[int, int, int, int]:
+    color = to_rgba_array(color) * 255
+    color = color.astype(int)
+    if color.ndim == 2:
+        return tuple(color[0])
+    return tuple(color)
 
 
 @lru_cache(maxsize=10)

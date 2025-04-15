@@ -561,7 +561,7 @@ def random_chunks(item_list: ty.Iterable[ty.Any], n_items: int = 0, n_tasks: int
     Warning: This function will shuffle the list ahead of time.
     """
     if n_items == 0 and n_tasks == 0:
-        raise ValueError("You must specified either 'n_items' or 'n_tasks'.")
+        raise ValueError("You must specify either 'n_items' or 'n_tasks'. Both are zero")
     if n_tasks:
         n_items = ceil(len(item_list) / n_tasks)
     shuffle(item_list)
@@ -569,9 +569,12 @@ def random_chunks(item_list: ty.Iterable[ty.Any], n_items: int = 0, n_tasks: int
         yield item_list[i : i + n_items]
 
 
-def zip_chunks(item_list, n_items: int, *items):
+def zip_chunks(item_list, n_items: int = 0, n_tasks: int = 0, *items):
     """Yield successive n-sized chunks from `item_list`."""
-    yield from zip(chunks(item_list, n_items), *[chunks(x, n_items) for x in items])
+    yield from zip(
+        chunks(item_list, n_items=n_items, n_tasks=n_tasks),
+        *[chunks(x, n_items=n_items, n_tasks=n_tasks) for x in items],
+    )
 
 
 def sequential_chunks(item_list, n_items: int):
