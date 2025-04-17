@@ -1,4 +1,5 @@
 """Decorators."""
+
 from __future__ import annotations
 
 import functools
@@ -87,7 +88,7 @@ def retry(
     return wrapper
 
 
-def deprecated(func):
+def deprecated(func: ty.Callable, context: str = "") -> ty.Callable:
     """A decorator which can be used to mark functions as deprecated.
 
     It will result in a warning being emitted when the function is used.
@@ -97,7 +98,7 @@ def deprecated(func):
     def new_func(*args, **kwargs):
         warnings.simplefilter("always", DeprecationWarning)  # turn off filter
         warnings.warn(
-            f"Call to deprecated function {func.__name__}.",
+            f"Call to deprecated function {func.__name__}. {context}",
             category=DeprecationWarning,
             stacklevel=2,
         )
