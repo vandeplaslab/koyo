@@ -218,7 +218,7 @@ class MultiCoreDispatcher:
         """Return iterable which can be consumed by the `generate_args_list` function."""
         return []
 
-    def generate_args_list(self):
+    def generate_args_list(self, post_process: bool = False):
         """Generate list of arguments which can be handled by the `dispatch` function."""
         raise NotImplementedError("Method must be implemented by the subclass")
 
@@ -242,7 +242,10 @@ class MultiCoreDispatcher:
         if pre_process:
             self.pre_process()
 
-        args_list = self.generate_args_list()
+        try:
+            args_list = self.generate_args_list(post_process)
+        except TypeError:
+            args_list = self.generate_args_list()
         if len(args_list) < self.n_cores:
             self.n_cores = len(args_list)
         if args_list:
