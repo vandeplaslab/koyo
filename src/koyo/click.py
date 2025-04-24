@@ -16,6 +16,8 @@ from natsort import natsorted
 
 from koyo.typing import PathLike
 
+ALLOW_EXTRA_ARGS = {"help_option_names": ["-h", "--help"], "ignore_unknown_options": True, "allow_extra_args": True}
+
 
 def expand_data_dirs(input_dir: str) -> list[str]:
     """Expand data directory."""
@@ -363,6 +365,14 @@ def arg_split_int(ctx, param, value):
     return args
 
 
+# noinspection PyUnusedLocal
+def arg_parse_env(ctx, param, value) -> tuple[str | None, ty.Any | None]:
+    """Split argument into environment variables."""
+    if value is None:
+        return None, None
+    return [v.split("=", maxsplit=1) for v in value]
+
+
 def parse_str_framelist(framelist: str) -> list[int]:
     """Parse list provided in string format."""
     if framelist is None:
@@ -513,30 +523,52 @@ def parse_fig_args(
     return parse_args_with_keys(extra_args, ("--fig:", "--f:"), clean)
 
 
-def parse_env_args(extra_args: tuple[str] | None, clean: bool = False):
+@ty.overload
+def parse_env_args(extra_args: tuple[str, ...] | None, clean: bool = False) -> dict[str, ty.Any]:
+    """Parse extra environment variables."""
+    ...
+
+
+@ty.overload
+def parse_env_args(extra_args: tuple[str, ...] | None, clean: bool = False) -> tuple[dict[str, ty.Any], tuple[str]]:
+    """Parse extra environment variables."""
+    ...
+
+
+def parse_env_args(
+    extra_args: tuple[str, ...] | None, clean: bool = False
+) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
     """Parse extra environment variables."""
     env_kwargs = {}
     if extra_args is None:
         if clean:
             return env_kwargs, extra_args
         return env_kwargs
-    extra_args_ = []
+
+    parsed_extra_args = []
     for arg in extra_args:
         if arg.startswith("--env:"):
             name, value = parse_arg(arg, "--env:")
             env_kwargs[name] = value
         else:
-            extra_args_.append(arg)
+            parsed_extra_args.append(arg)
     if clean:
-        return env_kwargs, extra_args_
+        return env_kwargs, parsed_extra_args
     return env_kwargs
 
 
 def set_env_args(**kwargs: ty.Any) -> None:
     """Set environment variables."""
-    from loguru import logger
-
     for name, value in kwargs.items():
+        os.environ[name] = str(value)
+        logger.info(f"Set environment variable: {name}={value}")
+
+
+def set_env_args_from_tuples(env_vars: tuple[str | None, str | None]) -> None:
+    """Set environment variables."""
+    for name, value in env_vars:
+        if name is None or value is None:
+            continue
         os.environ[name] = str(value)
         logger.info(f"Set environment variable: {name}={value}")
 
@@ -575,3 +607,15 @@ def select_from_list(
         elif auto_select.lower() == "oldest":
             return 0
     return default
+
+
+# Commonly used click options
+extra_args_ = click.argument("extra_args", nargs=-1, type=click.UNPROCESSED)
+env_var_ = click.option(
+    "-e",
+    "--env",
+    type=str,
+    multiple=True,
+    help="Environment variables to set. Values should be set as KEY=VALUE (e.g. --env KEY=VALUE).",
+    callback=arg_parse_env,
+)
