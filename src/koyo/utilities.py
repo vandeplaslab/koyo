@@ -105,13 +105,18 @@ def get_version(module: str) -> str:
 def is_above_version(module: str, version: str) -> bool:
     """Check whether the module is above a certain version."""
     import importlib.metadata
+    from packaging.version import Version
 
     try:
         installed_version = importlib.metadata.version(module)
     except importlib.metadata.PackageNotFoundError:
+        logger.warning(f"Module {module} not found.")
         return False
+    installed_version = Version(installed_version)
+    version = Version(version)
     if installed_version is not None:
         return installed_version >= version
+    logger.warning(f"Module {module} not found.")
     return False
 
 

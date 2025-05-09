@@ -56,10 +56,13 @@ def set_logger(
     verbosity: int,
     no_color: bool,
     log: PathLike | None = None,
-    logger: Logger = None,
+    logger: Logger | None = None,
     enable: tuple[str, ...] = ("koyo",),
 ):
     """Setup logger."""
+    if logger is None:
+        from loguru import logger
+
     level = verbosity * 10
     level, fmt, colorize, enqueue = get_loguru_config(level, no_color=no_color)
     set_loguru_env(fmt, level, colorize, enqueue)
@@ -81,6 +84,7 @@ def set_logger(
             remove=False,
         )
     logger.debug(f"Activated logger with level '{level}'.")
+    logger.trace(f"Command: {' '.join(sys.argv)}")
 
 
 def get_logger() -> Logger:

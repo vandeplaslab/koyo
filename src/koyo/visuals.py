@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 import typing as ty
 import warnings
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 
 import matplotlib.pyplot as plt
 import numba as nb
@@ -44,6 +44,19 @@ def close_pil_image(fig: Image) -> None:
     with suppress(Exception):
         fig.close()
         del fig
+
+
+@contextmanager
+def disable_bomb_protection() -> None:
+    """Disable PIL decompression bomb protection."""
+    from PIL import Image
+
+    max_size = Image.MAX_IMAGE_PIXELS
+    # disable decompression bomb protection
+    Image.MAX_IMAGE_PIXELS = 30_000 * 30_000  # 30k x 30k pixels
+    yield
+    # re-enable decompression bomb protection
+    Image.MAX_IMAGE_PIXELS = max_size
 
 
 def save_rgb(path: PathLike, image: np.ndarray) -> None:
