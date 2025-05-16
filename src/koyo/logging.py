@@ -175,6 +175,8 @@ def set_loguru_log(
         sink = get_stderr()
     if sink is None:
         raise ValueError("Sink is None - cannot set loguru log.")
+    if colorize is not None:
+        no_color = not colorize
 
     # automatically get format
     fmt = fmt if fmt is not None else (LOG_FMT if no_color else COLOR_LOG_FMT)
