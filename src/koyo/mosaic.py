@@ -243,11 +243,12 @@ def merge_mosaic(
     y_pad: int = 0,
     add_title_to_images: bool = False,
     text_color: str | tuple[int, int, int, int] = (255, 255, 255, 255),
+    font_size: int = 36,
 ) -> Image:
     """Merge images."""
     nr, nc, w, h = _get_mosaic_dims_for_list(items, n_cols=n_cols, x_pad=x_pad, y_pad=y_pad)
     if title:
-        title_buf = make_fig_title(title, w, nc)
+        title_buf = make_fig_title(title, w, nc, font_size=font_size)
     return _merge_mosaic(
         nr,
         nc,
