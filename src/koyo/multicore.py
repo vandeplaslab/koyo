@@ -43,7 +43,7 @@ def estimate_cpu_count_from_size(max_obj_size_in_bytes, keep_free_in_bytes=4_000
 
     # get currently available memory
     available_memory = virtual_memory().total - keep_free_in_bytes
-    n_cores = int(round(available_memory / max_obj_size_in_bytes))
+    n_cores = round(available_memory / max_obj_size_in_bytes)
     if n_cores < 1:
         raise ValueError(
             "Based on the amount of RAM available on this system, there is not enough memory to perform"
