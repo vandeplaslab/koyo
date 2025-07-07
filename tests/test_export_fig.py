@@ -5,10 +5,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from PIL import Image
-
 from koyo.fig_mixin import FigureExporter, FigureMixin
 from koyo.pptx_mixin import HAS_PPTX
+from PIL import Image
 
 
 class PptxPdf(FigureMixin):

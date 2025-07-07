@@ -41,6 +41,39 @@ def human_readable_byte_size(n_bytes: int) -> str:
     return f"{f} {suffixes[i]}"
 
 
+def split_tooltip(text: str, max_width: int = 80) -> str:
+    """Split tooltip text into multiple lines based on maximum width.
+
+    Args:
+        text: Text to be split
+        max_width: Maximum number of characters per line (default: 80)
+
+    Returns:
+        Formatted string with line breaks
+    """
+    if not text:
+        return ""
+
+    words = text.split()
+    lines = []
+    current_line = []
+    current_width = 0
+    for word in words:
+        word_len = len(word)
+        if current_width + word_len + 1 <= max_width:  # +1 for space
+            current_line.append(word)
+            current_width += word_len + 1
+        else:
+            if current_line:
+                lines.append(" ".join(current_line))
+            current_line = [word]
+            current_width = word_len + 1
+
+    if current_line:
+        lines.append(" ".join(current_line))
+    return "\n".join(lines)
+
+
 def get_unique_without_sort(seq: list) -> list:
     """Get unique values without sorting."""
     seen = set()
@@ -105,6 +138,7 @@ def get_version(module: str) -> str:
 def is_above_version(module: str, version: str) -> bool:
     """Check whether the module is above a certain version."""
     import importlib.metadata
+
     from packaging.version import Version
 
     try:

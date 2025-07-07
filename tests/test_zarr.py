@@ -2,7 +2,6 @@
 
 import numpy as np
 import pytest
-
 from koyo.zarr import get_chunk_shape_along_axis, load_array_from_zip, save_array_to_zip
 
 

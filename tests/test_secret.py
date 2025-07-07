@@ -2,7 +2,6 @@
 
 import numpy as np
 import pytest
-
 from koyo.secret import get_short_hash, get_unique_str, hash_iterable, hash_parameters
 
 

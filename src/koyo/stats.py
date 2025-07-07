@@ -104,7 +104,7 @@ def get_significant_correlations(
 def get_n_significant_correlations(
     correlation_matrix: np.ndarray | pd.DataFrame, n: int
 ) -> tuple[list[tuple[int, int, float]], list[tuple[int, int, float]]]:
-    """Get the n highest and lowest correlations"""
+    """Get the n highest and lowest correlations."""
     if isinstance(correlation_matrix, pd.DataFrame):
         correlation_matrix = correlation_matrix.values
 

@@ -1,5 +1,7 @@
 import numpy as np
 import pytest
+from numpy.testing import assert_equal
+
 from koyo.utilities import (
     check_image_orientation,
     check_value_order,
@@ -16,15 +18,22 @@ from koyo.utilities import (
     is_installed,
     is_number,
     rescale,
+    split_tooltip,
     view_as_blocks,
 )
-from numpy.testing import assert_equal
 
 
 def test_is_installed():
     assert is_installed("numpy")
     assert is_installed("numpy.linalg")
     assert not is_installed("not_installed_package")
+
+
+def test_split_tooltip():
+    text = "This is a test of different maximum widths"
+    # Test with narrow width
+    narrow = split_tooltip(text, 10)
+    assert all(len(line) <= 10 for line in narrow.split("\n"))
 
 
 def test_get_pixels_within_radius():

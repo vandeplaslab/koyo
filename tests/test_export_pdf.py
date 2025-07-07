@@ -4,9 +4,8 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from PIL import Image
-
 from koyo.pdf_mixin import PDFMixin
+from PIL import Image
 
 
 class PDF(PDFMixin):

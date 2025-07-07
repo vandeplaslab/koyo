@@ -29,20 +29,19 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
+    "click",
+    "click-groups",
     "numpy<2",
     "scipy",
     "numba",
+    "matplotlib",
+    "mpire",
     "natsort",
     "loguru",
     "toml",
-    "click",
-    "mpire",
-    "scikit-learn",
     "requests",
     "tabulate",
-    "matplotlib",
     "psutil",
-    "click-groups",
 ]
 
 # extras
@@ -51,6 +50,9 @@ dependencies = [
 pptx = [
     "python-pptx",
     "lxml==4.9.2 ; platform_system != 'Darwin' and python_version < '3.12' "  # for MacOS M1 compatibility
+]
+image = [
+    "scikit-learn",
 ]
 test = [
     "pytest>=6.0",
