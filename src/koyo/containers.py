@@ -4,12 +4,49 @@ from __future__ import annotations
 
 import typing as ty
 from abc import abstractmethod
+from keyword import iskeyword
 from typing import overload
 
 from koyo.utilities import is_valid_python_name
 
 _T = ty.TypeVar("_T")
 _K = ty.TypeVar("_K")
+
+
+def is_valid_python_name(name):
+    """Check whether the key is valid identifier."""
+    return name.isidentifier() and not iskeyword(name)
+
+
+class AttributeDict:
+    """Simple wrapper around schema dictionary."""
+
+    def __init__(self, data: dict):
+        self._data = data
+
+    def __repr__(self):
+        return repr(self._data)
+
+    def __getitem__(self, key: str | int) -> ty.Any:
+        """Get item id."""
+        return self._data[key]
+
+    def __getattr__(self, item: str | int) -> ty.Any:
+        # allow access to group members via dot notation
+        try:
+            return self.__getitem__(item)
+        except KeyError as err:
+            raise AttributeError from err
+
+    def __dir__(self):
+        # noinspection PyUnresolvedReferences
+        base = super().__dir__()
+        keys = sorted(set(base + list(self._data.keys())))
+        keys = [k for k in keys if is_valid_python_name(k)]
+        return keys
+
+    def _ipython_key_completions_(self):
+        return sorted(self)
 
 
 class MutableSequence(ty.MutableSequence[_T]):
