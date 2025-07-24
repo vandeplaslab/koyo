@@ -708,6 +708,8 @@ def fix_style(style: str) -> str:
         style = "seaborn-ticks"
     if style == "default" and "default" not in available:
         style = "seaborn-ticks"
+    if style == "dark":
+        style = "dark_background"
     if style.startswith("seaborn"):
         if "v0_8" not in style and "seaborn-v0_8" in available:
             style = style.replace("seaborn", "seaborn-v0_8")
