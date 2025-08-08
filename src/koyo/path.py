@@ -10,12 +10,23 @@ from loguru import logger
 from koyo.typing import PathLike
 
 
-def mglob(path: Path, *patterns: str) -> ty.Generator[Path, None, None]:
+def mglob(path: Path, *patterns: str, recursive: bool = False) -> ty.Generator[Path, None, None]:
     """Glob multiple patterns."""
     if not path.exists():
         return
     for pattern in patterns:
-        yield from path.glob(pattern)
+        if recursive:
+            yield from path.rglob(pattern)
+        else:
+            yield from path.glob(pattern)
+
+
+def dir_iter(path: PathLike) -> ty.Generator[Path, None, None]:
+    """Iterate over directory."""
+    path = Path(path)
+    for item in path.iterdir():
+        if item.is_dir():
+            yield item
 
 
 def uri_to_path(uri: str) -> Path:
