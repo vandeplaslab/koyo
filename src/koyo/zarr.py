@@ -1,9 +1,17 @@
 """zarr.py."""
 
 import numpy as np
-import zarr
-from numcodecs import Blosc
-from zarr.storage import ZipStore
+
+from koyo.utilities import is_installed
+
+HAS_ZARR = is_installed("zarr")
+
+if HAS_ZARR:
+    import zarr
+    from numcodecs import Blosc
+    from zarr.storage import ZipStore
+else:
+    zarr = Blosc = ZipStore = None
 
 
 def get_chunk_shape_along_axis(array: np.ndarray, axis: int = 0) -> tuple[int, int]:
@@ -18,7 +26,7 @@ def get_chunk_shape_along_axis(array: np.ndarray, axis: int = 0) -> tuple[int, i
     return 256, 256
 
 
-def save_array_to_zip(array: np.ndarray, zip_path: str, chunk_size: tuple[int, int] = (256, 256)):
+def save_array_to_zip(array: np.ndarray, zip_path: str, chunk_size: tuple[int, int] = (256, 256)) -> None:
     """
     Save a 2D NumPy array to a .zip file using zarr + Blosc (zstd) compression.
 
@@ -28,6 +36,8 @@ def save_array_to_zip(array: np.ndarray, zip_path: str, chunk_size: tuple[int, i
     - zip_path: Path to output .zip file
     - chunk_size: Chunk shape for compression
     """
+    if not HAS_ZARR:
+        raise ImportError("zarr is not installed. Please install it to use this function.")
     if array.ndim != 2:
         raise ValueError("Only 2D arrays supported")
 
@@ -50,6 +60,9 @@ def load_array_from_zip(zip_path: str) -> np.ndarray:
     -------
     - The decompressed NumPy array
     """
+    if not HAS_ZARR:
+        raise ImportError("zarr is not installed. Please install it to use this function.")
+
     store = ZipStore(zip_path, mode="r")
     array = zarr.open(store, mode="r")
     result = array[:]
