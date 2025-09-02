@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 import typing as ty
 from abc import abstractmethod
 from keyword import iskeyword
@@ -170,6 +171,51 @@ class SizedDict(ty.OrderedDict):
         """Override update."""
         super().update(m, **kwargs)
         self._check_size()
+
+
+class ShortLivedDict(dict):
+    """Short-lived dictionary that expires after a given time-to-live (TTL)."""
+
+    def __init__(self, ttl: float = 5.0):
+        super().__init__()
+        self.ttl = ttl
+        self._created = time.time()
+
+    def __getitem__(self, key: _K) -> _T:
+        self._check_expired()
+        return super().__getitem__(key)
+
+    def __setitem__(self, key: _K, value: _T) -> None:
+        self._check_expired()
+        return super().__setitem__(key, value)
+
+    def _expired(self) -> bool:
+        return time.time() - self._created > self.ttl
+
+    def _check_expired(self):
+        if self._expired():
+            super().clear()
+            self._created = time.time()
+
+    def get(self, key: _K, default: _T | None = None) -> _T | None:
+        """Get item with default value."""
+        self._check_expired()
+        return super().get(key, default)
+
+    def keys(self) -> ty.KeysView[_K]:
+        """Get items."""
+        self._check_expired()
+        return super().keys()
+
+    def items(self) -> ty.ItemsView[_K, _T]:
+        """Get items."""
+        self._check_expired()
+        return super().items()
+
+    def clear(self) -> None:
+        """Clear the dictionary."""
+        self._created = time.time()
+        return super().clear()
 
 
 class SizedList(ty.MutableSequence[_T]):

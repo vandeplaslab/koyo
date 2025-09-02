@@ -10,6 +10,27 @@ from loguru import logger
 from koyo.typing import PathLike
 
 
+def copy_file(src_path: str, dst_path: str) -> None:
+    """Copy a file from src_path to dst_path using zero-copy os.sendfile()."""
+    # Try zero-copy if available
+    if hasattr(os, "sendfile"):
+        with open(src_path, "rb") as fsrc, open(dst_path, "wb") as fdst:
+            size = os.fstat(fsrc.fileno()).st_size
+            offset = 0
+            while offset < size:
+                # Send up to 64 MB per call to avoid platform-specific limits
+                sent = os.sendfile(fdst.fileno(), fsrc.fileno(), offset, min(size - offset, 64 * 1024 * 1024))
+                if sent == 0:
+                    break
+                offset += sent
+        return
+    # Fallback to shutil.copyfile if zero-copy is not available
+    try:
+        shutil.copyfile(src_path, dst_path)
+    except FileNotFoundError:
+        logger.error(f"Source file '{src_path}' does not exist.")
+
+
 def mglob(path: Path, *patterns: str, recursive: bool = False) -> ty.Generator[Path, None, None]:
     """Glob multiple patterns."""
     if not path.exists():
