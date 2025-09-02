@@ -164,7 +164,7 @@ def set_loguru_log(
     catch: bool = False,
     colorize: bool | None = None,
     remove: bool = True,
-    logger: Logger = None,
+    logger: Logger | None = None,
 ) -> int:
     """Set loguru formatting."""
     if logger is None:
