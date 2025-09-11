@@ -8,6 +8,7 @@ import os
 import platform
 import subprocess
 import sys
+from functools import lru_cache
 
 IS_WIN = sys.platform == "win32"
 IS_LINUX = sys.platform == "linux"
@@ -183,3 +184,29 @@ def get_module_path(module: str, filename: str) -> str:
 
     path = str(importlib.resources.files(module).joinpath(filename))
     return path
+
+
+def running_as_pyinstaller_app() -> bool:
+    """Infer whether we are running pyinstaller bundle."""
+    import sys
+
+    return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
+
+
+@lru_cache(maxsize=4)
+def running_as_briefcase_app() -> bool:
+    """Infer whether we are running as a briefcase bundle."""
+    import importlib_metadata
+
+    # https://github.com/beeware/briefcase/issues/412
+    # https://github.com/beeware/briefcase/pull/425
+    # note that a module may not have a __package__ attribute
+    try:
+        app_module = sys.modules["__main__"].__package__
+    except AttributeError:
+        return False
+    try:
+        metadata = importlib_metadata.metadata(app_module)
+    except importlib_metadata.PackageNotFoundError:
+        return False
+    return "Briefcase-Version" in metadata

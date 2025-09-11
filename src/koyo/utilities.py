@@ -14,6 +14,7 @@ import numpy as np
 from natsort import natsorted
 
 from koyo.typing import PathLike, SimpleArrayLike
+from koyo.system import running_as_pyinstaller_app
 
 if ty.TYPE_CHECKING:
     from koyo.fig_mixin import PptxPdfWrapper
@@ -819,12 +820,6 @@ def difference_matrix(a: np.ndarray) -> np.ndarray:
     x = np.reshape(a, (len(a), 1))
     return x - x.transpose()
 
-
-def running_as_pyinstaller_app() -> bool:
-    """Infer whether we are running pyinstaller bundle."""
-    import sys
-
-    return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 
 def get_close_matches_case(word, possibilities, *args: ty.Any, **kwargs: ty.Any):

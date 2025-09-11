@@ -102,7 +102,7 @@ def get_logger() -> Logger:
     return logger
 
 
-def set_loguru_env(fmt: str, level: str, enqueue: bool, colorize: bool):
+def set_loguru_env(fmt: str, level: str, enqueue: bool, colorize: bool) -> None:
     """Set loguru environment variables."""
     os.environ["LOGURU_AUTOINIT"] = "0"
     os.environ["LOGURU_FORMAT"] = str(fmt)
