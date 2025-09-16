@@ -10,8 +10,7 @@ import subprocess
 import sys
 from functools import lru_cache
 
-from collections.abc import Iterator
-import types
+
 
 
 IS_WIN = sys.platform == "win32"
@@ -216,30 +215,3 @@ def running_as_briefcase_app() -> bool:
     return "Briefcase-Version" in metadata
 
 
-def _iter_all_modules(
-    package: str | types.ModuleType,
-    prefix: str = "",
-) -> Iterator[str]:
-    """Iterate over the names of all modules that can be found in the given
-    package, recursively.
-
-        >>> import _pytest
-        >>> list(_iter_all_modules(_pytest))
-        ['_pytest._argcomplete', '_pytest._code.code', ...]
-    """
-    import os
-    import pkgutil
-
-    if isinstance(package, str):
-        path = package
-    else:
-        # Type ignored because typeshed doesn't define ModuleType.__path__
-        # (only defined on packages).
-        package_path = package.__path__
-        path, prefix = package_path[0], package.__name__ + "."
-    for _, name, is_package in pkgutil.iter_modules([path]):
-        if is_package:
-            for m in _iter_all_modules(os.path.join(path, name), prefix=name + "."):
-                yield prefix + m
-        else:
-            yield prefix + name

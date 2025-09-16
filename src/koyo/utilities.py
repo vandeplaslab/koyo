@@ -12,6 +12,7 @@ from random import shuffle
 import numba as nb
 import numpy as np
 from natsort import natsorted
+from loguru import logger
 
 from koyo.typing import PathLike, SimpleArrayLike
 from koyo.system import running_as_pyinstaller_app
