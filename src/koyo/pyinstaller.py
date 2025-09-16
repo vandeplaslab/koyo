@@ -1,14 +1,15 @@
 """Helper functions for PyInstaller hooks."""
-from __future__ import annotations
 
-from collections.abc import Iterator
-import types
+from __future__ import annotations
 
 import importlib.util
 import sys
+import types
+from collections.abc import Iterator
 from pathlib import Path
 
-def load_module_from_path(path: str, module_name: str | None = None) -> types.ModuleType:
+
+def load_module_from_path(path: Path, module_name: str | None = None) -> types.ModuleType:
     """
     Load a .py file from an arbitrary path and return the module object.
 
@@ -34,6 +35,28 @@ def load_module_from_path(path: str, module_name: str | None = None) -> types.Mo
     sys.modules[module_name] = module
     spec.loader.exec_module(module)  # runs the module code
     return module
+
+
+def load_hooks(
+    hook_dir: Path, pattern: str = "hook-*.py"
+) -> tuple[list[str], list[tuple[str, str]], list[tuple[str, str]]]:
+    """Load all hook modules in the given directory matching the pattern."""
+    hiddenimports, datas, binaries = [], [], []
+    for hook in hook_dir.glob(pattern):
+        mod = load_module_from_path(hook)
+        if hasattr(mod, "hiddenimports"):
+            hiddenimports += mod.hiddenimports
+        if hasattr(mod, "datas"):
+            datas += mod.datas
+        if hasattr(mod, "binaries"):
+            binaries += mod.binaries
+    return hiddenimports, datas, binaries
+
+
+def get_runtime_hooks(hook_dir: Path, pattern: str = "hook-*.py") -> list[str]:
+    """Get a list of runtime hooks."""
+    return [str(hook) for hook in hook_dir.glob(pattern)]
+
 
 def _iter_all_modules(
     package: str | types.ModuleType,
