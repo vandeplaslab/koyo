@@ -54,6 +54,14 @@ def cli_parse_paths_sort(ctx, param, value) -> list[str]:
     return parse_paths(value, sort=True)
 
 
+def cli_parse_paths_sort_auto_glob(ctx, param, value) -> list[str]:
+    """Parse paths."""
+    if len(value) == 1:
+        if Path(value[0]).is_dir():
+            value = [f"{value[0]}/*"]
+    return parse_paths(value, sort=True)
+
+
 def with_plugins(plugins, **kwargs):
     """
     A decorator to register external CLI commands to an instance of
