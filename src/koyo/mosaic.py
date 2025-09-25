@@ -9,7 +9,7 @@ from math import ceil
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import to_rgba_array
+from matplotlib.colors import to_rgba_array, ListedColormap
 from tqdm import tqdm
 
 from koyo.typing import PathLike
@@ -658,6 +658,76 @@ def plot_mosaic_individual(
                 border_color=border_color.get(key, None),
                 title_color=title_color.get(key, None),
             )
+            ax.axis("off")
+            figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
+        image = merge_mosaic(
+            figures,
+            title=title,
+            n_cols=n_cols,
+            placeholder_color=placeholder_color,
+            color=color,
+        )
+    return image
+
+
+def plot_mosaic_with_mask_individual(
+    data: dict[str, np.ndarray],
+    mask: dict[str, np.ndarray] | None = None,
+    mask_color: str = "red",
+    mask_opacity: float = 0.3,
+    title: str = "",
+    colormap: str | dict[str, str] = "viridis",
+    colorbar: bool = True,
+    dpi: int = 100,
+    min_val: float | None = None,
+    max_val: float | None = None,
+    figsize: tuple[float, float] = (6, 6),
+    style: str = "dark_background",
+    n_cols: int | None = None,
+    border_color: dict[str, str] | None = None,
+    title_color: dict[str, str] | None = None,
+    color: tuple[int, int, int, int] | None = None,
+    placeholder_color: tuple[int, int, int, int] | None = None,
+    auto_rotate: bool = False,
+    **kwargs: ty.Any,
+) -> Image:
+    """Plot mosaic."""
+    from koyo.visuals import _plot_image
+
+    border_color = {} if border_color is None else border_color
+    title_color = {} if title_color is None else title_color
+
+    if not mask:
+        mask = {}
+
+    # create mask colormap
+    mask_colormap = ListedColormap([mask_color])
+    mask_colormap.set_bad(alpha=0.)
+    mask_colormap.set_over(alpha=0.)
+    mask_colormap.set_under(alpha=0.)
+
+    figures = {}
+    with plt.style.context(fix_style(style)):
+        if color is None:
+            color = _get_color_rgba255(plt.rcParams["axes.facecolor"])
+        if placeholder_color is None:
+            placeholder_color = _get_color_rgba255(plt.rcParams["axes.facecolor"])
+
+        for key in data:
+            fig, ax = _plot_image(
+                rotate(data[key], auto_rotate),
+                min_val=min_val,
+                max_val=max_val,
+                colorbar=colorbar,
+                colormap=colormap if isinstance(colormap, str) else colormap[key],
+                title=key,
+                figsize=figsize,
+                border_color=border_color.get(key, None),
+                title_color=title_color.get(key, None),
+            )
+            if key in mask:
+                masked = np.ma.masked_where(mask[key] == 0, mask[key])
+                ax.imshow(masked, cmap=mask_colormap, alpha=mask_opacity, interpolation='none')
             ax.axis("off")
             figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
         image = merge_mosaic(
