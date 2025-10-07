@@ -172,6 +172,25 @@ def vertices_to_collection(
     return line_col
 
 
+def plot_centroids(
+    x: np.ndarray, y: np.ndarray, x_label: str = "", y_label: str = "", title: str = "", xmin: float | None = None, xmax: float | None = None
+):
+    """Plot NMF/PCA component contribution."""
+    color = plt.rcParams["text.color"]
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    lc = vertices_to_collection(x, y, color=color, line_width=1.5)
+    ax.add_collection(lc)
+    ax.set_ylabel(y_label, fontsize=14)
+    ax.tick_params(axis="both", which="major", labelsize=12)
+    ax.set_ylim(np.min(y) * 1.05, np.max(y) * 1.05)  # needed because centroids are not properly setting min/max
+    if xmin is not None and xmax is not None:
+        ax.set_xlim(xmin, xmax)
+    ax.set_xlabel(x_label, fontsize=14)
+    ax.set_title(title, fontsize=16)
+    return fig, ax
+
+
 def compute_divider(value: float) -> int:
     """Compute divider."""
     divider = 1_000_000_000
