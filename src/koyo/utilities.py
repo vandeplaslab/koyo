@@ -884,6 +884,7 @@ def get_distributed_list(
     framelist: np.ndarray | None = None,
     as_index: bool = False,
     trim: bool = False,
+    offset: int = 0,
 ) -> np.ndarray:
     """Get list of frames that span the entire dataset.
 
@@ -899,6 +900,8 @@ def get_distributed_list(
         if `True`, the distributed framelist will consist of indices rather than actual frame IDs
     trim : bool, optional
         if `True`, the distributed framelist will be trimmed to the maximum available frame
+    offset : int
+        Offset  to apply to the start of the frame list.
 
     Returns
     -------
@@ -906,6 +909,7 @@ def get_distributed_list(
         array with list of frames to extract from the dataset
     """
     start = 0 if as_index else 1
+    start += offset
     end = total
 
     # check whether n_frames is not a fraction
