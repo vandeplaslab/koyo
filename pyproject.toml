@@ -22,9 +22,10 @@ classifiers = [
     "License :: OSI Approved :: BSD License",
     "Natural Language :: English",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Typing :: Typed",
 ]
 dynamic = ["version"]
@@ -60,7 +61,6 @@ test = [
     "pytest-cov",
 ]
 dev = [
-    "black",
     "ipython",
     "mypy",
     "pdbpp",
@@ -86,12 +86,6 @@ repository = "https://github.com/vandeplaslab/koyo"
 
 [tool.setuptools_scm]
 write_to = "src/koyo/_version.py"
-
-# https://github.com/psf/black
-[tool.black]
-line-length = 120
-target-version = ['py37', 'py38', 'py39']
-include = '\.pyi?$'
 
 # https://github.com/charliermarsh/ruff
 [tool.ruff]
