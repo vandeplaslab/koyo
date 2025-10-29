@@ -133,7 +133,7 @@ minversion = "6.0"
 testpaths = ["tests"]
 filterwarnings = [
     "error",
-    "ignore:'mode' parameter is deprecated and will be removed in Pillow 13 (2026-10-15):DeprecationWarning",
+    "ignore:'mode' parameter is deprecated and will be removed in Pillow 13 (2026-10-15):DeprecationWarning:",
 ]
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
