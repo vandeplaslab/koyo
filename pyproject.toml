@@ -51,7 +51,7 @@ dependencies = [
 [project.optional-dependencies]
 pptx = [
     "python-pptx",
-    "lxml==4.9.2 ; platform_system != 'Darwin' and python_version < '3.12' "  # for MacOS M1 compatibility
+    "lxml==4.9.2 ; platform_system == 'Darwin' and python_version < '3.12' "  # for MacOS M1 compatibility
 ]
 image = [
     "scikit-learn",
