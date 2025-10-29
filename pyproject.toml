@@ -135,6 +135,7 @@ filterwarnings = [
     "error",
     "ignore:'mode' parameter is deprecated:DeprecationWarning",
     "ignore::UserWarning:matplotlib.*",
+    "ignore::UserWarning:numba.*",
 ]
 
 # https://mypy.readthedocs.io/en/stable/config_file.html
