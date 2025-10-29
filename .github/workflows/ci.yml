@@ -121,7 +121,7 @@ jobs:
           password: ${{ secrets.PYPI_TOKEN }}
 
   publish:
-    name: Deploy to PyPI
+    name: Publish to GitHub Releases
     needs: [test, check-manifest, deploy_pypi]
     if: success() && startsWith(github.ref, 'refs/tags/') && github.event_name != 'schedule'
     runs-on: ubuntu-latest
