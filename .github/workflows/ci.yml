@@ -54,7 +54,7 @@ jobs:
             os: macos-latest
 
 
-  # now add an additional job to combine and upload the coverage
+  # now add a job to combine and upload the coverage
   upload_coverage:
     if: always()
     needs: [test]
