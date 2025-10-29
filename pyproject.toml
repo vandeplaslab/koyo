@@ -32,7 +32,8 @@ dynamic = ["version"]
 dependencies = [
     "click",
     "click-groups",
-    "numpy<2",
+    "numpy<2; python_version <= '3.12'",
+    "numpy>=2; python_version >= '3.13'",
     "scipy",
     "numba",
     "matplotlib",
