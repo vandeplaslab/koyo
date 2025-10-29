@@ -1,15 +1,17 @@
 """Garbage collection utilities."""
+
 import gc
-import weakref
 import time
+import weakref
+
 from loguru import logger
 
 _uncollectable_history = []  # store snapshots for later analysis
 
 
-def _gc_debug_callback(info):
+def _gc_debug_callback(phase, info):
     # We only care after GC finishes
-    if info["phase"] != "stop":
+    if phase != "stop":
         return
 
     gen = info["generation"]
@@ -22,19 +24,23 @@ def _gc_debug_callback(info):
         # Snapshot what's currently uncollectable
         snapshot = []
         for obj in gc.garbage:
-            snapshot.append({
-                "type": type(obj),
-                "repr": repr(obj)[:300],
-                "id": id(obj),
-                # store weakref so we don't keep it alive ourselves
-                "weak": weakref.ref(obj),
-            })
+            snapshot.append(
+                {
+                    "type": type(obj),
+                    "repr": repr(obj)[:300],
+                    "id": id(obj),
+                    # store weakref so we don't keep it alive ourselves
+                    "weak": weakref.ref(obj),
+                }
+            )
 
-        _uncollectable_history.append({
-            "time": ts,
-            "generation": gen,
-            "snapshot": snapshot,
-        })
+        _uncollectable_history.append(
+            {
+                "time": ts,
+                "generation": gen,
+                "snapshot": snapshot,
+            }
+        )
 
         # Optional: print a little detail to console for quick triage
         for entry in snapshot[:5]:  # don't spam if it's huge
