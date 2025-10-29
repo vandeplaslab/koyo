@@ -18,10 +18,12 @@ concurrency:
 
 jobs:
   check-manifest:
+    name: Check Manifest
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - run: pipx run check-manifest
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uvx check-manifest
 
   test:
     uses: pyapp-kit/workflows/.github/workflows/test-pyrepo.yml@v2
@@ -35,6 +37,7 @@ jobs:
       # changing this to "artifact" prevents uploading to codecov here,
       # instead it uploads an artifact with the coverage data
       coverage-upload: artifact
+
     strategy:
       fail-fast: false
       matrix:
