@@ -57,7 +57,6 @@ image = [
     "scikit-learn",
 ]
 test = [
-#    "zarr",
     "pytest>=6.0",
     "pytest-cov",
 ]
