@@ -641,11 +641,11 @@ def get_ticks_with_unit(
     """Get ticks for specified min/max range."""
     if not unit:
         if n is None:
-            ticks, tick_labels = [min_val, max_val], [y_tick_fmt(min_val), y_tick_fmt(max_val)]
+            ticks = [min_val, max_val]
         else:
             between = np.linspace(min_val, max_val, n)
             ticks = between.tolist()
-            tick_labels = [y_tick_fmt(t) for t in between]
+        tick_labels = [y_tick_fmt(t) for t in ticks]
     else:
         # if n is even, let's add one more tick
         if n is None:
@@ -712,6 +712,8 @@ def inset_colorbar(
     cbar = plt.colorbar(im, cax=cax, orientation=orientation, pad=0.1, ticks=ticks)
     cbar.outline.set_edgecolor(edgecolor)
     cbar.outline.set_linewidth(1)
+    if ticks:
+        cbar.mappable.set_clim(ticks[0], ticks[-1])
     if ticklabels:
         cbar.set_ticklabels(ticklabels)
     if label:
@@ -886,7 +888,7 @@ def _plot_or_update_image(
                 labelcolor=text_color,
                 edgecolor=text_color,
             )
-            cbar.mappable.set_clim(min_val, max_val)
+            # cbar.mappable.set_clim(min_val, max_val)
     else:
         img.set_array(array)
         img.set_cmap(colormap)
@@ -949,6 +951,8 @@ def plot_multiple_images(
     one_row: bool = False,
     n_cols: int = 0,
     highlight: str | None = None,
+    min_val: float | None = None,
+    max_val: float | None = None,
 ) -> Image:
     """Plot a pair of images."""
     from koyo.mosaic import plot_mosaic
@@ -963,6 +967,8 @@ def plot_multiple_images(
         title=title,
         n_cols=n_cols,
         highlight=highlight,
+        min_val=min_val,
+        max_val=max_val,
     )
 
 
