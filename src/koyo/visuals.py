@@ -191,6 +191,15 @@ def plot_centroids(
     return fig, ax
 
 
+def add_centroids(ax: plt.Axes, x: np.ndarray, y: np.ndarray, color: str = "b", line_width=1.5) -> plt.Axes:
+    """Add centroids."""
+    if not color:
+        color = plt.rcParams["text.color"]
+
+    lc = vertices_to_collection(x, y, color=color, line_width=line_width)
+    ax.add_collection(lc)
+
+
 def compute_divider(value: float) -> int:
     """Compute divider."""
     divider = 1_000_000_000
