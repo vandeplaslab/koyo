@@ -82,7 +82,7 @@ class FigureMixin(PDFMixin, PPTXMixin):
     @contextmanager
     def _export_figures(self, filename: PathLike | None = None) -> ty.Iterator[PptxPdfWrapper]:
         """Export figures."""
-        if filename:
+        if filename and (self.as_pptx or self.as_pdf):
             logger.trace(f"Exporting figures to {filename}")
         if self.as_pptx:
             with self._export_pptx_figures(filename) as pptx:
