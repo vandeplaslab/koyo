@@ -29,7 +29,7 @@ class BaseConfig(BaseModel):
         """Get fields to exclude from saving."""
         exclude = []
         schema = self.model_json_schema()["properties"]
-        for field_name, _field in self.model_fields.items():
+        for field_name, _field in self.__class__.model_fields.items():
             field_schema = schema[field_name]
             if not field_schema.get("save", True):
                 exclude.append(field_name)

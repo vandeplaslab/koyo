@@ -12,10 +12,17 @@ from random import shuffle
 import numba as nb
 import numpy as np
 from natsort import natsorted
-from loguru import logger
 
+# for compatibility with previous versions of koyo
+from koyo.system import (
+    get_module_path,
+    get_version,
+    is_above_version,
+    is_installed,
+    reraise_exception_if_debug,
+    running_as_pyinstaller_app,
+)
 from koyo.typing import PathLike, SimpleArrayLike
-from koyo.system import running_as_pyinstaller_app
 
 if ty.TYPE_CHECKING:
     from koyo.fig_mixin import PptxPdfWrapper
@@ -115,47 +122,6 @@ def clean_path(path: str) -> Path:
     return Path(path)
 
 
-def is_installed(module: str) -> bool:
-    """Try to import module."""
-    import importlib.util
-
-    try:
-        loader = importlib.util.find_spec(module)
-    except ModuleNotFoundError:
-        return False
-    return loader is not None
-
-
-def get_version(module: str) -> str:
-    """Get current version of package."""
-    import importlib.metadata
-
-    try:
-        installed_version = importlib.metadata.version(module)
-    except importlib.metadata.PackageNotFoundError:
-        return "N/A"
-    return installed_version
-
-
-def is_above_version(module: str, version: str) -> bool:
-    """Check whether the module is above a certain version."""
-    import importlib.metadata
-
-    from packaging.version import Version
-
-    try:
-        installed_version = importlib.metadata.version(module)
-    except importlib.metadata.PackageNotFoundError:
-        logger.warning(f"Module {module} not found.")
-        return False
-    installed_version = Version(installed_version)
-    version = Version(version)
-    if installed_version is not None:
-        return installed_version >= version
-    logger.warning(f"Module {module} not found.")
-    return False
-
-
 def get_format(fmt: str) -> str:
     """Parse format."""
     return fmt if fmt.startswith(".") else f".{fmt}"
@@ -226,28 +192,6 @@ def exclude_parameters(exclude: ty.Iterable[str], **kwargs: ty.Any) -> dict:
         if key not in exclude:
             kwargs_[key] = kwargs[key]
     return kwargs_
-
-
-def get_module_path(module: str, filename: str) -> str:
-    """Get module path."""
-    import importlib.resources
-
-    if not filename.endswith(".py"):
-        filename += ".py"
-
-    path = str(importlib.resources.files(module).joinpath(filename))
-    return path
-
-
-def reraise_exception_if_debug(exc, message: str = "Exception occurred", env_key: str = "DEV_MODE") -> None:
-    """Reraise exception if debug mode is enabled and jump into the debugger."""
-    import os
-
-    from loguru import logger
-
-    if os.environ.get(env_key, "0") == "1":
-        raise exc
-    logger.exception(message)
 
 
 def pluralize(word: str, n: int, with_e: bool = False) -> str:
@@ -820,7 +764,6 @@ def difference_matrix(a: np.ndarray) -> np.ndarray:
 
     x = np.reshape(a, (len(a), 1))
     return x - x.transpose()
-
 
 
 def get_close_matches_case(word, possibilities, *args: ty.Any, **kwargs: ty.Any):

@@ -1,5 +1,7 @@
 """Definitions of types."""
 
+from __future__ import annotations
+
 import sys
 import typing as ty
 from pathlib import Path

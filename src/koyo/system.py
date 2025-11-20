@@ -10,8 +10,7 @@ import subprocess
 import sys
 from functools import lru_cache
 
-
-
+from loguru import logger
 
 IS_WIN = sys.platform == "win32"
 IS_LINUX = sys.platform == "linux"
@@ -196,6 +195,15 @@ def running_as_pyinstaller_app() -> bool:
     return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 
+def reraise_exception_if_debug(exc, message: str = "Exception occurred", env_key: str = "DEV_MODE") -> None:
+    """Reraise exception if debug mode is enabled and jump into the debugger."""
+    import os
+
+    if os.environ.get(env_key, "0") == "1":
+        raise exc
+    logger.exception(message)
+
+
 @lru_cache(maxsize=4)
 def running_as_briefcase_app() -> bool:
     """Infer whether we are running as a briefcase bundle."""
@@ -215,3 +223,42 @@ def running_as_briefcase_app() -> bool:
     return "Briefcase-Version" in metadata
 
 
+def is_installed(module: str) -> bool:
+    """Try to import module."""
+    import importlib.util
+
+    try:
+        loader = importlib.util.find_spec(module)
+    except ModuleNotFoundError:
+        return False
+    return loader is not None
+
+
+def get_version(module: str) -> str:
+    """Get current version of package."""
+    import importlib.metadata
+
+    try:
+        installed_version = importlib.metadata.version(module)
+    except importlib.metadata.PackageNotFoundError:
+        return "N/A"
+    return installed_version
+
+
+def is_above_version(module: str, version: str) -> bool:
+    """Check whether the module is above a certain version."""
+    import importlib.metadata
+
+    from packaging.version import Version
+
+    try:
+        installed_version = importlib.metadata.version(module)
+    except importlib.metadata.PackageNotFoundError:
+        logger.warning(f"Module {module} not found.")
+        return False
+    installed_version = Version(installed_version)
+    version = Version(version)
+    if installed_version is not None:
+        return installed_version >= version
+    logger.warning(f"Module {module} not found.")
+    return False
