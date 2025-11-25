@@ -87,7 +87,7 @@ def format_human_time(nanoseconds: float, n_max: int = 2) -> str:
 
 
 def format_time(seconds: float) -> str:
-    """Convert time to nicer format. Value is provided in seconds."""
+    """Convert time to a nicer format. Value is provided in seconds."""
     if seconds <= 0.01:
         return f"{seconds * 1000000:.0f}us"
     elif seconds <= 0.1:
@@ -104,7 +104,9 @@ def format_time(seconds: float) -> str:
 class MeasureTimer:
     """Timer class."""
 
-    def __init__(self, func: ty.Callable | None = None, msg: str | None = None, human: bool = True):
+    def __init__(
+        self, func: ty.Callable | None = None, msg: str | None = None, human: bool = True, seconds: bool = False
+    ):
         self.func = func
         self.msg = msg
         self.human = human
@@ -113,8 +115,19 @@ class MeasureTimer:
         if self.msg and "{}" not in self.msg:
             self.msg += " in {}"
 
-        self.start: float = float(time.perf_counter_ns() if human else time.perf_counter())
+        if seconds:
+            self._time_func = time.time
+            self._format_func = format_human_time_s
+        else:
+            if human:
+                self._time_func = time.perf_counter_ns
+                self._format_func = format_human_time
+            else:
+                self._time_func = time.perf_counter
+                self._format_func = format_time
+        self.start: float = float(self._time_func())
         self.end: float | None = None
+        self.paused: float | None = None
         self.last: float | None = None
         self.steps: list[str] = []
 
@@ -129,10 +142,10 @@ class MeasureTimer:
 
     def current(self) -> float:
         """Return current time."""
-        return time.perf_counter_ns() if self.human else time.perf_counter()
+        return self._time_func()
 
     def elapsed(self, n: int = 1, start: float | None = None) -> float:
-        """Return amount of time that elapsed."""
+        """Return the amount of time that elapsed."""
         end = self.end or self.current()
         start = start or self.start
         elapsed = end - start
@@ -140,13 +153,24 @@ class MeasureTimer:
         self.last = end
         return elapsed
 
+    def pause(self, pause: bool = True) -> None:
+        """Pause or unpause the timer."""
+        if pause and self.paused is None:
+            self.paused = self.current()
+        elif not pause and self.paused is not None:
+            paused_time = self.current() - self.paused
+            self.start += paused_time
+            if self.end is not None:
+                self.end += paused_time
+            self.paused = None
+
     def elapsed_since_last(self) -> float:
         """Elapsed since last time."""
         return self.elapsed(start=self.last)
 
     def format(self, elapsed: int) -> str:
         """Format time."""
-        return format_human_time(elapsed) if self.human else format_time(elapsed)
+        return self._format_func(elapsed)
 
     def __call__(
         self,
@@ -160,7 +184,7 @@ class MeasureTimer:
         if since_last:
             start = self.last
         elapsed = self.elapsed(n, start)
-        formatted = format_human_time(elapsed) if self.human else format_time(elapsed)
+        formatted = self.format(elapsed)
         if n > 1:
             formatted = f"{formatted} [{current}/{n}]"
         if name:
