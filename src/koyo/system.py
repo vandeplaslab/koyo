@@ -9,6 +9,7 @@ import platform
 import subprocess
 import sys
 from functools import lru_cache
+from pathlib import Path
 
 from loguru import logger
 
@@ -17,6 +18,18 @@ IS_LINUX = sys.platform == "linux"
 IS_MAC = sys.platform == "darwin"
 IS_MAC_ARM = IS_MAC and platform.processor() == "arm"
 IS_PYINSTALLER = getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
+
+
+@lru_cache
+def check_available_space(path: str, min_required) -> bool:
+    """Check available space at a specified location."""
+    from psutil import disk_usage
+
+    path = Path(path).drive
+    if path:
+        hdd = disk_usage(path)
+        return hdd.free > min_required
+    return True
 
 
 def is_envvar(key: str, value: str) -> bool:
@@ -40,7 +53,7 @@ def set_freeze_support() -> None:
 
 
 def get_cli_path(name: str, env_key: str = "", default: str = "") -> str:
-    """Get path to imimspy executable.
+    """Get a path to imimspy executable.
 
     The path is determined in the following order:
     1. First, we check whether environment variable `{env_key}_{name.upper()}_PATH` is set.
@@ -162,7 +175,7 @@ def _linux_sys_name_lsb_release() -> str:
 
 
 def _sys_name() -> str:
-    """Discover MacOS or Linux Human readable information. For Linux provide information about distribution."""
+    """Discover a MacOS or Linux Human readable information. For Linux provide information about distribution."""
     with contextlib.suppress(Exception):
         if sys.platform == "linux":
             return _linux_sys_name()
@@ -178,14 +191,13 @@ def _sys_name() -> str:
 
 
 def get_module_path(module: str, filename: str) -> str:
-    """Get module path."""
+    """Get a module path."""
     import importlib.resources
 
     if not filename.endswith(".py"):
         filename += ".py"
 
-    path = str(importlib.resources.files(module).joinpath(filename))
-    return path
+    return str(importlib.resources.files(module).joinpath(filename))
 
 
 def running_as_pyinstaller_app() -> bool:
@@ -235,7 +247,7 @@ def is_installed(module: str) -> bool:
 
 
 def get_version(module: str) -> str:
-    """Get current version of package."""
+    """Get the current version of package."""
     import importlib.metadata
 
     try:
