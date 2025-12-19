@@ -26,6 +26,10 @@ if ty.TYPE_CHECKING:
         Presentation = None  # type: ignore[assignment,misc]
 
 
+DEFAULT_PIL_FMT = "PNG"
+DEFAULT_MPL_FMT = "PNG"
+
+
 class SlideLayout(IntEnum):
     """Slide layout options."""
 
@@ -215,7 +219,7 @@ def add_mpl_figure_to_pptx(
     override: bool = False,
     close: bool = False,
     title: str = "",
-    format: str = "jpg",
+    format: str = DEFAULT_MPL_FMT,
     **kwargs: ty.Any,
 ) -> None:
     """Export figure to file."""
@@ -237,7 +241,7 @@ def add_pil_image_to_pptx(
     filename: PathLike,
     image: Image,
     dpi: int = 150,
-    fmt: str = "JPEG",
+    fmt: str = DEFAULT_PIL_FMT,
     override: bool = False,
     close: bool = False,
     title: str = "",

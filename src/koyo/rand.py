@@ -21,9 +21,9 @@ def get_random_state(n: int = 1) -> int | list[int]:
 
 
 @contextmanager
-def temporary_seed(seed: int, skip_if_negative_one: bool = False):
+def temporary_seed(seed: int | None, skip_if_negative_one: bool = False):
     """Temporarily set numpy seed."""
-    if skip_if_negative_one and seed == -1:
+    if skip_if_negative_one and seed in [-1, None]:
         yield
         return
     state = np.random.get_state()

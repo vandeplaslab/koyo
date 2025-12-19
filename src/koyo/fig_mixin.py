@@ -26,6 +26,13 @@ if ty.TYPE_CHECKING:
         Presentation = None  # type: ignore[assignment,misc]
 
 
+DEFAULT_PIL_FMT = "PNG"
+DEFAULT_MPL_FMT = "PNG"
+
+
+# TODO: It would be neat to add a 'zipped' folder which would support exporting SVGs and other formats into a zip file
+
+
 class FigureMixin(PDFMixin, PPTXMixin):
     """Mixin class for figure exports."""
 
@@ -149,7 +156,7 @@ class FigureMixin(PDFMixin, PPTXMixin):
         filename: Path,
         image: Image,
         dpi: int = 150,
-        fmt: str = "JPEG",
+        fmt: str = DEFAULT_PIL_FMT,
         override: bool = False,
         pdf: PdfPages | None = None,
         pptx: Presentation | None = None,
@@ -276,7 +283,7 @@ class PptxPdfWrapper:
         filename: PathLike,
         image: Image,
         dpi: int = 150,
-        fmt: str = "JPEG",
+        fmt: str = DEFAULT_PIL_FMT,
         override: bool = False,
         close: bool = False,
         title: str = "",
