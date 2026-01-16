@@ -1,5 +1,6 @@
 """Path utilities."""
 
+from __future__ import annotations
 import os
 import shutil
 import typing as ty
@@ -8,6 +9,9 @@ from pathlib import Path
 from loguru import logger
 
 from koyo.typing import PathLike
+from koyo.system import IS_WIN
+
+DriveMap = tuple[tuple[str, str], ...]
 
 
 def copy_file(src_path: str, dst_path: str) -> None:
@@ -239,3 +243,69 @@ def is_network_path_unix(path: PathLike) -> bool:
     network_filesystems = ["nfs", "smbfs", "cifs", "fuse.sshfs"]
 
     return any(fs_type in filesystem_type for fs_type in network_filesystems)
+
+
+def apply_drive_mapping(file: Path, drive_map: DriveMap = ()) -> str:
+    """Apply drive mapping."""
+    file_ = str(file)
+    for map_from, map_to in drive_map:
+        file_ = file_.replace(map_from, map_to)
+    return file_
+
+
+def create_link(
+    target: Path,
+    output_dir: Path,
+    prefix: str = "",
+    suffix: str | None = None,
+    link_name: str | None = None,
+    drive_map: DriveMap = (),
+) -> Path:
+    """Create Shortcuts on Windows."""
+    if not IS_WIN:
+        raise ValueError("create_link is only supported on Windows systems.")
+
+    from pylnk3 import for_file
+
+    target = Path(target)
+    output_dir = Path(output_dir)
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    if suffix is None:
+        suffix = target.suffix
+    elif suffix != "":
+        suffix = ""
+    if link_name is None:
+        link_name = target.stem
+    if prefix:
+        link_name = f"{prefix}_{link_name}"
+    link_name = f"{link_name}{suffix}.lnk"
+
+    link_file = output_dir / link_name
+    target_ = apply_drive_mapping(target, drive_map)
+    if Path(target_).exists():
+        logger.warning(f"Target '{target_}' already exists - it will be overwritten.")
+    link_file_ = apply_drive_mapping(link_file, drive_map)
+    for_file(target_, link_file_)
+    return link_file
+
+
+def resolve_links(base_dir: Path, extensions: tuple[str, ...]) -> list[Path]:
+    """Resolve Shortcuts on Windows."""
+    links = []
+    if IS_WIN:
+        from pylnk3 import parse
+
+        paths = list(base_dir.glob("*.lnk"))
+        paths_ = []
+        for path in paths:
+            try:
+                path_ = parse(str(path)).path
+            except Exception as e:
+                logger.warning(f"Could not parse link '{path}': {e}")
+                continue
+            paths_.append(Path(path_))
+        paths_ = [path for path in paths_ if path.exists()]
+        links = [path for path in paths_ if path.suffix in extensions]
+    return links
