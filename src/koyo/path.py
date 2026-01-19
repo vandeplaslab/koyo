@@ -98,7 +98,7 @@ def remove_file(file: PathLike) -> None:
             logger.error(f"Failed to remove '{file}'. Reason: Not a file - it's a directory.")
 
 
-def empty_directory(path: PathLike) -> None:
+def empty_directory(path: PathLike, remove_parent: bool = True) -> None:
     """Recursively clear directory."""
     path = Path(path)
     if not path.exists():
@@ -117,11 +117,13 @@ def empty_directory(path: PathLike) -> None:
                 logger.warning(f"Failed to delete {file_path}. Reason: {e}")
     except Exception as e:
         logger.error(f"Failed to empty directory '{path}'. Reason: {e}")
-    try:
-        shutil.rmtree(path, ignore_errors=True)
-        logger.trace(f"Deleted '{path}'")
-    except Exception as e:
-        logger.error(f"Failed to delete '{path}'. Reason: {e}")
+
+    if remove_parent:
+        try:
+            shutil.rmtree(path, ignore_errors=True)
+            logger.trace(f"Deleted '{path}'")
+        except Exception as e:
+            logger.error(f"Failed to delete '{path}'. Reason: {e}")
 
 
 remove_directory = empty_directory
@@ -284,8 +286,8 @@ def create_link(
 
     link_file = output_dir / link_name
     target_ = apply_drive_mapping(target, drive_map)
-    if Path(target_).exists():
-        logger.warning(f"Target '{target_}' already exists - it will be overwritten.")
+    if Path(link_file).exists():
+        logger.warning(f"Link file '{link_file}' already exists - it will be overwritten.")
     link_file_ = apply_drive_mapping(link_file, drive_map)
     for_file(target_, link_file_)
     return link_file
