@@ -1,6 +1,7 @@
 """Path utilities."""
 
 from __future__ import annotations
+
 import os
 import shutil
 import typing as ty
@@ -8,8 +9,8 @@ from pathlib import Path
 
 from loguru import logger
 
-from koyo.typing import PathLike
 from koyo.system import IS_WIN
+from koyo.typing import PathLike
 
 DriveMap = tuple[tuple[str, str], ...]
 
@@ -198,6 +199,7 @@ def create_directory(*path: str) -> Path:
             logger.warning("Failed to create directory")
         finally:
             return path
+    return None
 
 
 def is_network_path(path: PathLike) -> bool:
@@ -263,6 +265,20 @@ def create_link(
     link_name: str | None = None,
     drive_map: DriveMap = (),
 ) -> Path:
+    """Create link cross-platform."""
+    if IS_WIN:
+        return create_lnk(target, output_dir, prefix, suffix, link_name, drive_map)
+    return create_symlink(target, output_dir, prefix, suffix, link_name, drive_map)
+
+
+def create_lnk(
+    target: Path,
+    output_dir: Path,
+    prefix: str = "",
+    suffix: str | None = None,
+    link_name: str | None = None,
+    drive_map: DriveMap = (),
+) -> Path:
     """Create Shortcuts on Windows."""
     if not IS_WIN:
         raise ValueError("create_link is only supported on Windows systems.")
@@ -290,6 +306,54 @@ def create_link(
         logger.warning(f"Link file '{link_file}' already exists - it will be overwritten.")
     link_file_ = apply_drive_mapping(link_file, drive_map)
     for_file(target_, link_file_)
+    return link_file
+
+
+def create_symlink(
+    target: Path,
+    output_dir: Path,
+    prefix: str = "",
+    suffix: str | None = None,
+    link_name: str | None = None,
+    drive_map: DriveMap = (),
+) -> Path:
+    """Create a symlink on macOS/Linux (POSIX)."""
+    target = Path(target)
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Match your Windows naming behavior
+    if suffix is None:
+        suffix = target.suffix
+    elif suffix != "":
+        # same logic as your original (note: this makes suffix always "", unless None)
+        suffix = ""
+
+    if link_name is None:
+        link_name = target.stem
+
+    if prefix:
+        link_name = f"{prefix}_{link_name}"
+
+    # On POSIX, no .lnk extension; keep suffix behavior if you want
+    link_name = f"{link_name}{suffix}"
+    link_file = output_dir / link_name
+
+    target_ = Path(apply_drive_mapping(target, drive_map))
+    link_file_ = Path(apply_drive_mapping(link_file, drive_map))
+
+    # If link already exists, replace it (like your Windows "overwrite" behavior)
+    if link_file_.exists() or link_file_.is_symlink():
+        link_file_.unlink()
+
+    # Prefer relative links when possible (more portable inside the same tree)
+    try:
+        rel_target = os.path.relpath(target_, start=link_file_.parent)
+        link_file_.symlink_to(rel_target)
+    except Exception:
+        # Fallback to absolute
+        link_file_.symlink_to(target_)
+
     return link_file
 
 
