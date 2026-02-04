@@ -183,6 +183,14 @@ def open_directory_alt(path: PathLike, *which: str) -> None:
         subprocess.Popen(["xdg-open", str(path)])
 
 
+def get_subdirectories(path: PathLike) -> list[Path]:
+    """Get subdirectories."""
+    path = Path(path)
+    if not path.exists():
+        return []
+    return [item for item in path.iterdir() if item.is_dir()]
+
+
 def create_directory(*path: str) -> Path:
     """Create directory.
 
