@@ -133,18 +133,6 @@ def renamed_parameter(
     warn_once: bool = True,
     validate_new_names: bool = True,
 ) -> ty.Callable[[ty.Callable[..., ty.Any]], ty.Callable[..., ty.Any]]:
-    """
-    Decorator to keep backwards compatibility with renamed function parameters.
-
-    renames: { "old_param": "new_param", ... }
-
-    If a caller passes old_param=..., it's transparently translated to new_param=...
-    and a log message is emitted.
-
-    Notes:
-    - This can only translate *keyword arguments*. Positional arguments have no names.
-    - If both old and new are provided, behavior depends on error_on_both.
-    """
     warned: set[str] = set()
 
     def decorator(fn: ty.Callable[..., ty.Any]) -> ty.Callable[..., ty.Any]:
@@ -160,34 +148,36 @@ def renamed_parameter(
 
         @functools.wraps(fn)
         def wrapper(*args: ty.Any, **kwargs: ty.Any) -> ty.Any:
-            # Bind to understand what the call resolved to.
-            bound = sig.bind_partial(*args, **kwargs)
+            # 1) Rewrite kwargs BEFORE binding (binding would reject deprecated names)
+            if kwargs:
+                for old, new in renames.items():
+                    if old not in kwargs:
+                        continue
 
-            for old, new in renames.items():
-                if old not in bound.arguments:
-                    continue
+                    if new in kwargs:
+                        msg = f"{fn.__qualname__}: received both deprecated '{old}' and '{new}'. Use only '{new}'."
+                        if error_on_both:
+                            raise TypeError(msg)
 
-                if new in bound.arguments:
-                    msg = f"{fn.__qualname__}: received both deprecated '{old}' and '{new}'. Use only '{new}'."
-                    if error_on_both:
-                        raise TypeError(msg)
-                    # keep explicit new, ignore old
-                    bound.arguments.pop(old, None)
+                        # Keep explicit new, ignore old
+                        kwargs.pop(old, None)
+                        if (not warn_once) or (old not in warned):
+                            warnings.warn(msg + f" Ignoring '{old}'.", stacklevel=2, category=UserWarning)
+                            warned.add(old)
+                        continue
+
+                    # Move old -> new
+                    kwargs[new] = kwargs.pop(old)
                     if (not warn_once) or (old not in warned):
-                        warnings.warn(msg + f" Ignoring '{old}'.", stacklevel=2, category=UserWarning)
+                        warnings.warn(
+                            f"{fn.__qualname__}: parameter '{old}' was renamed to '{new}' (please update your call)",
+                            stacklevel=2,
+                            category=UserWarning,
+                        )
                         warned.add(old)
-                    continue
 
-                # Move old -> new
-                bound.arguments[new] = bound.arguments.pop(old)
-
-                if (not warn_once) or (old not in warned):
-                    warnings.warn(
-                        f"{fn.__qualname__}: parameter '{old}' was renamed to '{new}' (please update your call)",
-                        stacklevel=2,
-                        category=UserWarning,
-                    )
-                    warned.add(old)
+            # 2) Now it's safe to bind (and it still validates *other* mistakes)
+            bound = sig.bind_partial(*args, **kwargs)
 
             return fn(*bound.args, **bound.kwargs)
 
