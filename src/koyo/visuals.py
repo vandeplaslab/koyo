@@ -173,7 +173,13 @@ def vertices_to_collection(
 
 
 def plot_centroids(
-    x: np.ndarray, y: np.ndarray, x_label: str = "", y_label: str = "", title: str = "", xmin: float | None = None, xmax: float | None = None
+    x: np.ndarray,
+    y: np.ndarray,
+    x_label: str = "",
+    y_label: str = "",
+    title: str = "",
+    xmin: float | None = None,
+    xmax: float | None = None,
 ):
     """Plot NMF/PCA component contribution."""
     color = plt.rcParams["text.color"]
@@ -746,6 +752,13 @@ def fix_style(style: str) -> str:
     if style != "default":
         assert style in available, f"Style '{style}' not available. Available styles: {available}"
     return style
+
+
+def is_dark() -> bool:
+    """Check the current style is using dark background."""
+    import matplotlib.pyplot as plt
+
+    return plt.rcParams["figure.facecolor"] in ["#111111", "#000000", "black", (0.0, 0.0, 0.0)]
 
 
 def shorten_style(style: str) -> str:
