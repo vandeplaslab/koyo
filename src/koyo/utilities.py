@@ -91,7 +91,8 @@ def get_unique_without_sort(seq: list) -> list:
 
 
 def ensure_output_dir_exists(
-    output_dir: PathLike | None, pptx_or_pdf: PptxPdfWrapper | None = None
+    output_dir: PathLike | None,
+    pptx_or_pdf: PptxPdfWrapper | None = None,
 ) -> tuple[bool, Path]:
     """Ensure that the output directory exists.
 
@@ -127,6 +128,11 @@ def get_format(fmt: str) -> str:
     return fmt if fmt.startswith(".") else f".{fmt}"
 
 
+def get_delimiter(suffix: str) -> str:
+    """Get delimiter for suffix."""
+    return {".csv": ",", ".tsv": "\t", ".txt": "\t"}[suffix]
+
+
 def ensure_list(array: np.ndarray | list[np.ndarray]) -> list[np.ndarray]:
     """Ensure that the input is a list."""
     if isinstance(array, np.ndarray):
@@ -135,9 +141,9 @@ def ensure_list(array: np.ndarray | list[np.ndarray]) -> list[np.ndarray]:
 
 
 def find_nearest_divisor(
-    value: int | float,
-    divisor: int | float = 1,
-    increment: int | float = 1,
+    value: float,
+    divisor: float = 1,
+    increment: float = 1,
     max_iters: int = 1000,
 ) -> int | float:
     """Find nearest divisor.
@@ -200,7 +206,7 @@ def pluralize(word: str, n: int, with_e: bool = False) -> str:
         return "is" if n == 1 else "are"
     if word in ["was", "were"]:
         return "was" if n == 1 else "were"
-    elif word in ["has", "have"]:
+    if word in ["has", "have"]:
         return "has" if n == 1 else "have"
     extra = "s" if not with_e else "es"
     return word if n == 1 else word + extra
@@ -228,11 +234,10 @@ def flatten_nested_list(list_of_lists: list[list]) -> list:
 def get_list_difference(li1: list, li2: list) -> list:
     """Get difference between two lists."""
     # get difference between two lists while keeping the order
-    li_dif = [i for i in li1 + li2 if i not in li1 or i not in li2]
-    return li_dif
+    return [i for i in li1 + li2 if i not in li1 or i not in li2]
 
 
-def find_nearest_index(data: SimpleArrayLike, value: int | (float | (np.ndarray | Iterable))):
+def find_nearest_index(data: SimpleArrayLike, value: float | np.ndarray | Iterable):
     """Find nearest index of asked value.
 
     Parameters
@@ -274,7 +279,7 @@ def find_nearest_index_array(data: SimpleArrayLike, value: np.ndarray | ty.Itera
 
 
 @nb.njit()
-def find_nearest_index_single(data: SimpleArrayLike, value: int | float):
+def find_nearest_index_single(data: SimpleArrayLike, value: float):
     """Find nearest index of asked value.
 
     Parameters
@@ -292,14 +297,14 @@ def find_nearest_index_single(data: SimpleArrayLike, value: int | float):
     return np.argmin(np.abs(data - value))
 
 
-def find_nearest_value_single(data: SimpleArrayLike, value: int | float) -> int | float:
+def find_nearest_value_single(data: SimpleArrayLike, value: float) -> int | float:
     """Find nearest value."""
     data = np.asarray(data)
     idx = find_nearest_index_single(data, value)
     return data[idx]
 
 
-def find_nearest_value_in_dict(data: dict[float, ty.Any], value: int | float) -> ty.Any:
+def find_nearest_value_in_dict(data: dict[float, ty.Any], value: float) -> ty.Any:
     """Find nearest value in dictionary."""
     key = find_nearest_value(list(data.keys()), value)
     return data[key]
@@ -328,7 +333,7 @@ def find_nearest_index_batch(array: SimpleArrayLike, values: SimpleArrayLike, so
     return indices
 
 
-def find_nearest_value(data: ty.Iterable, value: int | (float | (np.ndarray | Iterable))):
+def find_nearest_value(data: ty.Iterable, value: float | np.ndarray | Iterable):
     """Find nearest value."""
     data = np.asarray(data)
     idx = find_nearest_index(data, value)
@@ -366,9 +371,9 @@ def format_count(value: float) -> str:
     """Format count."""
     if value < 1e3:
         return f"{value:.0f}"
-    elif value < 1e6:
+    if value < 1e6:
         return f"{value / 1e3:.1f}K"
-    elif value < 1e9:
+    if value < 1e9:
         return f"{value / 1e6:.1f}M"
     return f"{value / 1e9:.1f}B"
 
@@ -377,13 +382,13 @@ def format_size(size: int) -> str:
     """Convert bytes to nicer format."""
     if size < 2**10:
         return f"{size}"
-    elif size < 2**20:
+    if size < 2**20:
         return "%.1fK" % (size / float(2**10))
-    elif size < 2**30:
+    if size < 2**30:
         return "%.1fM" % (size / float(2**20))
-    elif size < 2**40:
+    if size < 2**40:
         return "%.1fG" % (size / float(2**30))
-    elif size < 2**50:
+    if size < 2**50:
         return "%.1fT" % (size / float(2**40))
     return "%.1fP" % (size / float(2**50))
 
@@ -643,7 +648,7 @@ def get_array_mask(array: np.ndarray, min_val: float, max_val: float):
 
 
 @nb.njit(parallel=True)
-def get_array_mask_(array: np.ndarray, min_val: int | float, max_val: int | float) -> np.ndarray:
+def get_array_mask_(array: np.ndarray, min_val: float, max_val: float) -> np.ndarray:
     """Return mask for array."""
     mask = np.empty(array.shape, dtype=np.bool_)
     for i in nb.prange(array.size):
@@ -654,7 +659,10 @@ def get_array_mask_(array: np.ndarray, min_val: int | float, max_val: int | floa
 
 @nb.njit(parallel=True)
 def filter_array(
-    array: np.ndarray, array_to_mask: np.ndarray, min_val: int | float, max_val: int | float
+    array: np.ndarray,
+    array_to_mask: np.ndarray,
+    min_val: float,
+    max_val: float,
 ) -> np.ndarray:
     """Filter array based on another array."""
     # First, count how many elements pass the condition
@@ -823,7 +831,7 @@ def calculate_quantile_without_zeros(data, q=0.99):
 
 def get_distributed_list(
     total: int,
-    n_frames_or_proportion: int | float,
+    n_frames_or_proportion: float,
     framelist: np.ndarray | None = None,
     as_index: bool = False,
     trim: bool = False,
@@ -936,9 +944,10 @@ def optimize_dtype(int_value=None, float_value=None, allow_unsigned: bool = Fals
         if np.finfo(np.float32).min <= float_value <= np.finfo(np.float32).max:
             return np.float32
         return np.float64
+    return None
 
 
-def find_nearest_divisible(value: int | float, divisor: int | float, max_iters: int = 1000) -> int | float:
+def find_nearest_divisible(value: float, divisor: float, max_iters: int = 1000) -> int | float:
     """Find nearest value that can be evenly divided by the divisor.
 
     Parameters
@@ -1005,11 +1014,11 @@ def view_as_blocks(array: np.ndarray, n_rows: int, n_cols: int, auto_pad: bool =
     # check shape
     if h % n_rows != 0:
         raise ValueError(
-            f"{h} rows is not evenly divisible by {n_rows}. Nearest alternative: {find_nearest_divisor(h, n_rows)}"
+            f"{h} rows is not evenly divisible by {n_rows}. Nearest alternative: {find_nearest_divisor(h, n_rows)}",
         )
     if w % n_cols != 0:
         raise ValueError(
-            f"{w} cols is not evenly divisible by {n_cols}. Nearest alternative: {find_nearest_divisor(w, n_cols)}"
+            f"{w} cols is not evenly divisible by {n_cols}. Nearest alternative: {find_nearest_divisor(w, n_cols)}",
         )
     new_shape = (int(h / n_rows), int(w / n_cols))
     return array.reshape((h // n_rows, n_rows, -1, n_cols)).swapaxes(1, 2).reshape(-1, n_rows, n_cols), new_shape

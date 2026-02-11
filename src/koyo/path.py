@@ -361,8 +361,47 @@ def create_symlink(
     except Exception:
         # Fallback to absolute
         link_file_.symlink_to(target_)
-
     return link_file
+
+
+def create_link_txtlnk(
+    target: Path,
+    output_dir: Path,
+    prefix: str = "",
+    suffix: str | None = None,
+    link_name: str | None = None,
+    drive_map: DriveMap = (),
+) -> Path:
+    """Create a link cross-platform.
+
+    Rather than creating a symbolic link or a shortcut, we will save the path to a text file with the same name as
+    the target, where the content of the text file is the path to the target. This way, we can achieve a similar
+    functionality across different operating systems without relying on OS-specific features.
+    """
+    if suffix is None:
+        suffix = target.suffix
+    elif suffix != "":
+        # same logic as your original (note: this makes suffix always "", unless None)
+        suffix = ""
+
+    if link_name is None:
+        link_name = target.stem
+
+    if prefix:
+        link_name = f"{prefix}_{link_name}"
+
+    # On POSIX, no .lnk extension; keep suffix behavior if you want
+    link_name = f"{link_name}{suffix}.txtlnk"
+    link_file = output_dir / link_name
+
+    target_ = Path(apply_drive_mapping(target, drive_map))
+    link_file_ = Path(apply_drive_mapping(link_file, drive_map))
+
+    # Write the target path to the link file
+    link_file_.parent.mkdir(parents=True, exist_ok=True)
+    link_file_.write_text(str(target_))
+    logger.debug(f"Created link file '{link_file_}' pointing to '{target_}'")
+    return link_file_
 
 
 def resolve_links(base_dir: Path, extensions: tuple[str, ...]) -> list[Path]:
@@ -382,4 +421,19 @@ def resolve_links(base_dir: Path, extensions: tuple[str, ...]) -> list[Path]:
             paths_.append(Path(path_))
         paths_ = [path for path in paths_ if path.exists()]
         links = [path for path in paths_ if path.suffix in extensions]
+    else:
+        # For non-Windows, resolve .txtlnk files
+        for link_file in base_dir.glob("*.txtlnk"):
+            try:
+                target_path = link_file.read_text().strip()
+                target_path = Path(target_path)
+                if target_path.exists() and target_path.suffix in extensions:
+                    links.append(target_path)
+                else:
+                    logger.warning(
+                        f"Target path '{target_path}' from link '{link_file}' does not exist or has unsupported"
+                        f" extension.",
+                    )
+            except Exception as e:
+                logger.warning(f"Could not read link file '{link_file}': {e}")
     return links

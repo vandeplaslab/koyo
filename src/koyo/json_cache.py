@@ -1,11 +1,13 @@
 """Json source."""
 
+from __future__ import annotations
+
 import typing as ty
 import warnings
 from json import JSONDecodeError
 from pathlib import Path
 
-from koyo.json import read_json_data, write_json_data
+from koyo.json import read_json, write_json
 from koyo.typing import PathLike
 
 
@@ -93,7 +95,7 @@ class JSONCache:
         """Check whether flags file exists."""
         return self.path.exists()
 
-    def as_str(self, sep="; ", exclude: ty.Optional[ty.Tuple[str, ...]] = None) -> str:
+    def as_str(self, sep="; ", exclude: tuple[str, ...] | None = None) -> str:
         """Get string representation of the flags."""
         if exclude is None:
             exclude = ()
@@ -110,7 +112,7 @@ class JSONCache:
             return ret
         return ""
 
-    def as_dict(self, exclude: ty.Optional[ty.Tuple[str, ...]] = None) -> dict:
+    def as_dict(self, exclude: tuple[str, ...] | None = None) -> dict:
         """Get dictionary representation of the flags."""
         if exclude is None:
             exclude = ()
@@ -128,7 +130,7 @@ class JSONCache:
             print(f"{pre}<no data>")
         else:
             for k, v in data.items():
-                print(f"{pre}{k}: {v}", sep=sep)
+                print(f"{pre}{k}: {v}")
 
     @staticmethod
     def format_value(v) -> ty.Any:
@@ -136,9 +138,9 @@ class JSONCache:
         if isinstance(v, str):
             if v.lower() == "true":
                 return True
-            elif v.lower() == "false":
+            if v.lower() == "false":
                 return False
-            elif v.isnumeric():
+            if v.isnumeric():
                 return int(v)
             try:
                 return float(v)
@@ -146,27 +148,26 @@ class JSONCache:
                 return v
         return v
 
-    def read(self) -> ty.Dict:
+    def read(self) -> dict:
         """Read data."""
         if self.exists():
             try:
-                data = read_json_data(self.path)
-                data = {k: self.format_value(v) for k, v in data.items()}
-                return data
+                data = read_json(self.path)
+                return {k: self.format_value(v) for k, v in data.items()}
             except JSONDecodeError:
-                warnings.warn(f"Failed to read JSON file: {self.path}")
+                warnings.warn(f"Failed to read JSON file: {self.path}", stacklevel=2)
         return {}
 
-    def write(self, data: ty.Dict):
+    def write(self, data: dict):
         """Write data to disk."""
         self._dir_path.mkdir(parents=True, exist_ok=True)
-        write_json_data(self.path, data)
+        write_json(self.path, data)
 
     def save(self, path: PathLike):
         """Save data to disk."""
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        write_json_data(path, self.read())
+        write_json(path, self.read())
 
     def get_key(self, key: str, default=None):
         """Read flag from the flag file."""
@@ -180,7 +181,7 @@ class JSONCache:
             self._set_default()
         return self.read()[key]
 
-    def write_key(self, key: str, value: ty.Union[int, float, str, bool]):
+    def write_key(self, key: str, value: float | str | bool):
         """Write flag to the flag file."""
         if not self.exists():
             self._set_default()
