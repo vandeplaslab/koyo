@@ -84,6 +84,23 @@ def pairwise_pearsonr(array_one: np.ndarray, array_two: np.ndarray | pd.DataFram
     return correlation_matrix
 
 
+def feature_redundancy(W, similarity_threshold: float = 0.9) -> tuple[list[tuple[int, int, float]], float, np.ndarray]:
+    """Calculate spatial redundancy of NMF components based on cosine similarity of the weight matrix W."""
+    from sklearn.metrics.pairwise import cosine_similarity
+
+    W_norm = W / (np.linalg.norm(W, axis=0) + 1e-12)
+    sim = cosine_similarity(W_norm.T)
+    k = W.shape[1]
+    redundant_pairs = []
+    for i in range(k):
+        for j in range(i + 1, k):
+            if sim[i, j] > similarity_threshold:
+                redundant_pairs.append((i, j, sim[i, j]))
+    total_possible = k * (k - 1) / 2
+    redundant_percent = 100 * (len(redundant_pairs) / total_possible)
+    return redundant_pairs, redundant_percent, sim
+
+
 def get_significant_correlations(
     correlation_matrix: np.ndarray | pd.DataFrame, threshold: float = 0.5
 ) -> list[tuple[int, int, float]]:
