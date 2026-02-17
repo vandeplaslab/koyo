@@ -164,7 +164,10 @@ def open_directory_alt(path: PathLike, *which: str) -> None:
         path = path.lstrip("/")
     path = Path(path)
     if which:
-        path = path.joinpath(*which)
+        # only keep 'which' if the parts are (str, Path)
+        which = [part for part in which if isinstance(part, (str, Path))]
+        if which:
+            path = path.joinpath(*which)
 
     if platform.system() == "Windows":
         if path.exists():
@@ -173,7 +176,7 @@ def open_directory_alt(path: PathLike, *which: str) -> None:
             else:
                 subprocess.call(["explorer", str(path)])
         else:
-            subprocess.call(["explorer", os.path.dirname(path)])
+            subprocess.call(["explorer", str(path.parent)])
     elif platform.system() == "Darwin":
         if path.is_file():
             subprocess.call(["open", "-R", str(path)])

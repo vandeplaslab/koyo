@@ -133,9 +133,11 @@ def renamed_parameter(
     warn_once: bool = True,
     validate_new_names: bool = True,
 ) -> ty.Callable[[ty.Callable[..., ty.Any]], ty.Callable[..., ty.Any]]:
+    """Decorator to mark parameters as renamed."""
     warned: set[str] = set()
 
     def decorator(fn: ty.Callable[..., ty.Any]) -> ty.Callable[..., ty.Any]:
+        """Parameters"""
         sig = inspect.signature(fn)
 
         if validate_new_names:
@@ -148,6 +150,7 @@ def renamed_parameter(
 
         @functools.wraps(fn)
         def wrapper(*args: ty.Any, **kwargs: ty.Any) -> ty.Any:
+            """Wrapper."""
             # 1) Rewrite kwargs BEFORE binding (binding would reject deprecated names)
             if kwargs:
                 for old, new in renames.items():
