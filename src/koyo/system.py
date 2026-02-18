@@ -101,7 +101,7 @@ def get_cli_path(name: str, env_key: str = "", default: str = "") -> str:
                 return str(script_path)
     if default:
         return default
-    raise RuntimeError(f"Could not find '{name}' executable.")
+    raise RuntimeError(f"Could not find '{name}' executable.")  # noqa: TRY003
 
 
 def who_called_me() -> tuple[str, str, int]:
@@ -132,11 +132,14 @@ def who_called_me_stack(n: int = 6) -> None:
         function_name = frame_info.function
         line_number = frame_info.lineno
         print(f"Caller #{i}: File '{file_name}', Function '{function_name}', Line {line_number}")
+    print("\n")
 
 
 def _linux_sys_name() -> str:
-    """
-    Try to discover linux system name base on /etc/os-release file or lsb_release command output
+    """Try to discover linux system name base on /etc/os-release file or lsb_release command output.
+
+    Notes
+    -----
     https://www.freedesktop.org/software/systemd/man/os-release.html.
     """
     os_release_path = "/etc/os-release"
@@ -161,7 +164,7 @@ def _linux_sys_name() -> str:
 def _linux_sys_name_lsb_release() -> str:
     """Try to discover linux system name base on lsb_release command output."""
     with contextlib.suppress(subprocess.CalledProcessError):
-        res = subprocess.run(["lsb_release", "-d", "-r"], check=True, capture_output=True)
+        res = subprocess.run(["lsb_release", "-d", "-r"], check=True, capture_output=True)  # noqa: S603,S607
         text = res.stdout.decode()
         data = {}
         for line in text.split("\n"):
@@ -181,8 +184,8 @@ def _sys_name() -> str:
             return _linux_sys_name()
         if sys.platform == "darwin":
             with contextlib.suppress(subprocess.CalledProcessError):
-                res = subprocess.run(
-                    ["sw_vers", "-productVersion"],
+                res = subprocess.run(  # noqa  S603
+                    ["sw_vers", "-productVersion"],  # noqa: S607
                     check=True,
                     capture_output=True,
                 )
