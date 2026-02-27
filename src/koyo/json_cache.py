@@ -88,7 +88,7 @@ class JSONCache:
 
     @property
     def path(self) -> Path:
-        """Get path of flag's data."""
+        """Get the path of flag's data."""
         return self._dir_path / self.FILENAME
 
     def exists(self) -> bool:
