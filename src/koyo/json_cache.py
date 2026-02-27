@@ -19,6 +19,11 @@ class JSONCache:
     def __init__(self, path: PathLike):
         self._dir_path = Path(path)
 
+    @property
+    def name(self) -> str:
+        """Return the basename of the directory."""
+        return self._dir_path.name
+
     def __getattr__(self, item: str):
         return self[item]
 
@@ -41,14 +46,14 @@ class JSONCache:
             self.write(data)
 
     def remove(self, key: str) -> None:
-        """Remove key from cache."""
+        """Remove a key from the cache."""
         data = self.read()
         if key in data:
             del data[key]
             self.write(data)
 
     def remove_multiple(self, *keys: str) -> None:
-        """Remove multiple keys from cache."""
+        """Remove multiple keys from the cache."""
         data = self.read()
         for key in keys:
             if key in data:
@@ -63,11 +68,6 @@ class JSONCache:
         """Remove existing tags."""
         self.write({})
 
-    @property
-    def name(self) -> str:
-        """Return basename of the directory."""
-        return self._dir_path.name
-
     def keys(self):
         """Return all keys in cache."""
         return self.read().keys()
@@ -77,7 +77,7 @@ class JSONCache:
         return self.read().items()
 
     def update(self, **kwargs: ty.Any) -> None:
-        """Update cache with new key-value pairs."""
+        """Update the cache with new key-value pairs."""
         data = self.read()
         data.update(**kwargs)
         self.write(data)
@@ -170,19 +170,19 @@ class JSONCache:
         write_json(path, self.read())
 
     def get_key(self, key: str, default=None):
-        """Read flag from the flag file."""
+        """Read a flag from the flag file."""
         if not self.exists():
             self._set_default()
         return self.read().get(key, default)
 
     def read_key(self, key: str):
-        """Read flag from the flag file."""
+        """Read a flag from the flag file."""
         if not self.exists():
             self._set_default()
         return self.read()[key]
 
     def write_key(self, key: str, value: float | str | bool):
-        """Write flag to the flag file."""
+        """Write a flag to the flag file."""
         if not self.exists():
             self._set_default()
         data = self.read()

@@ -80,8 +80,7 @@ def hex_to_rgb_255(hex_str):
     """Convert hex color to rgb color in 255-scale."""
     hex_color = hex_str.lstrip("#")
     hlen = len(hex_color)
-    rgb = [int(hex_color[i : i + int(hlen / 3)], 16) for i in range(0, int(hlen), int(hlen / 3))]
-    return rgb
+    return [int(hex_color[i : i + int(hlen / 3)], 16) for i in range(0, int(hlen), int(hlen / 3))]
 
 
 def rgb_to_hex(colors, multiplier: int = 255) -> str:
@@ -89,7 +88,7 @@ def rgb_to_hex(colors, multiplier: int = 255) -> str:
     return f"#{int(colors[0] * multiplier):02x}{int(colors[1] * multiplier):02x}{int(colors[2] * multiplier):02x}"
 
 
-def hex_to_rgb(hex_str, decimals=3, alpha: float | None = None):
+def hex_to_rgb(hex_str, decimals=3, alpha: float | None = None) -> np.ndarray:
     """Convert hex color to numpy array."""
     hex_color = hex_str.lstrip("#")
     hex_len = len(hex_color)
@@ -97,7 +96,8 @@ def hex_to_rgb(hex_str, decimals=3, alpha: float | None = None):
     if alpha is not None:
         if alpha == 1:
             warnings.warn(
-                "The provided alpha value is equal to 1 - this function accepts values in 0-255 range.", stacklevel=2
+                "The provided alpha value is equal to 1 - this function accepts values in 0-255 range.",
+                stacklevel=2,
             )
         rgb.append(alpha)
     return np.round(np.asarray(rgb) / 255, decimals)
@@ -346,3 +346,4 @@ def transform_color(color: ColorType) -> np.ndarray:
             if color.shape[0] == 4:
                 return color
         raise ValueError(f"Invalid color array: {color}")
+    return None

@@ -36,8 +36,20 @@ def zip_directory(path_to_directory: PathLike, output_dir: PathLike) -> PathLike
     for root, _, files in tqdm(files, desc="Zipping", unit="file"):
         for file in files:
             zip_file_object.write(
-                os.path.join(root, file), os.path.relpath(os.path.join(root, file), path_to_directory)
+                os.path.join(root, file),
+                os.path.relpath(os.path.join(root, file), path_to_directory),
             )
     zip_file_object.close()
     logger.debug("Zipped directory")
+    return output_dir
+
+
+def zip_files(output_dir: PathLike, *files: PathLike) -> PathLike:
+    """Zip files."""
+    logger.debug("Zipping files...")
+    zip_file_object = zipfile.ZipFile(output_dir, "w", zipfile.ZIP_DEFLATED)
+    for file in tqdm(files, desc="Zipping", unit="file"):
+        zip_file_object.write(file, os.path.basename(file))
+    zip_file_object.close()
+    logger.debug("Zipped files")
     return output_dir
