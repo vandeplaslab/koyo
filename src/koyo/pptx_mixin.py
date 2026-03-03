@@ -164,8 +164,11 @@ class PPTXMixin:
             filename = pptx._filename
         else:
             filename = filename or self.pptx_filename
-        pptx.save(filename)  # type: ignore[arg-type]
-        logger.trace(f"Saved PPTX to {filename} with {len(pptx.slides)} slides")
+        if len(pptx.slides) == 0:
+            logger.warning("No slides to save in PPTX")
+        else:
+            pptx.save(filename)  # type: ignore[arg-type]
+            logger.trace(f"Saved PPTX to {filename} with {len(pptx.slides)} slides")
         if reset:
             self._pptx = None
 
