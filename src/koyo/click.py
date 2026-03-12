@@ -381,41 +381,53 @@ def arg_parse_env(ctx, param, value) -> tuple[str | None, ty.Any | None]:
     return [v.split("=", maxsplit=1) for v in value]
 
 
-def parse_str_framelist(framelist: str) -> list[int]:
+def parse_int_with_range(int_range: str) -> list[int]:
     """Parse list provided in string format."""
-    if framelist is None:
+    if int_range is None:
         return []
-    framelist = framelist.replace(" ", "")
-    _framelist = framelist.split(",")
+    int_range = int_range.replace(" ", "")
+    int_range_separated = int_range.split(",")
 
-    out_framelist = []
-    for frame in _framelist:
-        _frame = frame.split(":")
-        if len(_frame) == 1:
-            out_framelist.append(int(_frame[0]))
-        elif len(_frame) in [2, 3]:
-            start, end, step = int(_frame[0]), int(_frame[1]), 1
-            if len(_frame) == 3:
-                step = int(_frame[2])
-            out_framelist.extend(list(range(start, end, step)))
+    res = []
+    for range_separated in int_range_separated:
+        splitter = ":" if ":" in range_separated else "-"
+        range_split = range_separated.split(splitter)
+        if len(range_split) == 1:
+            res.append(int(range_split[0]))
+        elif len(range_split) in [2, 3]:
+            start, end, step = int(range_split[0]), int(range_split[1]) + 1, 1
+            if len(range_split) == 3:
+                step = int(range_split[2])
+            res.extend(list(range(start, end, step)))
         else:
-            print(f"Skipped {frame} - could not parse it")
-    return out_framelist
+            print(f"Skipped {range_separated} - could not parse it")
+    return res
 
 
 # noinspection PyUnusedLocal
-def arg_parse_framelist(ctx, param, value: str):
+def arg_parse_int_with_range(ctx, param, value: str):
     """Parse framelist."""
     if value is None:
         return None
-    return parse_str_framelist(value)
+    return parse_int_with_range(value)
 
 
-def arg_parse_framelist_multi(ctx, param, value: tuple[str]):
+def arg_parse_int_with_range_multi(ctx, param, value: tuple[str]):
     """Parse framelist."""
     if value is None:
         return None
-    return [parse_str_framelist(v) for v in value]
+    return [parse_int_with_range(v) for v in value]
+
+
+def arg_parse_int_with_range_multi_merge(ctx, param, value: tuple[str]):
+    """Parse framelist."""
+    if value is None:
+        return None
+
+    res = []
+    for v in arg_parse_int_with_range_multi(ctx, param, value):
+        res.extend(v)
+    return res
 
 
 # noinspection PyUnusedLocal

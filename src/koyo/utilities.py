@@ -1034,3 +1034,30 @@ def prettify_name(mz_min: float, mz_max: float, prefix: str = "", suffix: str = 
 def prettify_ion_name(mz_min: float, mz_max: float):
     """Prettify name."""
     return prettify_name(mz_min, mz_max, suffix=" Da", n_decimals=3)
+
+
+def bunch_integers(rois: list[int]) -> str:
+    """Combine consecutive integers into compact ranges."""
+    if isinstance(rois, int):
+        return str(rois)
+
+    rois = np.asarray(rois, dtype=int)
+
+    if rois.size == 0:
+        return ""
+
+    rois = np.unique(rois)
+    rois.sort()
+
+    # find split points where difference > 1
+    splits = np.where(np.diff(rois) != 1)[0] + 1
+    groups = np.split(rois, splits)
+
+    parts = []
+    for g in groups:
+        if g.size == 1:
+            parts.append(str(g[0]))
+        else:
+            parts.append(f"{g[0]}-{g[-1]}")
+
+    return ",".join(parts)
