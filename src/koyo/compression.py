@@ -2,11 +2,12 @@
 
 import os
 import zipfile
-
+from pathlib import Path
 from loguru import logger
 from tqdm import tqdm
 
 from koyo.typing import PathLike
+from koyo.timer import MeasureTimer
 
 DECOMPRESSION_FORMATS = ["gz", ".gz", "*.gz"]
 
@@ -27,29 +28,37 @@ def unzip_directory(path_to_zip: PathLike, output_dir: PathLike, remove_archive:
     return path_to_file
 
 
-def zip_directory(path_to_directory: PathLike, output_dir: PathLike) -> PathLike:
+def zip_directory(path_to_directory: PathLike, zip_file: PathLike) -> PathLike:
     """Zip directory."""
     logger.debug("Zipping directory...")
     # zip directory
-    zip_file_object = zipfile.ZipFile(output_dir, "w", zipfile.ZIP_DEFLATED)
+    zip_file_object = zipfile.ZipFile(zip_file, "w", zipfile.ZIP_DEFLATED)
     files = list(os.walk(path_to_directory))
-    for root, _, files in tqdm(files, desc="Zipping", unit="file"):
-        for file in files:
-            zip_file_object.write(
-                os.path.join(root, file),
-                os.path.relpath(os.path.join(root, file), path_to_directory),
-            )
+    with MeasureTimer() as timer:
+        for root, _, files in tqdm(files, desc="Zipping", unit="file"):
+            for file in files:
+                zip_file_object.write(
+                    os.path.join(root, file),
+                    os.path.relpath(os.path.join(root, file), path_to_directory),
+                )
+                logger.trace(f"Zipped file {file} in {timer(since_last=True)}.")
     zip_file_object.close()
-    logger.debug("Zipped directory")
-    return output_dir
+    logger.debug(f"Zipped directory to {zip_file} in {timer()}.")
+    return zip_file
 
 
-def zip_files(output_dir: PathLike, *files: PathLike) -> PathLike:
+def zip_files(zip_file: PathLike, *files: PathLike, remove_zipped: bool = False) -> PathLike:
     """Zip files."""
     logger.debug("Zipping files...")
-    zip_file_object = zipfile.ZipFile(output_dir, "w", zipfile.ZIP_DEFLATED)
-    for file in tqdm(files, desc="Zipping", unit="file"):
-        zip_file_object.write(file, os.path.basename(file))
+    zip_file_object = zipfile.ZipFile(zip_file, "w", zipfile.ZIP_DEFLATED)
+    with MeasureTimer() as timer:
+        for file in tqdm(files, desc="Zipping", unit="file"):
+            zip_file_object.write(file, os.path.basename(file))
+            logger.trace(f"Zipped file {file} in {timer(since_last=True)}.")
     zip_file_object.close()
-    logger.debug("Zipped files")
-    return output_dir
+    if remove_zipped:
+        for file in files:
+            Path(file).unlink(missing_ok=True)
+            logger.debug(f"Removing zipped file {file}...")
+    logger.debug(f"Zipped files to {zip_file} in {timer()}.")
+    return zip_file
