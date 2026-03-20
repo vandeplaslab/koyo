@@ -61,25 +61,26 @@ def warp_points(yx: np.ndarray, fwd_affine: np.ndarray) -> np.ndarray:
     if yx.ndim != 2 or yx.shape[1] != 2:
         raise ValueError(f"Expected (N, 2) coords, got {yx.shape}")
 
-    ones = np.ones((len(yx), 1), dtype=yx.dtype)
-    coords_h = np.hstack([yx, ones])  # (N, 3)
+    ones = np.ones((len(yx), 1), dtype=np.float32)
+    coords_h = np.hstack([yx, ones], dtype=np.float32)  # (N, 3)
     result_h = (fwd_affine @ coords_h.T).T  # (N, 3)
     return result_h[:, :2] / result_h[:, 2:3]  # de-homogenise
 
 
 def warp_channel(
-    image: np.ndarray, affine_inv: np.ndarray, output_shape: tuple[int, int], order: int = 1, silent: bool = False
+    image: np.ndarray, affine_inv: np.ndarray, output_shape: tuple[int, int], order: int = 1, silent: bool = False, use_cv2: bool | None = None
 ) -> np.ndarray:
     """Warp image."""
     import cv2
     from scipy.ndimage import affine_transform
 
     assert image.ndim == 2, "Only 2D images are supported for warping in this function."
-    use_cv2 = max(max(image.shape), max(output_shape)) < 32767
+    use_cv2 = max(max(image.shape), max(output_shape)) < 32767 if use_cv2 is None else use_cv2
     if not silent:
         logger.trace(f"Using {'cv2' if use_cv2 else 'scipy'} for warping.")
     if use_cv2:
         image = _convert_array_to_numpy(image)
+        image = ensure_opencv_dtype(image)
         warped = cv2.warpAffine(
             image.T,
             invert_affine(affine_inv)[:2, :],
@@ -91,6 +92,108 @@ def warp_channel(
     return warped
 
 
+def warp_channels(
+    image: np.ndarray, affine_inv: np.ndarray, output_shape: tuple[int, int], order: int = 1, silent: bool = False, use_cv2: bool | None = None
+) -> np.ndarray:
+    """Warp multi-channel image."""
+    n_channels = image.shape[0]
+    warped = np.zeros((n_channels, *output_shape), dtype=image.dtype)
+    for c in range(n_channels):
+        warped[c] = warp_channel(image[c], affine_inv, output_shape, order=order, silent=silent, use_cv2=use_cv2)
+    return warped
+
+
+def warp_coordinates_from_image(image: np.ndarray, affine_inv: np.ndarray, output_shape: tuple[int, int]) -> np.ndarray:
+    """Warp coordinates from an image."""
+    tmp = warp_channel(image, affine_inv, output_shape=output_shape)
+    y, x = np.where(tmp > 0)
+    return y, x
+
+
+def get_shape_from_affine(shape: tuple[int, int], fwd_affine: np.ndarray) -> tuple[int, int]:
+    """
+    Compute the bounding box shape of an image after a forward affine transform.
+
+    Parameters
+    ----------
+    shape : (H, W)
+    fwd_affine : (3, 3) forward affine matrix in yx pixel space
+
+    Returns
+    -------
+    (H_out, W_out) : tight bounding box around the four transformed corners
+    """
+    h, w = shape
+    # Four corners in yx, going round the image
+    corners = np.array(
+        [[0, 0], [0, w - 1], [h - 1, 0], [h - 1, w - 1]],
+        dtype=float,
+    )
+
+    transformed = warp_points(corners, fwd_affine)  # (4, 2)
+
+    y_min, x_min = transformed.min(axis=0)
+    y_max, x_max = transformed.max(axis=0)
+
+    h_out = int(np.ceil(y_max - y_min)) + 1
+    w_out = int(np.ceil(x_max - x_min)) + 1
+    return h_out, w_out
+
+
+def get_shape_from_affine_shifted(shape: tuple[int, int], fwd_affine: np.ndarray) -> tuple[tuple[int, int], np.ndarray]:
+    """
+    Returns the output shape and an adjusted matrix that shifts all content
+    into non-negative coordinates (no clipping).
+
+    Returns
+    -------
+    output_shape : (H_out, W_out)
+    adjusted_matrix : (3, 3) matrix with translation baked in
+    """
+    h, w = shape
+    corners = np.array(
+        [
+            [0, 0],
+            [0, w - 1],
+            [h - 1, 0],
+            [h - 1, w - 1],
+        ],
+        dtype=float,
+    )
+
+    transformed = warp_points(corners, fwd_affine)
+
+    # Shift to move content to (0, 0) if needed
+    y_min, x_min = transformed.min(axis=0)
+    shift = np.array(
+        [
+            [1, 0, -min(y_min, 0)],
+            [0, 1, -min(x_min, 0)],
+            [0, 0, 1],
+        ]
+    )
+    adjusted = shift @ fwd_affine
+
+    # Recompute corners with adjusted matrix
+    transformed_adj = warp_points(corners, adjusted)
+    y_max, x_max = transformed_adj.max(axis=0)
+
+    h_out = int(np.ceil(y_max)) + 1
+    w_out = int(np.ceil(x_max)) + 1
+    return (h_out, w_out), adjusted
+
+
+def arrange_warped(warped: list[np.ndarray], is_rgb: bool) -> np.ndarray:
+    """Arrange warped images into a single array."""
+    # stack image
+    warped = np.dstack(warped)
+    # ensure that RGB remains RGB but AF remain AF
+    if warped.ndim == 3 and not is_rgb:
+        # if warped.ndim == 3 and np.argmin(warped.shape) == 2 and not is_rgb:
+        warped = np.moveaxis(warped, 2, 0)
+    return warped
+
+
 def _convert_array_to_numpy(array: np.ndarray) -> np.ndarray:
     """Convert array to numpy if it's a dask array."""
     with contextlib.suppress(ImportError):
@@ -99,3 +202,12 @@ def _convert_array_to_numpy(array: np.ndarray) -> np.ndarray:
         if isinstance(array, da.Array):
             return array.compute()
     return array
+
+
+def ensure_opencv_dtype(arr: np.ndarray) -> np.ndarray:
+    """Convert arrays to OpenCV-compatible dtypes."""
+    if arr.dtype == np.bool_:
+        return arr.astype(np.uint8)
+    if arr.dtype in (np.uint8, np.uint16, np.float32, np.float64, np.int16, np.int32):
+        return arr
+    return arr.astype(np.float32)
