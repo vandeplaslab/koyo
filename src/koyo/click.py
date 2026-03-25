@@ -20,14 +20,41 @@ ALLOW_EXTRA_ARGS = {"help_option_names": ["-h", "--help"], "ignore_unknown_optio
 
 
 def expand_data_dirs(input_dir: str) -> list[str]:
-    """Expand data directory."""
+    """Expand a path that may contain a glob wildcard into a list of matches.
+
+    Parameters
+    ----------
+    input_dir : str
+        Directory path, optionally containing ``*`` wildcards.
+
+    Returns
+    -------
+    list of str
+        Matched paths, or a single-element list with the original string if no
+        wildcard is present.
+    """
     if "*" in input_dir:
         return list(glob.glob(input_dir))
     return [input_dir]
 
 
 def parse_paths(input_dirs: list[PathLike], absolute: bool = False, sort: bool = False) -> list[str]:
-    """Parse list/tuple of paths and check whether any of them have glob-like pattern."""
+    """Expand a list of paths, resolving any glob patterns.
+
+    Parameters
+    ----------
+    input_dirs : list of PathLike
+        Input paths; each entry may contain ``*`` wildcards.
+    absolute : bool, optional
+        If ``True``, convert all results to absolute paths.
+    sort : bool, optional
+        If ``True``, return paths in natural sort order.
+
+    Returns
+    -------
+    list of str
+        Flattened, optionally sorted list of resolved path strings.
+    """
     result = []
     for path in input_dirs:
         path = str(path)
@@ -159,7 +186,7 @@ def dev_options(func: ty.Callable) -> ty.Callable:
     if not IS_PYINSTALLER:
         func = click.option(
             "--dev",
-            help="Flat to indicate that CLI should run in development mode and catch all errors.",
+            help="Flag to indicate that CLI should run in development mode and catch all errors.",
             default=False,
             is_flag=True,
             show_default=True,
@@ -168,13 +195,37 @@ def dev_options(func: ty.Callable) -> ty.Callable:
 
 
 def repr_filelist(filelist: ty.Sequence[PathLike]) -> str:
-    """Pretty iterable..."""
+    """Return a semicolon-separated string of filenames (without directories).
+
+    Parameters
+    ----------
+    filelist : sequence of PathLike
+        Paths whose basenames should be joined.
+
+    Returns
+    -------
+    str
+        Basenames joined by ``"; "``.
+    """
     res = [Path(file).name for file in filelist]
     return "; ".join(res)
 
 
 def repr_iterable(iterable: ty.Sequence[ty.Any]):
-    """Pretty iterable..."""
+    """Return a compact representation of a sequence for display purposes.
+
+    Parameters
+    ----------
+    iterable : sequence
+        Any sequence.  If it has more than 10 elements, a count summary is
+        returned instead of the full sequence.
+
+    Returns
+    -------
+    str or sequence or None
+        Original sequence (≤10 items), ``"<n> items..."`` summary (>10 items),
+        or ``None`` if *iterable* is not a ``Sequence``.
+    """
     if iterable is None:
         return iterable
     if isinstance(iterable, ty.Sequence):
@@ -379,7 +430,28 @@ def arg_parse_env(ctx, param, value) -> tuple[str | None, ty.Any | None]:
 
 
 def parse_int_with_range(int_range: str) -> list[int]:
-    """Parse list provided in string format."""
+    """Parse a compact integer-range string into a flat list of integers.
+
+    Supports comma-separated values and ranges expressed with ``":"`` or
+    ``"-"`` as the separator.  An optional third component sets the step.
+
+    Parameters
+    ----------
+    int_range : str
+        Range specification, e.g. ``"1,3,5:10,20-25:2"``.
+
+    Returns
+    -------
+    list of int
+        Expanded list of integer values.
+
+    Examples
+    --------
+    >>> parse_int_with_range("1,3,5:7")
+    [1, 3, 5, 6, 7]
+    >>> parse_int_with_range("0:10:2")
+    [0, 2, 4, 6, 8, 10]
+    """
     if int_range is None:
         return []
     int_range = int_range.replace(" ", "")
@@ -430,8 +502,6 @@ def arg_parse_int_with_range_multi_merge(ctx, param, value: tuple[str]):
 # noinspection PyUnusedLocal
 def parse_values(ctx, param, value: str):
     """Parse values and return them as list of potential options."""
-    from ast import literal_eval
-
     if isinstance(value, str):
         return [literal_eval(val) for val in value.split(",")]
     return [literal_eval(val) for val in value]
@@ -444,7 +514,27 @@ def timed_iterator(
     silent: bool = False,
     is_filename: bool = False,
 ):
-    """Timed iterable that yields value and prints amount of time spent on said iterable."""
+    """Yield items from *iterable* while logging per-item timing statistics.
+
+    Parameters
+    ----------
+    iterable : iterable
+        Items to iterate over.  Materialized to a list internally to count
+        total items.
+    text : str, optional
+        Prefix shown in each log message.
+    func : callable, optional
+        Logging function used to emit messages (default: ``info_msg``).
+    silent : bool, optional
+        If ``True``, suppress all timing output.
+    is_filename : bool, optional
+        If ``True``, appends the basename of each item to *text*.
+
+    Yields
+    ------
+    item
+        Each element of *iterable* in order.
+    """
     from koyo.timer import format_human_time_s, measure_time
 
     total = 0
@@ -487,7 +577,20 @@ def parse_arg(arg: str, key: str) -> tuple[str, ty.Any]:
 
 
 def parse_extra_args(extra_args: tuple[str, ...] | None) -> dict[str, ty.Any]:
-    """Arguments"""
+    """Parse ``key=value`` strings into a dictionary.
+
+    Parameters
+    ----------
+    extra_args : tuple of str or None
+        Sequence of ``"key=value"`` tokens.  Arguments without ``"="`` are
+        skipped with an informational log message.  When the same key appears
+        more than once, values are collected into a list.
+
+    Returns
+    -------
+    dict
+        Parsed keyword arguments.
+    """
     kwargs: dict[str, ty.Any] = {}
     if extra_args is None:
         return kwargs
@@ -497,14 +600,9 @@ def parse_extra_args(extra_args: tuple[str, ...] | None) -> dict[str, ty.Any]:
             continue
         name, value = parse_arg(arg, "")
         if name in kwargs:
-            if name in kwargs and not isinstance(kwargs[name], list):
+            if not isinstance(kwargs[name], list):
                 kwargs[name] = [kwargs[name]]
-            if isinstance(kwargs[name], list):
-                kwargs[name].append(value)
-            elif isinstance(kwargs[name], (str, int, float, bool)):
-                kwargs[name] = value
-            else:
-                kwargs[name] = [kwargs[name], value]
+            kwargs[name].append(value)
         else:
             kwargs[name] = value
     return kwargs
@@ -593,7 +691,20 @@ def set_env_args_from_tuples(env_vars: tuple[str | None, str | None]) -> None:
 
 
 def filter_kwargs(*allowed: str, **kwargs: ty.Any) -> dict[str, ty.Any]:
-    """Filter allowed kwargs."""
+    """Return only the kwargs whose keys appear in *allowed*.
+
+    Parameters
+    ----------
+    *allowed : str
+        Whitelisted keyword argument names.
+    **kwargs : Any
+        Keyword arguments to filter.
+
+    Returns
+    -------
+    dict
+        Subset of *kwargs* restricted to keys in *allowed*.
+    """
     return {key: value for key, value in kwargs.items() if key in allowed}
 
 

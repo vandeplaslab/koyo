@@ -22,7 +22,21 @@ IS_PYINSTALLER = getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 @lru_cache
 def check_available_space(path: str, min_required) -> bool:
-    """Check available space at a specified location."""
+    """Check available disk space at a specified path.
+
+    Parameters
+    ----------
+    path : str
+        Filesystem path to check (the drive/mount point is derived from it).
+    min_required : int
+        Minimum number of free bytes required.
+
+    Returns
+    -------
+    bool
+        ``True`` if free space exceeds *min_required*, or if the drive cannot
+        be determined (e.g. on a path without a drive letter).
+    """
     from psutil import disk_usage
 
     path = Path(path).drive
@@ -33,17 +47,45 @@ def check_available_space(path: str, min_required) -> bool:
 
 
 def is_envvar(key: str, value: str) -> bool:
-    """Check if an environment variable is set."""
+    """Check whether an environment variable is set to a specific value.
+
+    Parameters
+    ----------
+    key : str
+        Name of the environment variable.
+    value : str
+        Expected value.
+
+    Returns
+    -------
+    bool
+        ``True`` if the variable exists and equals *value*.
+    """
     return key in os.environ and os.environ[key] == str(value)
 
 
 def is_envvar_set(key: str) -> bool:
-    """Check if an environment variable is set."""
+    """Check whether an environment variable exists and has a non-empty value.
+
+    Parameters
+    ----------
+    key : str
+        Name of the environment variable.
+
+    Returns
+    -------
+    bool
+        ``True`` if the variable is present and its value is not empty.
+    """
     return key in os.environ and os.environ[key]
 
 
 def set_freeze_support() -> None:
-    """Set freeze support for multiprocessing."""
+    """Enable multiprocessing freeze support for PyInstaller bundles.
+
+    Calls ``multiprocessing.freeze_support()`` and, on macOS, sets the
+    start method to ``"spawn"`` to avoid fork-related crashes.
+    """
     import sys
     from multiprocessing import freeze_support, set_start_method
 
@@ -53,18 +95,15 @@ def set_freeze_support() -> None:
 
 
 def get_cli_path(name: str, env_key: str = "", default: str = "") -> str:
-    """Get a path to imimspy executable.
+    """Get a path to a named executable.
 
     The path is determined in the following order:
-    1. First, we check whether environment variable `{env_key}_{name.upper()}_PATH` is set.
-    2. If not, we check whether we are running as a PyInstaller app.
-    3. If not, we check whether we are running as a Python app.
-    4. If not, we raise an error.
-    """
-    import os
-    import sys
-    from pathlib import Path
 
+    1. Check whether environment variable ``{env_key}_{name.upper()}_PATH`` is set.
+    2. Check whether we are running as a PyInstaller bundle.
+    3. Check whether the executable is on the Python environment's PATH.
+    4. Raise ``RuntimeError`` if the executable cannot be found.
+    """
     from koyo.utilities import running_as_pyinstaller_app
 
     env_var = f"{env_key}_{name.upper()}_PATH"
@@ -105,7 +144,21 @@ def get_cli_path(name: str, env_key: str = "", default: str = "") -> str:
 
 
 def who_called_me() -> tuple[str, str, int]:
-    """Get the file name, function name, and line number of the caller."""
+    """Return the file, function, and line number of the immediate caller.
+
+    Returns
+    -------
+    file_name : str
+        Absolute path to the source file of the caller.
+    function_name : str
+        Name of the calling function.
+    line_number : int
+        Line number within *file_name* where this function was invoked.
+
+    Notes
+    -----
+    Also prints the caller information to stdout as a side-effect.
+    """
     # Get the current frame
     current_frame = inspect.currentframe()
     # Get the caller's frame
@@ -120,7 +173,13 @@ def who_called_me() -> tuple[str, str, int]:
 
 
 def who_called_me_stack(n: int = 6) -> None:
-    """Print the last 5 callers that led to this function being called."""
+    """Print the call stack up to *n* frames above this function.
+
+    Parameters
+    ----------
+    n : int, optional
+        Maximum number of caller frames to display (default 6).
+    """
     stack = inspect.stack()
     # The stack list starts with the current frame at index 0,
     # so the callers start from index 1 onward.
@@ -136,7 +195,7 @@ def who_called_me_stack(n: int = 6) -> None:
 
 
 def _linux_sys_name() -> str:
-    """Try to discover linux system name base on /etc/os-release file or lsb_release command output.
+    """Try to discover linux system name based on /etc/os-release file or lsb_release command output.
 
     Notes
     -----
@@ -162,7 +221,7 @@ def _linux_sys_name() -> str:
 
 
 def _linux_sys_name_lsb_release() -> str:
-    """Try to discover linux system name base on lsb_release command output."""
+    """Try to discover linux system name based on lsb_release command output."""
     with contextlib.suppress(subprocess.CalledProcessError):
         res = subprocess.run(["lsb_release", "-d", "-r"], check=True, capture_output=True)  # noqa: S603,S607
         text = res.stdout.decode()
@@ -194,7 +253,20 @@ def _sys_name() -> str:
 
 
 def get_module_path(module: str, filename: str) -> str:
-    """Get a module path."""
+    """Return the filesystem path to a file inside an installed package.
+
+    Parameters
+    ----------
+    module : str
+        Importable package name (e.g. ``"koyo"``).
+    filename : str
+        Filename within the package, with or without the ``.py`` extension.
+
+    Returns
+    -------
+    str
+        Absolute path to the requested file.
+    """
     import importlib.resources
 
     if not filename.endswith(".py"):
@@ -204,14 +276,25 @@ def get_module_path(module: str, filename: str) -> str:
 
 
 def running_as_pyinstaller_app() -> bool:
-    """Infer whether we are running pyinstaller bundle."""
+    """Return ``True`` if the process is running inside a PyInstaller bundle."""
     import sys
 
     return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 
 def reraise_exception_if_debug(exc, message: str = "Exception occurred", env_key: str = "DEV_MODE") -> None:
-    """Reraise exception if debug mode is enabled and jump into the debugger."""
+    """Re-raise *exc* when a debug env-var is set, otherwise log it.
+
+    Parameters
+    ----------
+    exc : BaseException
+        The exception to handle.
+    message : str, optional
+        Message passed to ``logger.exception`` when not re-raising.
+    env_key : str, optional
+        Environment variable name whose value ``"1"`` enables re-raise
+        (default ``"DEV_MODE"``).
+    """
     import os
 
     if os.environ.get(env_key, "0") == "1":
@@ -239,7 +322,18 @@ def running_as_briefcase_app() -> bool:
 
 
 def is_installed(module: str) -> bool:
-    """Try to import module."""
+    """Check whether a Python module is available without importing it.
+
+    Parameters
+    ----------
+    module : str
+        Fully-qualified module name (e.g. ``"numpy.linalg"``).
+
+    Returns
+    -------
+    bool
+        ``True`` if the module can be found on ``sys.path``.
+    """
     import importlib.util
 
     try:
@@ -250,7 +344,18 @@ def is_installed(module: str) -> bool:
 
 
 def get_version(module: str) -> str:
-    """Get the current version of package."""
+    """Return the installed version of a package.
+
+    Parameters
+    ----------
+    module : str
+        Package name as known to ``importlib.metadata``.
+
+    Returns
+    -------
+    str
+        Version string, or ``"N/A"`` if the package is not installed.
+    """
     import importlib.metadata
 
     try:
@@ -261,7 +366,21 @@ def get_version(module: str) -> str:
 
 
 def is_above_version(module: str, version: str) -> bool:
-    """Check whether the module is above a certain version."""
+    """Check whether an installed package meets a minimum version requirement.
+
+    Parameters
+    ----------
+    module : str
+        Package name as known to ``importlib.metadata``.
+    version : str
+        Minimum required version string (e.g. ``"1.20.0"``).
+
+    Returns
+    -------
+    bool
+        ``True`` if the installed version is >= *version*, ``False`` if the
+        package is not installed or the version is lower.
+    """
     import importlib.metadata
 
     from packaging.version import Version
