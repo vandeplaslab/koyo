@@ -1061,3 +1061,23 @@ def bunch_integers(rois: list[int]) -> str:
             parts.append(f"{g[0]}-{g[-1]}")
 
     return ",".join(parts)
+
+
+def reverse_mapping(mapping: dict[str, list[Path]], return_both: bool = False) -> dict[str, dict[str, Path]]:
+    """Reverse mapping."""
+    new_mapping: dict[str, dict[str, str]] = {}
+    if mapping is None:
+        if return_both:
+            return new_mapping, mapping
+        return new_mapping
+    for dataset_name, values in mapping.items():
+        if values is None:
+            continue
+        for path in values:
+            basename = path.stem
+            if basename not in new_mapping:
+                new_mapping[basename] = {}
+            new_mapping[basename][dataset_name] = path
+    if return_both:
+        return new_mapping, mapping
+    return new_mapping

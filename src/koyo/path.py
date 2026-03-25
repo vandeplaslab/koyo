@@ -9,7 +9,8 @@ from pathlib import Path
 
 from loguru import logger
 
-from koyo.system import IS_WIN
+
+from koyo.system import IS_WIN, IS_LINUX, IS_MAC
 from koyo.typing import PathLike
 
 DriveMap = tuple[tuple[str, str], ...]
@@ -184,6 +185,48 @@ def open_directory_alt(path: PathLike, *which: str) -> None:
             subprocess.Popen(["open", str(path)])
     else:
         subprocess.Popen(["xdg-open", str(path)])
+
+
+def open_directory_universal(path: str | os.PathLike[str]) -> None:
+    """
+    Open a directory in the system file manager on macOS, Windows, or Linux.
+
+    Supports:
+    - local paths
+    - network-mounted drives / shares
+    - paths with spaces
+
+    Parameters
+    ----------
+    path:
+        Directory path to open.
+
+    Raises
+    ------
+    FileNotFoundError
+        If the path does not exist.
+    RuntimeError
+        If opening the directory fails.
+    """
+    import subprocess
+
+    directory = Path(path).expanduser()
+    if not directory.exists():
+        raise FileNotFoundError(f"Path does not exist: {directory}")
+    if not directory.is_dir():
+        directory = directory.parent
+
+    try:
+        if IS_WIN:
+            # Use os.startfile on Windows; handles spaces fine.
+            os.startfile(str(directory))  # type: ignore[attr-defined]
+        elif IS_MAC:
+            # subprocess with a list avoids shell quoting issues.
+            subprocess.run(["open", str(directory)], check=True)
+        elif IS_LINUX:
+            subprocess.run(["xdg-open", str(directory)], check=True)
+    except Exception as exc:
+        raise RuntimeError(f"Failed to open directory: {directory}") from exc
 
 
 def get_subdirectories(path: PathLike) -> list[Path]:
