@@ -56,9 +56,8 @@ def cli_parse_paths_sort(ctx, param, value) -> list[str]:
 
 def cli_parse_paths_sort_auto_glob(ctx, param, value) -> list[str]:
     """Parse paths."""
-    if len(value) == 1:
-        if Path(value[0]).is_dir():
-            value = [f"{value[0]}/*"]
+    if len(value) == 1 and Path(value[0]).is_dir():
+        value = [f"{value[0]}/*"]
     return parse_paths(value, sort=True)
 
 
@@ -183,6 +182,7 @@ def repr_iterable(iterable: ty.Sequence[ty.Any]):
         if n > 10:
             return f"{n} items..."
         return iterable
+    return None
 
 
 def append(table: list[tuple[str, str, str]], name: str = "", param: str = "", value: ty.Any = "") -> None:
@@ -323,9 +323,9 @@ def expand_dirs(input_dir: str) -> ty.Sequence[str]:
     """Expand data directory."""
     if "*" in str(input_dir):
         return glob.glob(input_dir)
-    elif isinstance(input_dir, (str, Path)):
+    if isinstance(input_dir, (str, Path)):
         return [str(input_dir)]
-    elif isinstance(input_dir, ty.Sequence):
+    if isinstance(input_dir, ty.Sequence):
         return [str(path) for path in input_dir]
     return input_dir
 
@@ -351,8 +351,7 @@ def arg_split_str(ctx, param, value):
     """Split arguments."""
     if value is None:
         return None
-    args = [arg.strip() for arg in value.split(",")]
-    return args
+    return [arg.strip() for arg in value.split(",")]
 
 
 # noinspection PyUnusedLocal
@@ -360,8 +359,7 @@ def arg_split_float(ctx, param, value):
     """Split arguments."""
     if value is None:
         return None
-    args = [float(arg.strip()) for arg in value.split(",")]
-    return args
+    return [float(arg.strip()) for arg in value.split(",")]
 
 
 # noinspection PyUnusedLocal
@@ -369,8 +367,7 @@ def arg_split_int(ctx, param, value):
     """Split arguments."""
     if value is None:
         return None
-    args = [int(arg.strip()) for arg in value.split(",")]
-    return args
+    return [int(arg.strip()) for arg in value.split(",")]
 
 
 # noinspection PyUnusedLocal
@@ -514,7 +511,9 @@ def parse_extra_args(extra_args: tuple[str, ...] | None) -> dict[str, ty.Any]:
 
 
 def parse_args_with_keys(
-    extra_args: tuple[str] | None, fields: tuple[str, ...], clean: bool = False
+    extra_args: tuple[str] | None,
+    fields: tuple[str, ...],
+    clean: bool = False,
 ) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
     extra_kwargs = {}
     if extra_args is None:
@@ -537,7 +536,8 @@ def parse_args_with_keys(
 
 
 def parse_fig_args(
-    extra_args: tuple[str] | None, clean: bool = False
+    extra_args: tuple[str] | None,
+    clean: bool = False,
 ) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
     """Parse extra parameters."""
     return parse_args_with_keys(extra_args, ("--fig:", "--f:"), clean)
@@ -546,17 +546,16 @@ def parse_fig_args(
 @ty.overload
 def parse_env_args(extra_args: tuple[str, ...] | None, clean: bool = False) -> dict[str, ty.Any]:
     """Parse extra environment variables."""
-    ...
 
 
 @ty.overload
 def parse_env_args(extra_args: tuple[str, ...] | None, clean: bool = False) -> tuple[dict[str, ty.Any], tuple[str]]:
     """Parse extra environment variables."""
-    ...
 
 
 def parse_env_args(
-    extra_args: tuple[str, ...] | None, clean: bool = False
+    extra_args: tuple[str, ...] | None,
+    clean: bool = False,
 ) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
     """Parse extra environment variables."""
     env_kwargs = {}
@@ -619,12 +618,11 @@ def select_from_list(
     if item_list:
         if len(item_list) == 1:
             return 0
-        elif auto_select.lower() == "off":
-            choice = click.prompt(text, type=click.INT, default=default)
-            return choice
-        elif auto_select.lower() == "newest":
+        if auto_select.lower() == "off":
+            return click.prompt(text, type=click.INT, default=default)
+        if auto_select.lower() == "newest":
             return len(item_list) - 1
-        elif auto_select.lower() == "oldest":
+        if auto_select.lower() == "oldest":
             return 0
     return default
 

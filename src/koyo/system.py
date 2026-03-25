@@ -277,3 +277,108 @@ def is_above_version(module: str, version: str) -> bool:
         return installed_version >= version
     logger.warning(f"Module {module} not found.")
     return False
+
+
+def is_network_path(path: str | os.PathLike) -> bool:
+    """Return True if *path* lives on a network / remote filesystem.
+
+    Works on Windows, macOS, and Linux without third-party dependencies.
+    """
+    path = os.path.abspath(path)
+
+    if sys.platform == "win32":
+        return _is_network_windows(path)
+    if sys.platform == "darwin":
+        return _is_network_macos(path)
+    return _is_network_linux(path)
+
+
+def _is_network_windows(path: str) -> bool:
+    import ctypes
+
+    # UNC paths (\\server\share\...) are always network
+    if path.startswith("\\\\"):
+        return True
+
+    # Get the drive letter and ask Windows what type it is
+    drive = os.path.splitdrive(path)[0] + "\\"
+    DRIVE_REMOTE = 4
+    get_drive_type = ctypes.windll.kernel32.GetDriveTypeW
+    return get_drive_type(drive) == DRIVE_REMOTE
+
+
+def _is_network_macos(path: str) -> bool:
+    import subprocess
+
+    # Network fs types commonly seen on macOS
+    NETWORK_FS_TYPES = {
+        "nfs",
+        "afpfs",
+        "smbfs",
+        "cifs",
+        "webdav",
+        "ftp",
+        "ftpfs",
+        "osxfuse",
+        "macfuse",
+    }
+
+    try:
+        result = subprocess.run(
+            ["df", "-P", "-T", path],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        # df -T output: "Filesystem Type ..."  — type is second column of data row
+        lines = result.stdout.strip().splitlines()
+        if len(lines) >= 2:
+            fs_type = lines[1].split()[1].lower()
+            return fs_type in NETWORK_FS_TYPES
+    except (subprocess.TimeoutExpired, FileNotFoundError, IndexError):
+        pass
+
+    return False
+
+
+def _is_network_linux(path: str) -> bool:
+    NETWORK_FS_TYPES = {
+        "nfs",
+        "nfs4",
+        "cifs",
+        "smb",
+        "smbfs",
+        "afs",
+        "ncpfs",
+        "glusterfs",
+        "cephfs",
+        "sshfs",
+        "fuse.sshfs",
+        "davfs",
+        "fuse.davfs2",
+        "lustre",
+        "gpfs",
+        "pvfs2",
+    }
+
+    try:
+        # /proc/mounts lists all mounted filesystems
+        with open("/proc/mounts") as f:
+            mounts = f.readlines()
+    except OSError:
+        return False
+
+    # Find the most specific (longest) mount point that is a prefix of path
+    best_match = ""
+    best_fs_type = ""
+    for line in mounts:
+        parts = line.split()
+        if len(parts) < 3:
+            continue
+        mount_point = parts[1]
+        fs_type = parts[2].lower()
+        if path.startswith(mount_point) and len(mount_point) > len(best_match):
+            best_match = mount_point
+            best_fs_type = fs_type
+
+    return best_fs_type in NETWORK_FS_TYPES
