@@ -1,7 +1,14 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python -m pytest tests/test_system.py tests/test_click.py tests/test_utilities.py -v --tb=short)"
+      "Bash(python -m pytest tests/test_system.py tests/test_click.py tests/test_utilities.py -v --tb=short)",
+      "Bash(grep:*)",
+      "Bash(ls -1 src/koyo/*.py)",
+      "Bash(xargs -I {} basename {} .py)",
+      "Bash(ls -1 tests/test_*.py)",
+      "Bash(xargs -I {} basename {} test_.py)",
+      "Bash(python -m pytest tests/test_transform.py tests/test_stats.py tests/test_context.py tests/test_path.py tests/test_json_cache.py tests/test_config.py tests/test_logging.py tests/test_color.py tests/test_containers.py tests/test_timer.py -v --tb=short)",
+      "Bash(python -m pytest --tb=short -q)"
     ]
   }
 }
