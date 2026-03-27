@@ -27,7 +27,7 @@ def test_pdf(tmp_path):
     pdf = PDF(tmp / "test.pdf", as_pdf=True)
 
     assert pdf.pdf_filename == tmp / "test.pdf"
-    array = np.random.randint(0, 255, (1000, 1000), dtype=np.uint8)
+    array = np.random.default_rng().integers(0, 255, (1000, 1000), dtype=np.uint8)
     image = Image.fromarray(array)
     pdf._add_pil_image_to_pdf(tmp / "test.png", image)
     pdf._save_pdf(pdf.pdf)
@@ -43,7 +43,7 @@ def test_pdf(tmp_path):
     pdf._add_mpl_figure_to_pdf(tmp / "test.png", plt.gcf(), pdf=page)
     assert not (tmp / "test.png").exists()
     # export PIL figure
-    array = np.random.randint(0, 255, (1000, 1000), dtype=np.uint8)
+    array = np.random.default_rng().integers(0, 255, (1000, 1000), dtype=np.uint8)
     image = Image.fromarray(array)
     pdf._add_pil_image_to_pdf(tmp / "test.png", image, pdf=page)
     assert not (tmp / "test.png").exists()
@@ -52,7 +52,7 @@ def test_pdf(tmp_path):
     assert (tmp / "test2.pdf").exists()
 
     with pdf._export_pdf_figures(tmp / "test3.pdf") as page:
-        array = np.random.randint(0, 255, (1000, 1000), dtype=np.uint8)
+        array = np.random.default_rng().integers(0, 255, (1000, 1000), dtype=np.uint8)
         image = Image.fromarray(array)
         pdf._add_pil_image_to_pdf(tmp / "test.png", image, pdf=page)
     assert (tmp / "test3.pdf").exists()

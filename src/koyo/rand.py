@@ -9,7 +9,7 @@ import numpy as np
 
 def get_random_seed() -> int:
     """Get random seed."""
-    return np.random.randint(0, np.iinfo(np.int32).max - 1, 1)[0]
+    return np.random.default_rng().integers(0, np.iinfo(np.int32).max - 1, 1)[0]
 
 
 def get_random_state(n: int = 1) -> int | list[int]:
@@ -27,7 +27,7 @@ def temporary_seed(seed: int | None, skip_if_negative_one: bool = False):
         yield
         return
     state = np.random.get_state()
-    np.random.seed(seed)
+    np.random.default_rng(seed)
     try:
         yield
     finally:
