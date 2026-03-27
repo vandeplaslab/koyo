@@ -5,22 +5,27 @@ import sys
 from pathlib import Path
 
 import pytest
-
 from koyo.path import (
     apply_drive_mapping,
     copy_file,
     create_directory,
+    create_link,
     create_link_txtlnk,
     create_symlink,
     dir_iter,
     empty_directory,
     get_copy_path,
+    get_mount_point,
     get_subdirectories,
     mglob,
+    move_directory,
+    open_directory,
+    open_directory_alt,
+    open_directory_universal,
     remove_file,
     resolve_links,
+    uri_to_path,
 )
-
 
 # ---------------------------------------------------------------------------
 # copy_file
@@ -166,6 +171,16 @@ def test_empty_directory_nonexistent(tmp_path):
     empty_directory(tmp_path / "ghost", remove_parent=True)
 
 
+def test_move_directory_moves_contents(tmp_path):
+    src = tmp_path / "src"
+    dest = tmp_path / "dest"
+    src.mkdir()
+    (src / "file.txt").write_text("x")
+    move_directory(src, dest)
+    assert not src.exists()
+    assert (dest / "file.txt").read_text() == "x"
+
+
 # ---------------------------------------------------------------------------
 # create_directory
 # ---------------------------------------------------------------------------
@@ -183,6 +198,11 @@ def test_create_directory_already_exists(tmp_path):
     existing.mkdir()
     result = create_directory(str(existing))
     assert result is None
+
+
+def test_uri_to_path_file_uri():
+    result = uri_to_path("file:///tmp/example.txt")
+    assert str(result).endswith("/tmp/example.txt")
 
 
 # ---------------------------------------------------------------------------
@@ -222,6 +242,11 @@ def test_apply_drive_mapping_no_match():
 def test_apply_drive_mapping_empty():
     result = apply_drive_mapping(Path("/some/path"), ())
     assert result == "/some/path"
+
+
+def test_get_mount_point_returns_existing_mount(tmp_path):
+    result = get_mount_point(tmp_path)
+    assert os.path.ismount(result)
 
 
 # ---------------------------------------------------------------------------
@@ -271,6 +296,17 @@ def test_create_link_txtlnk_with_prefix(tmp_path):
     assert "exp01" in link.name
 
 
+def test_create_link_dispatches_to_symlink(monkeypatch, tmp_path):
+    target = tmp_path / "file.txt"
+    target.write_text("data")
+    out_dir = tmp_path / "links"
+    expected = out_dir / "file.txt"
+
+    monkeypatch.setattr("koyo.path.IS_WIN", False)
+    monkeypatch.setattr("koyo.path.create_symlink", lambda *args, **kwargs: expected)
+    assert create_link(target, out_dir) == expected
+
+
 # ---------------------------------------------------------------------------
 # resolve_links
 # ---------------------------------------------------------------------------
@@ -290,3 +326,43 @@ def test_resolve_links_skips_missing_targets(tmp_path):
     link_file.write_text(str(tmp_path / "ghost.h5"))
     result = resolve_links(tmp_path, (".h5",))
     assert result == []
+
+
+def test_open_directory_uses_webbrowser(monkeypatch, tmp_path):
+    opened = []
+    monkeypatch.setattr("webbrowser.open", opened.append)
+    open_directory(tmp_path / "file.txt")
+    assert opened == [str(tmp_path)]
+
+
+def test_open_directory_alt_macos_file(monkeypatch, tmp_path):
+    calls = []
+    target = tmp_path / "file.txt"
+    target.write_text("x")
+    monkeypatch.setattr("platform.system", lambda: "Darwin")
+    monkeypatch.setattr("subprocess.call", lambda args: calls.append(args) or 0)
+    open_directory_alt(target)
+    assert calls == [["open", "-R", str(target)]]
+
+
+def test_open_directory_alt_linux_directory(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr("platform.system", lambda: "Linux")
+    monkeypatch.setattr("subprocess.Popen", lambda args: calls.append(args))
+    open_directory_alt(tmp_path)
+    assert calls == [["xdg-open", str(tmp_path)]]
+
+
+def test_open_directory_universal_missing_path(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        open_directory_universal(tmp_path / "missing")
+
+
+def test_open_directory_universal_macos_directory(monkeypatch, tmp_path):
+    calls = []
+    monkeypatch.setattr("koyo.path.IS_WIN", False)
+    monkeypatch.setattr("koyo.path.IS_MAC", True)
+    monkeypatch.setattr("koyo.path.IS_LINUX", False)
+    monkeypatch.setattr("subprocess.run", lambda args, check: calls.append((args, check)))
+    open_directory_universal(tmp_path)
+    assert calls == [(["open", str(tmp_path)], True)]

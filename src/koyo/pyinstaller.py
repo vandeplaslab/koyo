@@ -38,7 +38,8 @@ def load_module_from_path(path: Path, module_name: str | None = None) -> types.M
 
 
 def load_hooks(
-    hook_dir: Path, pattern: str = "hook-*.py"
+    hook_dir: Path,
+    pattern: str = "hook-*.py",
 ) -> tuple[list[str], list[tuple[str, str]], list[tuple[str, str]]]:
     """Load all hook modules in the given directory matching the pattern."""
     hiddenimports, datas, binaries = [], [], []

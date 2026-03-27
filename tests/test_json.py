@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from koyo.json import read_json_data, read_json_gzip, write_json_data, write_json_gzip
 
@@ -29,3 +31,17 @@ def test_check_gzip_size(tmpdir_factory):
     path_json = write_json_data(path_json, data)
     path_gz = write_json_gzip(path_gz, data)
     assert path_json.stat().st_size > path_gz.stat().st_size
+
+
+def test_write_json_gzip_appends_gz_suffix(tmp_path):
+    path = tmp_path / "payload.json"
+    written = write_json_gzip(path, {"A": 1})
+    assert written == Path(tmp_path / "payload.gz")
+    assert written.exists()
+
+
+def test_write_json_gzip_preserves_existing_gz_suffix(tmp_path):
+    path = tmp_path / "payload.json.gz"
+    written = write_json_gzip(path, {"A": 1})
+    assert written == path
+    assert written.exists()

@@ -9,8 +9,7 @@ from pathlib import Path
 
 from loguru import logger
 
-
-from koyo.system import IS_WIN, IS_LINUX, IS_MAC
+from koyo.system import IS_LINUX, IS_MAC, IS_WIN
 from koyo.typing import PathLike
 
 DriveMap = tuple[tuple[str, str], ...]

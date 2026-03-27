@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hashlib
 import typing as ty
 import uuid
@@ -23,7 +25,7 @@ def get_uuid() -> str:
     return str(uuid.uuid4())
 
 
-def uuid_obj(data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, Path, str, int, float]) -> str:
+def uuid_obj(data: ty.Iterable | list | dict | tuple | Path | str | int | float) -> str:
     """Hash python object."""
     return str(uuid.UUID(hash_obj(data)))
 
@@ -38,7 +40,7 @@ def uuid_parameters(**kwargs) -> str:
     return str(uuid.UUID(hash_parameters(**kwargs)))
 
 
-def hash_obj(data: ty.Union[ty.Iterable, ty.List, ty.Dict, ty.Tuple, Path, str, int, float], n_in_hash: int = 0) -> str:
+def hash_obj(data: ty.Iterable | list | dict | tuple | Path | str | int | float, n_in_hash: int = 0) -> str:
     """Hash python object."""
     hash_id = hashlib.md5()
     hash_id.update(repr(data).encode("utf-8"))

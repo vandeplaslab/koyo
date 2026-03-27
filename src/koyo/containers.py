@@ -43,8 +43,7 @@ class AttributeDict:
         # noinspection PyUnresolvedReferences
         base = super().__dir__()
         keys = sorted(set(base + list(self._data.keys())))
-        keys = [k for k in keys if is_valid_python_name(k)]
-        return keys
+        return [k for k in keys if is_valid_python_name(k)]
 
     def _ipython_key_completions_(self):
         return sorted(self)
@@ -100,7 +99,7 @@ class MutableSequence(ty.MutableSequence[_T]):
     def __repr__(self):
         return repr(self._list)
 
-    def __eq__(self, other: ty.Any):
+    def __eq__(self, other: object):
         return self._list == other
 
     def __hash__(self) -> int:
@@ -129,8 +128,7 @@ class MutableMapping(ty.MutableMapping[_K, _T]):
         # noinspection PyUnresolvedReferences
         base = super().__dir__()
         keys = sorted(set(base + list(self) + list(self._dict.keys())))  # type: ignore[operator]
-        keys = [k for k in keys if is_valid_python_name(k)]
-        return keys
+        return [k for k in keys if is_valid_python_name(k)]
 
     def _ipython_key_completions_(self) -> list[str]:
         return sorted(self)

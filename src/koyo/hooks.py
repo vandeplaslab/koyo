@@ -81,9 +81,7 @@ def uninstall_logger_hook() -> None:
 def catch_if_debug():
     """Catch exception if debugging."""
     if os.environ.get("DEV_MODE", "0") == "0":
-        try:
+        with suppress(Exception):
             yield
-        except Exception:
-            pass
     else:
         yield

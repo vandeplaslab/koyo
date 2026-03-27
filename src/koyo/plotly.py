@@ -30,6 +30,7 @@ def write_png(fig: Figure, filename: PathLike) -> Path | None:
         filename.parent.mkdir(parents=True, exist_ok=True)
         fig.write_image(str(filename))
         return filename
+    return None
 
 
 def show_html(filename: PathLike) -> None:

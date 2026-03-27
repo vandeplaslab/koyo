@@ -140,7 +140,7 @@ class PPTXMixin:
             from pptx.util import Inches
         except ImportError:
             raise ImportError(
-                "pptx is not installed. Please install it using `pip install python-pptx`."
+                "pptx is not installed. Please install it using `pip install python-pptx`.",
             ) from None
 
         pptx = Presentation()
@@ -151,7 +151,8 @@ class PPTXMixin:
 
     @contextmanager
     def _export_pptx_figures(
-        self, filename: PathLike | None = None
+        self,
+        filename: PathLike | None = None,
     ) -> ty.Generator[Presentation | None, None, None]:
         """Context manager that yields a presentation for bulk figure export.
 
@@ -173,9 +174,9 @@ class PPTXMixin:
             The presentation to populate, or ``None`` if `as_pptx` is
             ``False``.
         """
-        import matplotlib
+        import matplotlib as mpl
 
-        matplotlib.use("agg")
+        mpl.use("agg")
 
         pptx: Presentation | None = None
         reset = False
@@ -208,7 +209,10 @@ class PPTXMixin:
         add_title_to_pptx(pptx, title)  # type: ignore[arg-type]
 
     def _add_content_to_pptx(
-        self, content: str, title: str = "", pptx: Presentation | None = None
+        self,
+        content: str,
+        title: str = "",
+        pptx: Presentation | None = None,
     ) -> None:
         """Add a title-and-content slide to the presentation.
 
@@ -281,7 +285,16 @@ class PPTXMixin:
 
         pptx = pptx or self.pptx
         add_mpl_figure_to_pptx(
-            pptx, filename, fig, face_color, bbox_inches, dpi, override, close=close, title=title, **kwargs
+            pptx,
+            filename,
+            fig,
+            face_color,
+            bbox_inches,
+            dpi,
+            override,
+            close=close,
+            title=title,
+            **kwargs,
         )
 
     def _add_pil_image_to_pptx(
@@ -327,11 +340,22 @@ class PPTXMixin:
         """
         pptx = pptx or self.pptx
         add_pil_image_to_pptx(
-            pptx, filename, image, dpi, fmt=fmt, override=override, close=close, title=title, **kwargs
+            pptx,
+            filename,
+            image,
+            dpi,
+            fmt=fmt,
+            override=override,
+            close=close,
+            title=title,
+            **kwargs,
         )
 
     def _save_pptx(
-        self, pptx: Presentation, filename: PathLike | None = None, reset: bool = False
+        self,
+        pptx: Presentation,
+        filename: PathLike | None = None,
+        reset: bool = False,
     ) -> None:
         """Save the presentation to disk.
 
@@ -352,10 +376,7 @@ class PPTXMixin:
             When ``True``, clears the cached ``self._pptx`` after saving.
             Defaults to ``False``.
         """
-        if hasattr(pptx, "_filename"):
-            filename = pptx._filename
-        else:
-            filename = filename or self.pptx_filename
+        filename = pptx._filename if hasattr(pptx, "_filename") else filename or self.pptx_filename
         if len(pptx.slides) == 0:
             logger.warning("No slides to save in PPTX")
         else:

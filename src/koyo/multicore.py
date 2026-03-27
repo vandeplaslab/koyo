@@ -47,7 +47,7 @@ def estimate_cpu_count_from_size(max_obj_size_in_bytes, keep_free_in_bytes=4_000
     if n_cores < 1:
         raise ValueError(
             "Based on the amount of RAM available on this system, there is not enough memory to perform"
-            + " this action."
+            + " this action.",
         )
 
     if n_cores > get_cpu_count():

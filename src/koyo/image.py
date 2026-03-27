@@ -60,8 +60,7 @@ def reshape_array(array: np.ndarray, image_shape: ty.Tuple[int, int], pixel_inde
     image_n_pixels = np.prod(image_shape)
     im_array = np.full(image_n_pixels, dtype=dtype, fill_value=fill_value)
     im_array[pixel_index] = array
-    im_array = np.reshape(im_array, image_shape)
-    return im_array
+    return np.reshape(im_array, image_shape)
 
 
 def unshape_array(image: np.ndarray, pixel_index: np.ndarray) -> np.ndarray:
@@ -104,12 +103,14 @@ def flatten_array_from_coordinates(array: np.ndarray, coordinates: np.ndarray, o
         except IndexError:
             res = array[:, coordinates[:, 0] - offset, coordinates[:, 1] - offset]
         # need to swap axes
-        res = np.swapaxes(res, 0, 1)
-        return res
+        return np.swapaxes(res, 0, 1)
 
 
 def reshape_array_batch(
-    array: np.ndarray, image_shape: ty.Tuple[int, int], pixel_index: np.ndarray, fill_value: float = 0
+    array: np.ndarray,
+    image_shape: ty.Tuple[int, int],
+    pixel_index: np.ndarray,
+    fill_value: float = 0,
 ):
     """Reshape many images into a data cube."""
     array = np.asarray(array)
@@ -122,8 +123,7 @@ def reshape_array_batch(
     for i in range(count):
         im_array[i, pixel_index] = array[:, i]
     # reshape data
-    im_array = np.reshape(im_array, (count, *image_shape))
-    return im_array
+    return np.reshape(im_array, (count, *image_shape))
 
 
 def reshape_array_batch_from_coordinates(
@@ -162,8 +162,7 @@ def get_coordinates_from_index(index: np.ndarray, shape: ty.Tuple[int, int]) -> 
         raise ValueError("Image dimension 1 does not match that of the dataset")
 
     y_coordinates, x_coordinates = np.indices(index_im.shape)
-    yx_coordinates = np.c_[np.ravel(y_coordinates), np.ravel(x_coordinates)][index]
-    return yx_coordinates
+    return np.c_[np.ravel(y_coordinates), np.ravel(x_coordinates)][index]
 
 
 def colocalization(img_a: np.ndarray, img_b: np.ndarray) -> float:

@@ -227,6 +227,8 @@ def _linux_sys_name_lsb_release() -> str:
         text = res.stdout.decode()
         data = {}
         for line in text.split("\n"):
+            if ":" not in line:
+                continue
             key, val = line.split(":")
             data[key.strip()] = val.strip()
         version_str = data["Description"]
@@ -243,7 +245,7 @@ def _sys_name() -> str:
             return _linux_sys_name()
         if sys.platform == "darwin":
             with contextlib.suppress(subprocess.CalledProcessError):
-                res = subprocess.run(  # noqa  S603
+                res = subprocess.run(  # S603
                     ["sw_vers", "-productVersion"],  # noqa: S607
                     check=True,
                     capture_output=True,

@@ -5,7 +5,7 @@ from __future__ import annotations
 import builtins
 import sys
 import typing as ty
-from enum import EnumMeta
+from enum import Enum, EnumMeta
 from pathlib import Path
 
 if ty.TYPE_CHECKING:
@@ -26,7 +26,6 @@ if sys.version_info >= (3, 11):
     from enum import StrEnum
 else:
     # in 3.11+, using the below class in an f-string would put the enum name instead of its value
-    from enum import Enum
 
     class StrEnum(str, Enum):
         pass

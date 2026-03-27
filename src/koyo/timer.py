@@ -105,7 +105,11 @@ class MeasureTimer:
     """Timer class."""
 
     def __init__(
-        self, func: ty.Callable | None = None, msg: str | None = None, human: bool = True, seconds: bool = False
+        self,
+        func: ty.Callable | None = None,
+        msg: str | None = None,
+        human: bool = True,
+        seconds: bool = False,
     ):
         self.func = func
         self.msg = msg
@@ -327,7 +331,7 @@ class Timer:
         n_keys = len(keys)
 
         if n_keys < 2:
-            return
+            return None
 
         # get total
         total = time.time() - self.timers[0][0]

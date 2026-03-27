@@ -3,14 +3,12 @@
 import sys
 
 import pytest
-
 from koyo.logging import (
     get_loguru_config,
     get_loguru_level,
     get_stderr,
     get_stdout,
 )
-
 
 # ---------------------------------------------------------------------------
 # get_loguru_level

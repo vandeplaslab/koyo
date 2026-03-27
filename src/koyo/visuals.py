@@ -107,8 +107,7 @@ def fig_to_pil(fig: plt.Figure) -> Image:
     fig.savefig(buf, bbox_inches="tight")
     plt.close(fig)
     buf.seek(0)
-    img = Image.open(buf)
-    return img
+    return Image.open(buf)
 
 
 def show_fig(fig: plt.Figure) -> None:
@@ -162,14 +161,13 @@ def vertices_to_collection(
     from matplotlib.collections import LineCollection
 
     xy_values = convert_to_vertical_line_input(x, y)
-    line_col = LineCollection(
+    return LineCollection(
         xy_values,
         colors=[color] * len(x),
         linewidths=line_width,
         linestyles=line_style,
         alpha=alpha,
     )
-    return line_col
 
 
 def plot_centroids(
@@ -233,12 +231,14 @@ def convert_divider_to_str(value: float, exp_value: int) -> str:
             if value.is_integer():
                 return f"{value:.0F}"
             return f"{value:.1F}"
+        return None
     elif exp_value in [3, 4, 5]:
         return f"{value / 1000:.1f}k"
     elif exp_value in [6, 7, 8]:
         return f"{value / 1000000:.1f}M"
     elif exp_value in [9, 10, 11, 12]:
         return f"{value / 1000000000:.1f}B"
+    return None
 
 
 def y_tick_fmt(x, pos=None) -> str:
@@ -259,7 +259,10 @@ def set_intensity_formatter(ax):
 
 
 def add_contours(
-    ax: plt.Axes, contours: np.ndarray | dict[str, np.ndarray], line_width: float = 1.0, color: str | None = None
+    ax: plt.Axes,
+    contours: np.ndarray | dict[str, np.ndarray],
+    line_width: float = 1.0,
+    color: str | None = None,
 ) -> None:
     """Add contours to the axes."""
     if contours is None:
@@ -411,9 +414,7 @@ def make_legend_handles(
         kws = extra_kws.get(name, {})
         if kind_ == "line":
             handles.append(Line2D([0], [0], color=color, lw=width_, label=name, **kws))
-        elif kind_ == "patch":
-            handles.append(Patch(facecolor=color, edgecolor=color, label=name, **kws))
-        elif kind_ == "patch":
+        elif kind_ == "patch" or kind_ == "patch":
             handles.append(Patch(facecolor=color, edgecolor=color, label=name, **kws))
         else:
             raise ValueError(f"Unknown kind {kind_}")
@@ -438,7 +439,7 @@ def add_scalebar(ax, px_size: float | None, color="k"):
         from matplotlib_scalebar.scalebar import ScaleBar
     except ImportError:
         print("matplotlib-scalebar not installed. Please install it using 'pip install matplotlib-scalebar'")
-        return
+        return None
 
     scalebar = ScaleBar(px_size, "um", frameon=False, color=color, font_properties={"size": 20})
     ax.add_artist(scalebar)
@@ -651,7 +652,10 @@ def add_label(
 
 
 def get_ticks_with_unit(
-    min_val: float, max_val: float, unit: str | None = None, n: int | None = None
+    min_val: float,
+    max_val: float,
+    unit: str | None = None,
+    n: int | None = None,
 ) -> tuple[list[float], list[str]]:
     """Get ticks for specified min/max range."""
     if not unit:
@@ -746,9 +750,8 @@ def fix_style(style: str) -> str:
         style = "seaborn-ticks"
     if style == "dark":
         style = "dark_background"
-    if style.startswith("seaborn"):
-        if "v0_8" not in style and "seaborn-v0_8" in available:
-            style = style.replace("seaborn", "seaborn-v0_8")
+    if style.startswith("seaborn") and "v0_8" not in style and "seaborn-v0_8" in available:
+        style = style.replace("seaborn", "seaborn-v0_8")
     if style != "default":
         assert style in available, f"Style '{style}' not available. Available styles: {available}"
     return style
@@ -766,8 +769,7 @@ def shorten_style(style: str) -> str:
     style = style.replace("seaborn-v0_8-", "s-")  # seaborn style is too long
     style = style.replace("seaborn-", "s-")
     style = style.replace("seaborn", "s")
-    style = style.replace("dark_background", "dark")
-    return style
+    return style.replace("dark_background", "dark")
 
 
 def _override_seaborn_heatmap_annotations():
@@ -785,7 +787,11 @@ def _annotate_heatmap(g: _HeatMapper, ax: plt.Axes, mesh) -> None:
     height, width = g.annot_data.shape
     xpos, ypos = np.meshgrid(np.arange(width) + 0.5, np.arange(height) + 0.5)
     for x, y, m, color, val in zip(
-        xpos.flat, ypos.flat, mesh.get_array().flat, mesh.get_facecolors(), g.annot_data.flat
+        xpos.flat,
+        ypos.flat,
+        mesh.get_array().flat,
+        mesh.get_facecolors(),
+        g.annot_data.flat,
     ):
         if m is not np.ma.masked:
             lum = relative_luminance(color)

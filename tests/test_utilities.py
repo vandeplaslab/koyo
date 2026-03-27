@@ -1,7 +1,5 @@
 import numpy as np
 import pytest
-from numpy.testing import assert_equal
-
 from koyo.utilities import (
     check_image_orientation,
     check_value_order,
@@ -21,6 +19,7 @@ from koyo.utilities import (
     split_tooltip,
     view_as_blocks,
 )
+from numpy.testing import assert_equal
 
 
 def test_is_installed():
@@ -192,9 +191,9 @@ def test_check_image_orientation(shape):
 
 
 def test_format_size():
-    assert "100" == format_size(100)
-    assert "1.0K" == format_size(2**10)
-    assert "1.0M" == format_size(2**20)
-    assert "1.0G" == format_size(2**30)
-    assert "1.0T" == format_size(2**40)
-    assert "1.0P" == format_size(2**50)
+    assert format_size(100) == "100"
+    assert format_size(2**10) == "1.0K"
+    assert format_size(2**20) == "1.0M"
+    assert format_size(2**30) == "1.0G"
+    assert format_size(2**40) == "1.0T"
+    assert format_size(2**50) == "1.0P"

@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import time
 import warnings
 
 import pytest
-
 from koyo.decorators import classproperty, deprecated, renamed_parameter, retry
 
 

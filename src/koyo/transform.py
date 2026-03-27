@@ -5,12 +5,14 @@ from __future__ import annotations
 import contextlib
 
 import numpy as np
-
 from loguru import logger
 
 
 def transform_xy_coordinates(
-    xy: np.ndarray, *, yx_affine: np.ndarray | None = None, xy_affine: np.ndarray | None = None
+    xy: np.ndarray,
+    *,
+    yx_affine: np.ndarray | None = None,
+    xy_affine: np.ndarray | None = None,
 ) -> np.ndarray:
     """Transform xy coordinates using either yx or xy affine matrix."""
     if xy_affine is None and yx_affine is None:
@@ -22,8 +24,7 @@ def transform_xy_coordinates(
         xy = np.dot(xy, yx_affine.T)
     if xy_affine is not None:
         xy = np.dot(xy, xy_affine)
-    xy = xy[:, :2]
-    return xy
+    return xy[:, :2]
 
 
 def invert_affine(fwd_affine: np.ndarray) -> np.ndarray:
@@ -68,7 +69,12 @@ def warp_points(yx: np.ndarray, fwd_affine: np.ndarray) -> np.ndarray:
 
 
 def warp_channel(
-    image: np.ndarray, affine_inv: np.ndarray, output_shape: tuple[int, int], order: int = 1, silent: bool = False, use_cv2: bool | None = None
+    image: np.ndarray,
+    affine_inv: np.ndarray,
+    output_shape: tuple[int, int],
+    order: int = 1,
+    silent: bool = False,
+    use_cv2: bool | None = None,
 ) -> np.ndarray:
     """Warp image."""
     import cv2
@@ -93,7 +99,12 @@ def warp_channel(
 
 
 def warp_channels(
-    image: np.ndarray, affine_inv: np.ndarray, output_shape: tuple[int, int], order: int = 1, silent: bool = False, use_cv2: bool | None = None
+    image: np.ndarray,
+    affine_inv: np.ndarray,
+    output_shape: tuple[int, int],
+    order: int = 1,
+    silent: bool = False,
+    use_cv2: bool | None = None,
 ) -> np.ndarray:
     """Warp multi-channel image."""
     n_channels = image.shape[0]
@@ -170,7 +181,7 @@ def get_shape_from_affine_shifted(shape: tuple[int, int], fwd_affine: np.ndarray
             [1, 0, -min(y_min, 0)],
             [0, 1, -min(x_min, 0)],
             [0, 0, 1],
-        ]
+        ],
     )
     adjusted = shift @ fwd_affine
 

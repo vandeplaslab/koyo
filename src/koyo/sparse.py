@@ -27,9 +27,8 @@ def get_index_dtype(arrays=(), maxval=None, check_contents=False):
     int32max = np.iinfo(np.int32).max
 
     dtype = np.intc
-    if maxval is not None:
-        if maxval > int32max:
-            dtype = np.int64
+    if maxval is not None and maxval > int32max:
+        dtype = np.int64
 
     if isinstance(arrays, np.ndarray):
         arrays = (arrays,)

@@ -62,9 +62,9 @@ class PDFMixin:
     @contextmanager
     def _export_pdf_figures(self, filename: PathLike | None = None) -> ty.Generator[PdfPages | None, None, None]:
         """Export figures."""
-        import matplotlib
+        import matplotlib as mpl
 
-        matplotlib.use("agg")
+        mpl.use("agg")
 
         pdf, reset = None, False
         if self.as_pdf:
