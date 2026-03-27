@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
 
+from koyo.system import is_installed
 from koyo.typing import PathLike
-from koyo.utilities import is_installed
 
 HAS_PPTX = is_installed("pptx")
 

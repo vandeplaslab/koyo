@@ -12,8 +12,8 @@ import numba as nb
 import numpy as np
 
 from koyo.image import clip_hotspots
+from koyo.system import is_above_version
 from koyo.typing import PathLike
-from koyo.utilities import is_above_version
 
 if ty.TYPE_CHECKING:
     import pandas as pd

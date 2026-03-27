@@ -10,8 +10,8 @@ from loguru import logger
 from psutil import cpu_count, virtual_memory
 from tqdm import tqdm
 
+from koyo.system import running_as_pyinstaller_app
 from koyo.timer import report_time
-from koyo.utilities import running_as_pyinstaller_app
 
 
 def estimate_cpu_count_from_size(max_obj_size_in_bytes, keep_free_in_bytes=4_000_000):

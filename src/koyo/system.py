@@ -104,7 +104,7 @@ def get_cli_path(name: str, env_key: str = "", default: str = "") -> str:
     3. Check whether the executable is on the Python environment's PATH.
     4. Raise ``RuntimeError`` if the executable cannot be found.
     """
-    from koyo.utilities import running_as_pyinstaller_app
+    from koyo.system import running_as_pyinstaller_app
 
     env_var = f"{env_key}_{name.upper()}_PATH"
     if os.environ.get(env_var, None):

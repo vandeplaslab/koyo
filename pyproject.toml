@@ -155,6 +155,7 @@ extend-ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"src/koyo/utiltities.py" = ["F401"]
 "tests/*.py" = ["D", "S"]
 
 # https://docs.pytest.org/en/6.2.x/customize.html

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from koyo.utilities import is_installed
+from koyo.system import is_installed
 
 HAS_ZARR = is_installed("zarr")
 

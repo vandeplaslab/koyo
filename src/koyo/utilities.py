@@ -14,6 +14,14 @@ import numpy as np
 from natsort import natsorted
 
 # for compatibility with previous versions of koyo
+from koyo.system import (
+    get_module_path,
+    get_version,
+    is_above_version,
+    is_installed,
+    reraise_exception_if_debug,
+    running_as_pyinstaller_app,
+)
 from koyo.typing import PathLike, SimpleArrayLike
 
 if ty.TYPE_CHECKING:
