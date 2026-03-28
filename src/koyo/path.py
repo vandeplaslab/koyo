@@ -29,9 +29,11 @@ def copy_file(src_path: str, dst_path: str) -> None:
                     break
                 offset += sent
         return
-    # Fallback to shutil.copyfile if zero-copy is not available
+    # Fall back to a buffered copy to avoid shutil's platform-specific fast-copy
+    # helpers, which may still try to use os.sendfile internally.
     try:
-        shutil.copyfile(src_path, dst_path)
+        with open(src_path, "rb") as fsrc, open(dst_path, "wb") as fdst:
+            shutil.copyfileobj(fsrc, fdst)
     except FileNotFoundError:
         logger.error(f"Source file '{src_path}' does not exist.")
 
