@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 import typing as ty
 from contextlib import contextmanager
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 PERIODS = [
     ("year", 60 * 60 * 24 * 365 * 1e9),
@@ -39,10 +39,10 @@ def format_datetime_ago(datetime_str: str) -> str:
 
     try:
         # Parse the input datetime string
-        datetime_obj = datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%SZ")
+        datetime_obj = datetime.strptime(datetime_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
 
         # Calculate the time difference from the current time
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         time_difference = now - datetime_obj
 
         # Define time units

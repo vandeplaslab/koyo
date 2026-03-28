@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 
 import pytest
+
 from koyo.path import (
     apply_drive_mapping,
     copy_file,
@@ -202,7 +203,7 @@ def test_create_directory_already_exists(tmp_path):
 
 def test_uri_to_path_file_uri():
     result = uri_to_path("file:///tmp/example.txt")
-    assert str(result).endswith("/tmp/example.txt")
+    assert result.as_posix().endswith("/tmp/example.txt")
 
 
 # ---------------------------------------------------------------------------
@@ -231,17 +232,17 @@ def test_get_subdirectories_nonexistent(tmp_path):
 
 def test_apply_drive_mapping_replaces():
     result = apply_drive_mapping(Path("/old/path/file.txt"), (("/old", "/new"),))
-    assert result == "/new/path/file.txt"
+    assert Path(result).as_posix() == "/new/path/file.txt"
 
 
 def test_apply_drive_mapping_no_match():
     result = apply_drive_mapping(Path("/some/path"), (("/other", "/alt"),))
-    assert result == "/some/path"
+    assert Path(result).as_posix() == "/some/path"
 
 
 def test_apply_drive_mapping_empty():
     result = apply_drive_mapping(Path("/some/path"), ())
-    assert result == "/some/path"
+    assert Path(result).as_posix() == "/some/path"
 
 
 def test_get_mount_point_returns_existing_mount(tmp_path):

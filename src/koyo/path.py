@@ -455,32 +455,35 @@ def resolve_links(base_dir: Path, extensions: tuple[str, ...]) -> list[Path]:
     """Resolve Shortcuts on Windows."""
     links = []
     if IS_WIN:
-        from pylnk3 import parse
+        try:
+            from pylnk3 import parse
+        except ImportError:
+            logger.debug("pylnk3 is not installed; skipping .lnk resolution on Windows.")
+        else:
+            paths = list(base_dir.glob("*.lnk"))
+            paths_ = []
+            for path in paths:
+                try:
+                    path_ = parse(str(path)).path
+                except Exception as e:
+                    logger.warning(f"Could not parse link '{path}': {e}")
+                    continue
+                paths_.append(Path(path_))
+            paths_ = [path for path in paths_ if path.exists()]
+            links.extend(path for path in paths_ if path.suffix in extensions)
 
-        paths = list(base_dir.glob("*.lnk"))
-        paths_ = []
-        for path in paths:
-            try:
-                path_ = parse(str(path)).path
-            except Exception as e:
-                logger.warning(f"Could not parse link '{path}': {e}")
-                continue
-            paths_.append(Path(path_))
-        paths_ = [path for path in paths_ if path.exists()]
-        links = [path for path in paths_ if path.suffix in extensions]
-    else:
-        # For non-Windows, resolve .txtlnk files
-        for link_file in base_dir.glob("*.txtlnk"):
-            try:
-                target_path = link_file.read_text().strip()
-                target_path = Path(target_path)
-                if target_path.exists() and target_path.suffix in extensions:
-                    links.append(target_path)
-                else:
-                    logger.warning(
-                        f"Target path '{target_path}' from link '{link_file}' does not exist or has unsupported"
-                        f" extension.",
-                    )
-            except Exception as e:
-                logger.warning(f"Could not read link file '{link_file}': {e}")
+    # Resolve .txtlnk files on every platform as a lightweight fallback.
+    for link_file in base_dir.glob("*.txtlnk"):
+        try:
+            target_path = link_file.read_text().strip()
+            target_path = Path(target_path)
+            if target_path.exists() and target_path.suffix in extensions:
+                links.append(target_path)
+            else:
+                logger.warning(
+                    f"Target path '{target_path}' from link '{link_file}' does not exist or has unsupported"
+                    f" extension.",
+                )
+        except Exception as e:
+            logger.warning(f"Could not read link file '{link_file}': {e}")
     return links

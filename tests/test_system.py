@@ -118,7 +118,7 @@ def test_running_as_pyinstaller_app_false():
 
 
 def test_check_available_space_no_drive_returns_true():
-    assert check_available_space(str(Path.cwd()), 10**18)
+    assert check_available_space("/path/without/a/drive", 10**18)
 
 
 def test_get_cli_path_from_env(monkeypatch, tmp_path):
