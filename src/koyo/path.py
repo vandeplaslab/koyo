@@ -306,9 +306,10 @@ def is_network_path_unix(path: PathLike) -> bool:
 
 def apply_drive_mapping(file: Path, drive_map: DriveMap = ()) -> str:
     """Apply drive mapping."""
-    file_ = str(file)
+    # Normalize separators so configured mappings behave the same on every OS.
+    file_ = Path(file).as_posix()
     for map_from, map_to in drive_map:
-        file_ = file_.replace(map_from, map_to)
+        file_ = file_.replace(Path(map_from).as_posix(), Path(map_to).as_posix())
     return file_
 
 
