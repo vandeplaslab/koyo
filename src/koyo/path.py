@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import os
+import hashlib
+import re
 import shutil
 import typing as ty
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 from loguru import logger
 
@@ -13,6 +15,16 @@ from koyo.system import IS_LINUX, IS_MAC, IS_WIN
 from koyo.typing import PathLike
 
 DriveMap = tuple[tuple[str, str], ...]
+
+_WINDOWS_INVALID_CHARS = re.compile(r'[<>:"/\\|?*\x00-\x1F]')
+_WINDOWS_RESERVED_NAMES = {
+    "CON",
+    "PRN",
+    "AUX",
+    "NUL",
+    *(f"COM{i}" for i in range(1, 10)),
+    *(f"LPT{i}" for i in range(1, 10)),
+}
 
 
 def copy_file(src_path: str, dst_path: str) -> None:
@@ -488,3 +500,188 @@ def resolve_links(base_dir: Path, extensions: tuple[str, ...]) -> list[Path]:
         except Exception as e:
             logger.warning(f"Could not read link file '{link_file}': {e}")
     return links
+
+
+class WindowsPathError(ValueError):
+    """Raised when a valid Windows-safe path cannot be produced."""
+
+
+def _is_reserved_windows_name(name: str) -> bool:
+    """
+    Check whether a single filename component is a reserved Windows device name.
+    The check ignores the extension, e.g. 'CON.txt' is still invalid.
+    """
+    base = name.split(".", 1)[0].rstrip(" .").upper()
+    return base in _WINDOWS_RESERVED_NAMES
+
+
+def _is_valid_windows_component(name: str) -> bool:
+    """
+    Validate a single path component for Windows.
+    """
+    if not name:
+        return False
+    if name in {".", ".."}:
+        return True
+    if _WINDOWS_INVALID_CHARS.search(name):
+        return False
+    if name.endswith(" ") or name.endswith("."):
+        return False
+    if _is_reserved_windows_name(name):
+        return False
+    return True
+
+
+def _is_valid_windows_path(path: str | Path, max_path: int = 260) -> bool:
+    """
+    Conservative Windows path validation.
+
+    Notes:
+    - Uses the traditional MAX_PATH default of 260 unless overridden.
+    - Modern Windows can support longer paths, but that is not always enabled.
+    """
+    s = str(path)
+    p = PureWindowsPath(s)
+
+    if len(str(p)) > max_path:
+        return False
+
+    for part in p.parts:
+        # Skip drive roots and path roots
+        if part in {"\\", "/"}:
+            continue
+        if re.fullmatch(r"[A-Za-z]:\\?", part):
+            continue
+        if not _is_valid_windows_component(part):
+            return False
+
+    return True
+
+
+def shorten_path_for_windows(
+    path: str | Path,
+    *,
+    max_path: int = 260,
+    max_component_length: int = 255,
+    hash_len: int = 4,
+    collision_check: bool = True,
+) -> Path:
+    """
+    Shorten a path's filename until it is valid on Windows.
+
+    Strategy
+    --------
+    1. If already valid, return as-is.
+    2. Shorten the filename stem while preserving the extension.
+    3. If the shortened candidate collides with an existing file, use a short hash.
+    4. If no valid candidate can be produced, raise WindowsPathError.
+
+    Parameters
+    ----------
+    path:
+        Input path.
+    max_path:
+        Maximum allowed full path length. Defaults to 260 for broad Windows compatibility.
+    max_component_length:
+        Maximum length for a single filename component. Defaults to 255.
+    hash_len:
+        Length of the fallback hash suffix.
+    collision_check:
+        If True, check whether the candidate already exists on disk.
+
+    Returns
+    -------
+    Path
+        A Windows-safe path.
+
+    Raises
+    ------
+    WindowsPathError
+        If the path cannot be made valid.
+    """
+    p = Path(path)
+    parent = p.parent
+    original_name = p.name
+
+    if not original_name:
+        raise WindowsPathError("Path has no filename to shorten.")
+
+    # If the parent path is already too long, there may be no room left
+    parent_str = str(parent)
+    separator_len = 1 if parent_str not in {"", "."} else 0
+
+    # Preserve full suffix chain, e.g. ".tar.gz"
+    suffix = "".join(p.suffixes)
+    if suffix and len(suffix) >= len(original_name):
+        stem = original_name
+        suffix = ""
+    else:
+        stem = original_name[: len(original_name) - len(suffix)]
+
+    if not _is_valid_windows_component(original_name):
+        # If invalid for reasons other than length, shortening alone will not fix it.
+        # We allow reserved-name repair by changing the stem during truncation,
+        # but invalid characters should fail immediately.
+        if _WINDOWS_INVALID_CHARS.search(original_name) or original_name.endswith((" ", ".")):
+            raise WindowsPathError(
+                f"Filename contains Windows-invalid characters or trailing space/dot: {original_name!r}"
+            )
+
+    # Room available for the filename component based on total path length
+    remaining_for_name = max_path - len(parent_str) - separator_len
+    allowed_name_len = min(max_component_length, remaining_for_name)
+
+    if allowed_name_len <= 0:
+        raise WindowsPathError(f"Parent path is too long to fit any filename within max_path={max_path}.")
+
+    if len(suffix) >= allowed_name_len:
+        raise WindowsPathError(f"Extension {suffix!r} leaves no room for a valid filename stem.")
+
+    def make_candidate(candidate_stem: str) -> Path:
+        return parent / f"{candidate_stem}{suffix}"
+
+    def is_unique(candidate: Path) -> bool:
+        return not collision_check or not candidate.exists()
+
+    def is_valid(candidate: Path) -> bool:
+        return _is_valid_windows_path(candidate, max_path=max_path)
+
+    # Early return if already valid
+    if is_valid(p):
+        return p
+
+    # First pass: plain truncation
+    max_stem_len = allowed_name_len - len(suffix)
+    for n in range(max_stem_len, 0, -1):
+        candidate_stem = stem[:n].rstrip(" .")
+        if not candidate_stem:
+            continue
+
+        candidate = make_candidate(candidate_stem)
+
+        if is_valid(candidate):
+            if is_unique(candidate) or candidate == p:
+                return candidate
+            break  # collision -> go to hash fallback
+
+    # Second pass: hash fallback
+    digest = hashlib.blake2b(original_name.encode("utf-8"), digest_size=16).hexdigest()[:hash_len]
+    hash_suffix = f"_{digest}"
+    max_stem_len_with_hash = max_stem_len - len(hash_suffix)
+
+    if max_stem_len_with_hash <= 0:
+        raise WindowsPathError("Not enough space to add a hash-based fallback filename.")
+
+    for n in range(max_stem_len_with_hash, 0, -1):
+        candidate_stem = stem[:n].rstrip(" .")
+        if not candidate_stem:
+            continue
+
+        hashed_stem = f"{candidate_stem}{hash_suffix}"
+        candidate = make_candidate(hashed_stem)
+
+        if is_valid(candidate):
+            if is_unique(candidate) or candidate == p:
+                return candidate
+
+    raise WindowsPathError(f"Could not produce a valid Windows-safe filename for path: {str(path)!r}")
