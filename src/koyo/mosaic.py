@@ -9,7 +9,7 @@ from math import ceil
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import to_rgba_array, ListedColormap
+from matplotlib.colors import ListedColormap, to_rgba_array
 from tqdm import tqdm
 
 from koyo.typing import PathLike
@@ -99,7 +99,10 @@ class RectanglePacker:
 
 
 def get_positions(
-    images: list[Image], min_width: int = 0, x_pad: int = 0, y_pad: int = 0
+    images: list[Image],
+    min_width: int = 0,
+    x_pad: int = 0,
+    y_pad: int = 0,
 ) -> tuple[tuple[int, int], list[tuple[int, int]], list[Image]]:
     """Get positions and canvas size."""
     packer = RectanglePacker(min_width=min_width, x_pad=x_pad, y_pad=y_pad)
@@ -126,6 +129,8 @@ def get_positions(
 
 def pack_images(images: list[Image], min_width: int = 0, x_pad: int = 0, y_pad: int = 0) -> Image:
     """Packs a list of images into a high-density rectangle packing with automatic canvas sizing."""
+    from PIL import Image
+
     packer = RectanglePacker(min_width=min_width, x_pad=x_pad, y_pad=y_pad)
 
     # Sort images by area (descending) for better packing
@@ -339,9 +344,8 @@ def merge_mosaic_with_columns(
     else:
         for filename in image_dir.glob("*"):
             if filename.is_file():
-                with open(filename, "rb") as f:
-                    with Image.open(io.BytesIO(f.read())) as im:
-                        items.append((im.copy(), im.width, im.height))
+                with open(filename, "rb") as f, Image.open(io.BytesIO(f.read())) as im:
+                    items.append((im.copy(), im.width, im.height))
 
     if not items:
         raise ValueError("No images found in the specified directory.")
@@ -406,9 +410,10 @@ def _merge_mosaic(
         assert len(color) in [3, 4], f"Color must be a tuple of 3 or 4 integers, not {color}."
     color = (*tuple(color), 255) if len(color) == 3 else color
     if isinstance(placeholder_color, tuple):
-        assert len(placeholder_color) in [3, 4], (
-            f"Placeholder color must be a tuple of 3 or 4 integers, not {placeholder_color}."
-        )
+        assert len(placeholder_color) in [
+            3,
+            4,
+        ], f"Placeholder color must be a tuple of 3 or 4 integers, not {placeholder_color}."
     placeholder_color = (*tuple(placeholder_color), 255) if len(placeholder_color) == 3 else placeholder_color
 
     names = list(items.keys())
@@ -562,14 +567,13 @@ def plot_mosaic(
                 ax.title.set_color(plt.rcParams["text.color"])
             figures[key] = fig_to_bytes(fig, close=False, dpi=dpi)
         plt.close(fig)
-        image = merge_mosaic(
+        return merge_mosaic(
             figures,
             title=title,
             n_cols=n_cols,
             placeholder_color=placeholder_color,
             color=color,
         )
-    return image
 
 
 def plot_mosaic_no_colorbar(
@@ -600,9 +604,9 @@ def plot_mosaic_no_colorbar(
                     min_val=min_val,
                     max_val=max_val,
                     colormap=colormap if isinstance(colormap, str) else colormap[key],
-                )
+                ),
             )
-        image = merge_mosaic(
+        return merge_mosaic(
             images,
             title=title,
             x_pad=5,
@@ -612,7 +616,6 @@ def plot_mosaic_no_colorbar(
             placeholder_color=placeholder_color,
             color=color,
         )
-    return image
 
 
 def plot_mosaic_individual(
@@ -660,14 +663,13 @@ def plot_mosaic_individual(
             )
             ax.axis("off")
             figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
-        image = merge_mosaic(
+        return merge_mosaic(
             figures,
             title=title,
             n_cols=n_cols,
             placeholder_color=placeholder_color,
             color=color,
         )
-    return image
 
 
 def plot_mosaic_with_mask_individual(
@@ -702,9 +704,9 @@ def plot_mosaic_with_mask_individual(
 
     # create mask colormap
     mask_colormap = ListedColormap([mask_color])
-    mask_colormap.set_bad(alpha=0.)
-    mask_colormap.set_over(alpha=0.)
-    mask_colormap.set_under(alpha=0.)
+    mask_colormap.set_bad(alpha=0.0)
+    mask_colormap.set_over(alpha=0.0)
+    mask_colormap.set_under(alpha=0.0)
 
     figures = {}
     with plt.style.context(fix_style(style)):
@@ -727,17 +729,16 @@ def plot_mosaic_with_mask_individual(
             )
             if key in mask:
                 masked = np.ma.masked_where(mask[key] == 0, mask[key])
-                ax.imshow(masked, cmap=mask_colormap, alpha=mask_opacity, interpolation='none')
+                ax.imshow(masked, cmap=mask_colormap, alpha=mask_opacity, interpolation="none")
             ax.axis("off")
             figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
-        image = merge_mosaic(
+        return merge_mosaic(
             figures,
             title=title,
             n_cols=n_cols,
             placeholder_color=placeholder_color,
             color=color,
         )
-    return image
 
 
 def plot_mosaic_line_individual(
@@ -780,14 +781,13 @@ def plot_mosaic_line_individual(
                 title_color=title_color.get(key, None),
             )
             figures[key] = fig_to_bytes(fig, close=True, dpi=dpi)
-        image = merge_mosaic(
+        return merge_mosaic(
             figures,
             title=title,
             n_cols=n_cols,
             color=color,
             placeholder_color=placeholder_color,
         )
-    return image
 
 
 def _get_color_rgba255(color) -> tuple[int, int, int, int]:
@@ -847,24 +847,21 @@ def convert_array_to_image(
     # Save the image
     image = Image.fromarray(uint8_image)
     if title:
-        if colormap == "viridis":
-            color = "white"
-        else:
-            color = to_hex(plt.rcParams["text.color"])
+        color = "white" if colormap == "viridis" else to_hex(plt.rcParams["text.color"])
         _add_text_to_pil_image(image, title, (3, 3), color)
     return image
 
 
 def _add_text_to_pil_image(
-    image: Image, text: str, position: tuple[int, int], color: str | tuple[int, int, int, int]
+    image: Image,
+    text: str,
+    position: tuple[int, int],
+    color: str | tuple[int, int, int, int],
 ) -> None:
     from PIL import ImageDraw, ImageFont
 
     font_path = find_font()
-    if font_path:
-        font = ImageFont.truetype(font_path, 14)
-    else:
-        font = ImageFont.load_default()
+    font = ImageFont.truetype(font_path, 14) if font_path else ImageFont.load_default()
     draw = ImageDraw.Draw(image)
     draw.text(position, text, fill=color, font=font)  # (255, 255, 255, 255))
 

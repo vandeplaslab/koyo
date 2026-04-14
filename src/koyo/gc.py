@@ -31,7 +31,7 @@ def _gc_debug_callback(phase, info):
                     "id": id(obj),
                     # store weakref so we don't keep it alive ourselves
                     "weak": weakref.ref(obj),
-                }
+                },
             )
 
         _uncollectable_history.append(
@@ -39,7 +39,7 @@ def _gc_debug_callback(phase, info):
                 "time": ts,
                 "generation": gen,
                 "snapshot": snapshot,
-            }
+            },
         )
 
         # Optional: print a little detail to console for quick triage

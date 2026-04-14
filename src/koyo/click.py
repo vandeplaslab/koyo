@@ -282,19 +282,19 @@ def get_args_from_option(option: ty.Callable) -> str:
     if not hasattr(option, "__closure__"):
         raise ValueError(f"Option {option} does not have closure.")
     closure = option.__closure__
+    if closure is None:
+        raise ValueError(f"Option {option} does not have closure.")
+
+    option_names: list[str] = []
     for cell in closure:
         if isinstance(cell.cell_contents, tuple):
-            break
-    ret = ""
-    for value in cell.cell_contents:
-        if isinstance(value, str) and value.startswith("-"):
-            ret += value
-    # check if we can split the arguments
-    if "--" in ret:
-        rets = ret.split("--")
-        rets = [r if r.startswith("-") else f"--{r}" for r in rets]
-        ret = "/".join(rets)
-    return ret
+            option_names = [value for value in cell.cell_contents if isinstance(value, str) and value.startswith("-")]
+            if option_names:
+                break
+    if not option_names:
+        raise ValueError(f"Could not extract option arguments from {option}.")
+    option_names.sort(key=lambda value: (len(value.lstrip("-")), value))
+    return "/".join(option_names)
 
 
 class Parameter:

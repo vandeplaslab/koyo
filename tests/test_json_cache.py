@@ -1,7 +1,6 @@
 """Tests for koyo.json_cache.JSONCache."""
 
 import pytest
-
 from koyo.json_cache import JSONCache
 
 

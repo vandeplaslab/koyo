@@ -9,7 +9,6 @@ pytest.importorskip("pydantic")
 
 from koyo.config import BaseConfig
 
-
 # ---------------------------------------------------------------------------
 # Minimal concrete config for testing
 # ---------------------------------------------------------------------------
@@ -100,6 +99,13 @@ def test_temporary_overwrite_multiple_fields(cfg):
     assert cfg.count == 0
 
 
+def test_temporary_overwrite_reverts_after_exception(cfg):
+    with pytest.raises(RuntimeError, match="boom"), cfg.temporary_overwrite(name="temp", count=5):
+        raise RuntimeError("boom")
+    assert cfg.name == "default"
+    assert cfg.count == 0
+
+
 # ---------------------------------------------------------------------------
 # output_path
 # ---------------------------------------------------------------------------
@@ -107,3 +113,13 @@ def test_temporary_overwrite_multiple_fields(cfg):
 
 def test_output_path(cfg, tmp_path):
     assert cfg.output_path == tmp_path / "config.json"
+
+
+def test_auto_load_reads_existing_file(tmp_path):
+    _TmpConfig.USER_CONFIG_DIR = tmp_path
+    stored = _TmpConfig(name="stored", count=3)
+    stored.save()
+
+    cfg = _TmpConfig(_auto_load=True)
+    assert cfg.name == "stored"
+    assert cfg.count == 3

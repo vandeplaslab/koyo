@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import colorsys
+import contextlib
 import random
 import typing as ty
 import warnings
@@ -18,7 +19,7 @@ if ty.TYPE_CHECKING:
 ColorType = ty.Union[list, tuple, np.ndarray, str]
 
 
-def mpl_to_rgba_255(color: ty.Union[str, tuple, list]) -> tuple:
+def mpl_to_rgba_255(color: str | tuple | list) -> tuple:
     """Convert a matplotlib color to an RGBA tuple in 255-scale.
 
     Parameters
@@ -36,7 +37,7 @@ def mpl_to_rgba_255(color: ty.Union[str, tuple, list]) -> tuple:
     return tuple((to_rgba_array(color)[0] * 255).astype(np.uint8))
 
 
-def rgb_1_to_hex(color: ty.Union[tuple, list]) -> str:
+def rgb_1_to_hex(color: tuple | list) -> str:
     """Convert an RGB color in 1-scale to a hex string.
 
     Only the first three channels (R, G, B) are used; an alpha channel is
@@ -56,7 +57,7 @@ def rgb_1_to_hex(color: ty.Union[tuple, list]) -> str:
     return "#" + "".join(f"{int(c * 255):02x}" for c in rgb)
 
 
-def rgb_255_to_1(color: ty.Union[tuple, list, str], decimals: int = 3) -> ty.List[float]:
+def rgb_255_to_1(color: tuple | list | str, decimals: int = 3) -> list[float]:
     """Convert a color from 255-scale RGB to 1-scale RGB.
 
     Parameters
@@ -80,10 +81,8 @@ def rgb_255_to_1(color: ty.Union[tuple, list, str], decimals: int = 3) -> ty.Lis
     """
     # Parse string representation if needed
     if isinstance(color, str):
-        try:
+        with contextlib.suppress(Exception):
             color = literal_eval(color)
-        except Exception:
-            pass
 
     color = np.array(color)
     if color.shape[0] not in (3, 4):
@@ -100,7 +99,7 @@ def hex_to_rgb_1(
     hex_str: str,
     decimals: int = 3,
     with_alpha: bool = False,
-) -> ty.List[float]:
+) -> list[float]:
     """Convert a hex color string to RGB values in 1-scale.
 
     Parameters
@@ -128,7 +127,7 @@ def hex_to_rgb_1(
     return rgb
 
 
-def hex_to_rgb_255(hex_str: str) -> ty.List[int]:
+def hex_to_rgb_255(hex_str: str) -> list[int]:
     """Convert a hex color string to RGB values in 255-scale.
 
     Parameters
@@ -146,7 +145,7 @@ def hex_to_rgb_255(hex_str: str) -> ty.List[int]:
     return [int(hex_color[i : i + channel_width], 16) for i in range(0, len(hex_color), channel_width)]
 
 
-def rgb_to_hex(colors: ty.Union[tuple, list], multiplier: int = 255) -> str:
+def rgb_to_hex(colors: tuple | list, multiplier: int = 255) -> str:
     """Convert an RGB or RGBA color to a hex string.
 
     Parameters
@@ -169,7 +168,7 @@ def rgb_to_hex(colors: ty.Union[tuple, list], multiplier: int = 255) -> str:
 def hex_to_rgb(
     hex_str: str,
     decimals: int = 3,
-    alpha: ty.Optional[float] = None,
+    alpha: float | None = None,
 ) -> np.ndarray:
     """Convert a hex color string to a numpy array in 1-scale.
 
@@ -219,7 +218,7 @@ def get_random_hex_color() -> str:
     return f"#{random.randint(0, 0xFFFFFF):06x}"
 
 
-def get_next_color(n: int, other_colors: ty.Optional[ty.List[str]] = None) -> str:
+def get_next_color(n: int, other_colors: list[str] | None = None) -> str:
     """Return the nth distinct color, avoiding any colors in ``other_colors``.
 
     Selects from a predefined palette of 16 colors. If ``n`` exceeds the
@@ -276,7 +275,7 @@ def get_next_color(n: int, other_colors: ty.Optional[ty.List[str]] = None) -> st
     return color
 
 
-def generate_distinct_colors(starting_colors: ty.List[str], n_colors: int) -> ty.List[str]:
+def generate_distinct_colors(starting_colors: list[str], n_colors: int) -> list[str]:
     """Generate a list of distinct hex colors, extending a predefined palette as needed.
 
     Converts the starting colors to HLS space, then fills any remaining
@@ -317,7 +316,7 @@ def generate_distinct_colors(starting_colors: ty.List[str], n_colors: int) -> ty
         return f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
 
     # Convert predefined colors to HLS
-    starting_hls: ty.List[ty.Tuple[float, float, float]] = []
+    starting_hls: list[tuple[float, float, float]] = []
     for hex_color in starting_colors:
         hex_color = hex_color.lstrip("#")
         r, g, b = (int(hex_color[i : i + 2], 16) / 255.0 for i in (0, 2, 4))
@@ -335,13 +334,12 @@ def generate_distinct_colors(starting_colors: ty.List[str], n_colors: int) -> ty
 
     result_colors = starting_colors[:]
     result_colors += [
-        hls_to_hex(hue, saturation, lightness)
-        for hue, saturation, lightness in starting_hls[len(starting_colors) :]
+        hls_to_hex(hue, saturation, lightness) for hue, saturation, lightness in starting_hls[len(starting_colors) :]
     ]
     return result_colors[:n_colors]
 
 
-def colormap_to_hex(colormap: MplColormap) -> ty.List[str]:
+def colormap_to_hex(colormap: MplColormap) -> list[str]:
     """Convert a matplotlib colormap to a list of hex color strings.
 
     Parameters
@@ -361,7 +359,7 @@ def get_colors_from_colormap(
     colormap: str,
     n_colors: int,
     is_reversed: bool = False,
-) -> ty.List[str]:
+) -> list[str]:
     """Sample ``n_colors`` hex colors from a named matplotlib colormap.
 
     Parameters
@@ -379,18 +377,17 @@ def get_colors_from_colormap(
     list of str
         Hex color strings of length ``n_colors``.
     """
-    import matplotlib.cm
-
     if is_reversed and not colormap.endswith("_r"):
         colormap += "_r"
 
-    # NOTE: matplotlib.cm.get_cmap is deprecated in Matplotlib 3.7+;
-    # migrate to matplotlib.colormaps[name] when the minimum version allows.
-    return colormap_to_hex(matplotlib.cm.get_cmap(colormap, n_colors))
+    import matplotlib as mpl
+
+    cmap = mpl.colormaps.get_cmap(colormap).resampled(n_colors)
+    return colormap_to_hex(cmap)
 
 
 def find_text_color(
-    base_color: ty.Union[tuple, list, np.ndarray],
+    base_color: tuple | list | np.ndarray,
     dark_color: ty.Any = "black",
     light_color: ty.Any = "white",
     coef_choice: int = 0,
@@ -448,7 +445,7 @@ def find_text_color(
 
 
 def make_listed_colormap(
-    colors: ty.List[str],
+    colors: list[str],
     is_vispy: bool = False,
 ) -> MplColormap:
     """Build a listed colormap from a list of hex colors.
@@ -471,9 +468,10 @@ def make_listed_colormap(
         A colormap built from the provided colors.
     """
     from matplotlib.colors import LinearSegmentedColormap
-    from vispy.color.colormap import Colormap
 
     if is_vispy:
+        from vispy.color.colormap import Colormap
+
         colors.insert(0, "#FFFFFF")
 
     colormap = LinearSegmentedColormap.from_list("colormap", colors, len(colors))
@@ -510,7 +508,7 @@ def _check_color_dim(val: np.ndarray) -> np.ndarray:
         if len(display_val) > 100:
             display_val = display_val[:97] + "..."
         raise RuntimeError(
-            f"Value must have second dimension of size 3 or 4. Got `{display_val}`, shape={val.shape}"
+            f"Value must have second dimension of size 3 or 4. Got `{display_val}`, shape={val.shape}",
         )
 
     if val.shape[1] == 3:
@@ -541,7 +539,7 @@ def rgbs_to_hex(rgbs: ty.Sequence) -> np.ndarray:
     )
 
 
-def transform_color(color: ColorType) -> ty.Optional[np.ndarray]:
+def transform_color(color: ColorType) -> np.ndarray | None:
     """Normalize a color of any supported type to a 2-D RGBA array in 1-scale.
 
     Accepts hex strings (with ``'#'`` or ``'0x'`` prefix), ``'rgb(...)'`` and
@@ -576,7 +574,10 @@ def transform_color(color: ColorType) -> ty.Optional[np.ndarray]:
         if color.startswith("0x"):
             return np.atleast_2d(hex_to_rgb_1(color[2:], with_alpha=True))
         if color.startswith(("rgb", "rgba")):
-            return np.atleast_2d(literal_eval(color))
+            start = color.find("(")
+            if start == -1 or not color.endswith(")"):
+                raise ValueError(f"Invalid color string: {color!r}")
+            return np.atleast_2d(literal_eval(color[start:]))
         raise ValueError(f"Invalid color string: {color!r}")
 
     if isinstance(color, (list, tuple)):

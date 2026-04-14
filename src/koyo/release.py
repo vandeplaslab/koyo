@@ -46,8 +46,7 @@ def get_latest_git(user: str = "vandeplaslab", package: str = "koyo") -> dict[st
     """Get latest release from GitHub."""
     response = requests.get(f"https://api.github.com/repos/{user}/{package}/releases/latest")
     if response.status_code == 200:
-        data = response.json()
-        return data
+        return response.json()
     return {}
 
 
@@ -63,7 +62,10 @@ def format_version(data: dict) -> str:
 
 
 def is_new_version_available(
-    current_version: str, user: str = "vandeplaslab", package: str = "koyo", data: dict[str, ty.Any] | None = None
+    current_version: str,
+    user: str = "vandeplaslab",
+    package: str = "koyo",
+    data: dict[str, ty.Any] | None = None,
 ) -> tuple[bool, str]:
     """Check whether there is a new version available."""
     import requests.exceptions

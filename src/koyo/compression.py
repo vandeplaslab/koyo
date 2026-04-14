@@ -3,11 +3,12 @@
 import os
 import zipfile
 from pathlib import Path
+
 from loguru import logger
 from tqdm import tqdm
 
-from koyo.typing import PathLike
 from koyo.timer import MeasureTimer
+from koyo.typing import PathLike
 
 DECOMPRESSION_FORMATS = ["gz", ".gz", "*.gz"]
 

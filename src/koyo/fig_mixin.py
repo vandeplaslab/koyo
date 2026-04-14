@@ -55,9 +55,8 @@ class FigureMixin(PDFMixin, PPTXMixin):
         filename = str(filename)
         parts = filename.rsplit(".", maxsplit=1)
         # if there are multiple ., then let's combine it using . but exclude the last one
-        if len(parts) > 1:
-            if parts[-1].lower() in ("pptx", "pdf"):
-                filename = ".".join(parts[:-1])
+        if len(parts) > 1 and parts[-1].lower() in ("pptx", "pdf"):
+            filename = ".".join(parts[:-1])
         if self.as_pptx:
             return f"{filename}.pptx"
         elif self.as_pdf:
@@ -70,8 +69,7 @@ class FigureMixin(PDFMixin, PPTXMixin):
 
         if pptx_filename.exists():
             pptx = Presentation(pptx_filename)
-            has_slides = bool(pptx.slides)
-            return has_slides
+            return bool(pptx.slides)
         return False
 
     def get_actual_output_filename(self, output_dir: PathLike, pptx_or_pdf_path: PathLike) -> Path:
@@ -109,7 +107,11 @@ class FigureMixin(PDFMixin, PPTXMixin):
             self._add_title_to_pdf(title, pdf=pdf)
 
     def _add_content(
-        self, content: str, title: str, pdf: PdfPages | None = None, pptx: Presentation | None = None
+        self,
+        content: str,
+        title: str,
+        pdf: PdfPages | None = None,
+        pptx: Presentation | None = None,
     ) -> None:
         """Add title to pptx."""
         if self.as_pptx:
@@ -215,7 +217,10 @@ class FigureExporter(FigureMixin):
         with self._export_figures(filename) as pptx_or_pdf:
             for ext in extensions:
                 for file in tqdm(
-                    Path(input_dir).rglob(ext), desc=f"Exporting images ({ext})", disable=silent, leave=False
+                    Path(input_dir).rglob(ext),
+                    desc=f"Exporting images ({ext})",
+                    disable=silent,
+                    leave=False,
                 ):
                     pptx_or_pdf.add_or_export_pil_image(file, Image.open(file), close=True)
                     n += 1
@@ -234,7 +239,10 @@ class PptxPdfWrapper:
     """Wrapper class that handles both PPTX and PDF exports."""
 
     def __init__(
-        self, ppt_or_pdf: PdfPages | Presentation | None = None, as_pptx: bool = False, as_pdf: bool = False
+        self,
+        ppt_or_pdf: PdfPages | Presentation | None = None,
+        as_pptx: bool = False,
+        as_pdf: bool = False,
     ) -> None:
         self.ppt_or_pdf = ppt_or_pdf
         self.as_pptx = as_pptx

@@ -1,4 +1,5 @@
-"""Simple python ulitities for various projects."""
+"""Simple python utilities for various projects."""
+
 from importlib.metadata import PackageNotFoundError, version
 
 from loguru import logger

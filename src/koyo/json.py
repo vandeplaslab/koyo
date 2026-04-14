@@ -41,7 +41,7 @@ def default(o: ty.Any) -> ty.Any:
         return bool(o)
     elif isinstance(o, Path):
         return str(o)
-    raise TypeError("Could not convert {} of type {}".format(*o), type(o))
+    raise TypeError(f"Could not convert object {o!r} of type {type(o).__name__}")
 
 
 def read_json(filepath: PathLike) -> ty.Any:
@@ -57,8 +57,7 @@ def read_json(filepath: PathLike) -> ty.Any:
     loaded json data
     """
     with open(filepath) as f_ptr:
-        obj = json.load(f_ptr)
-    return obj
+        return json.load(f_ptr)
 
 
 def write_json(filepath: PathLike, obj, indent: int = 4, check_existing: bool = False, compress: bool = False) -> Path:
@@ -106,7 +105,7 @@ def write_json_gzip(filepath: PathLike, obj: ty.Any) -> Path:
     import gzip
 
     filepath = Path(filepath)
-    if not filepath.with_suffix(".gz"):
+    if filepath.suffix != ".gz":
         filepath = filepath.with_suffix(".gz")
     with gzip.open(filepath, "w") as f_ptr:
         f_ptr.write(json.dumps(obj, default=default).encode("utf-8"))
@@ -116,6 +115,12 @@ def write_json_gzip(filepath: PathLike, obj: ty.Any) -> Path:
 def read_json_gzip(filepath: PathLike) -> ty.Any:
     """Read gzip compressed JSON data."""
     import gzip
+
+    filepath = Path(filepath)
+    if not filepath.exists() and filepath.suffix != ".gz":
+        gz_filepath = filepath.with_suffix(".gz")
+        if gz_filepath.exists():
+            filepath = gz_filepath
 
     with gzip.open(filepath, "r") as f_ptr:
         return json.loads(f_ptr.read().decode("utf-8"))

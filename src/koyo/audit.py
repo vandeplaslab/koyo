@@ -8,7 +8,7 @@ def open_file_audit_hook(name, *args):
         print(name, *args, "was called:")
         caller = inspect.currentframe()
         while caller := caller.f_back:
-            print(f"\tFunction {caller.f_code.co_name} " f"in {caller.f_code.co_filename}:" f"{caller.f_lineno}")
+            print(f"\tFunction {caller.f_code.co_name} in {caller.f_code.co_filename}:{caller.f_lineno}")
 
 
 def install_open_file_audit_hook():

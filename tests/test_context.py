@@ -4,7 +4,6 @@ import gc
 import sys
 
 import pytest
-
 from koyo.context import (
     captured_stderr,
     captured_stdout,
@@ -14,7 +13,6 @@ from koyo.context import (
     noop,
     nullout,
 )
-
 
 # ---------------------------------------------------------------------------
 # captured_stdout / captured_stderr

@@ -5,8 +5,8 @@ from __future__ import annotations
 import typing as ty
 from pathlib import Path
 
+from koyo.system import is_installed
 from koyo.typing import PathLike
-from koyo.utilities import is_installed
 
 if ty.TYPE_CHECKING:
     try:
@@ -30,6 +30,7 @@ def write_png(fig: Figure, filename: PathLike) -> Path | None:
         filename.parent.mkdir(parents=True, exist_ok=True)
         fig.write_image(str(filename))
         return filename
+    return None
 
 
 def show_html(filename: PathLike) -> None:

@@ -36,7 +36,7 @@ class ProjectBase:
 
     def __init__(self, project_dir: PathLike, cache_dir: PathLike | None = None):
         self.project_dir = Path(project_dir)
-        if not self.project_dir.suffix == self.PROJECT_SUFFIX:
+        if self.project_dir.suffix != self.PROJECT_SUFFIX:
             self.project_dir = self.project_dir.with_suffix(self.PROJECT_SUFFIX)
         self.project_dir.mkdir(exist_ok=True, parents=True)
         self._cache_dir = cache_dir

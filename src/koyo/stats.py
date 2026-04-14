@@ -13,7 +13,9 @@ def rank_features(df: pd.DataFrame) -> np.ndarray:
 
 
 def pairwise_spearmanr(
-    array_one: np.ndarray | pd.DataFrame, array_two: np.ndarray | pd.DataFrame | None = None, ranked: bool = False
+    array_one: np.ndarray | pd.DataFrame,
+    array_two: np.ndarray | pd.DataFrame | None = None,
+    ranked: bool = False,
 ) -> np.ndarray | pd.DataFrame:
     """Compute pairwise Spearman rank correlation between columns of two arrays."""
     if array_two is None:
@@ -102,7 +104,8 @@ def feature_redundancy(W, similarity_threshold: float = 0.9) -> tuple[list[tuple
 
 
 def get_significant_correlations(
-    correlation_matrix: np.ndarray | pd.DataFrame, threshold: float = 0.5
+    correlation_matrix: np.ndarray | pd.DataFrame,
+    threshold: float = 0.5,
 ) -> list[tuple[int, int, float]]:
     """Get significant correlations."""
     if isinstance(correlation_matrix, pd.DataFrame):
@@ -114,12 +117,12 @@ def get_significant_correlations(
         for j in range(correlation_matrix.shape[1])
         if abs(correlation_matrix[i, j]) > threshold
     ]
-    pairs = sorted(pairs, key=lambda x: x[2])
-    return pairs
+    return sorted(pairs, key=lambda x: x[2])
 
 
 def get_n_significant_correlations(
-    correlation_matrix: np.ndarray | pd.DataFrame, n: int
+    correlation_matrix: np.ndarray | pd.DataFrame,
+    n: int,
 ) -> tuple[list[tuple[int, int, float]], list[tuple[int, int, float]]]:
     """Get the n highest and lowest correlations."""
     if isinstance(correlation_matrix, pd.DataFrame):

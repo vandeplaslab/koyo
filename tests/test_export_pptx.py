@@ -29,7 +29,7 @@ def test_pptx(tmp_path):
     pptx = PPTX(tmp / "test.pptx", as_pptx=True)
 
     assert pptx.pptx_filename == tmp / "test.pptx"
-    array = np.random.randint(0, 255, (1000, 1000), dtype=np.uint8)
+    array = np.random.default_rng().integers(0, 255, (1000, 1000), dtype=np.uint8)
     image = Image.fromarray(array)
     pptx._add_pil_image_to_pptx(tmp / "test.png", image, title="Title for plot")
     pptx._save_pptx(pptx.pptx)
@@ -46,7 +46,7 @@ def test_pptx(tmp_path):
     pptx._add_mpl_figure_to_pptx(tmp / "test.png", plt.gcf(), pptx=page, title="Title for plot")
     assert not (tmp / "test.png").exists()
     # export PIL figure
-    array = np.random.randint(0, 255, (1000, 1000), dtype=np.uint8)
+    array = np.random.default_rng().integers(0, 255, (1000, 1000), dtype=np.uint8)
     image = Image.fromarray(array)
     pptx._add_pil_image_to_pptx(tmp / "test.png", image, pptx=page, title="Title for plot")
     assert not (tmp / "test.png").exists()
@@ -56,7 +56,7 @@ def test_pptx(tmp_path):
     assert (tmp / "test2.pptx").exists()
 
     with pptx._export_pptx_figures(tmp / "test3.pptx") as page:
-        array = np.random.randint(0, 255, (1000, 1000), dtype=np.uint8)
+        array = np.random.default_rng().integers(0, 255, (1000, 1000), dtype=np.uint8)
         image = Image.fromarray(array)
         pptx._add_pil_image_to_pptx(tmp / "test.png", image, pptx=page, title="Title for plot")
     assert (tmp / "test3.pptx").exists()

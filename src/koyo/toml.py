@@ -1,4 +1,5 @@
 """TOML utility functions."""
+
 import os
 import typing as ty
 
@@ -22,8 +23,7 @@ def read_toml_data(filepath: PathLike):
         dictionary with TOML data
     """
     with open(filepath) as f_ptr:
-        data = toml.load(f_ptr)
-    return data
+        return toml.load(f_ptr)
 
 
 def write_toml_data(filepath: PathLike, obj: ty.Dict, check_existing: bool = False):

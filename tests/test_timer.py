@@ -1,7 +1,6 @@
 import time
 
 import pytest
-
 from koyo.timer import MeasureTimer, format_datetime_ago, format_human_time, format_time, time_average, time_loop
 
 
@@ -65,33 +64,33 @@ def test_format_datetime_ago_invalid_format():
 
 
 def test_format_datetime_ago_just_now():
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
-    recent = (datetime.utcnow() - timedelta(seconds=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    recent = (datetime.now(timezone.utc) - timedelta(seconds=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
     result = format_datetime_ago(recent)
     assert result == "just now"
 
 
 def test_format_datetime_ago_minutes():
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
-    past = (datetime.utcnow() - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    past = (datetime.now(timezone.utc) - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
     result = format_datetime_ago(past)
     assert "minute" in result
 
 
 def test_format_datetime_ago_hours():
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
-    past = (datetime.utcnow() - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    past = (datetime.now(timezone.utc) - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%SZ")
     result = format_datetime_ago(past)
     assert "hour" in result
 
 
 def test_format_datetime_ago_days():
-    from datetime import datetime, timedelta
+    from datetime import datetime, timedelta, timezone
 
-    past = (datetime.utcnow() - timedelta(days=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    past = (datetime.now(timezone.utc) - timedelta(days=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
     result = format_datetime_ago(past)
     assert "day" in result
 

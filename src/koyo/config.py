@@ -1,5 +1,7 @@
 """Configuration module."""
 
+from __future__ import annotations
+
 import typing as ty
 from contextlib import contextmanager, suppress
 from pathlib import Path
@@ -74,7 +76,7 @@ class BaseConfig(BaseModel):
         """Export configuration to file."""
         try:
             self.output_path.write_text(
-                self.model_dump_json(indent=4, exclude_unset=True, exclude=self.get_exclude_fields())
+                self.model_dump_json(indent=4, exclude_unset=True, exclude=self.get_exclude_fields()),
             )
             logger.info(f"Saved configuration to {self.output_path}")
         except Exception as e:
@@ -84,8 +86,10 @@ class BaseConfig(BaseModel):
     def temporary_overwrite(self, **kwargs: ty.Any) -> ty.Generator[None, None, None]:
         """Temporarily overwrite configuration and then revert back."""
         original = {key: getattr(self, key) for key in kwargs}
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-        yield
-        for key, value in original.items():
-            setattr(self, key, value)
+        try:
+            for key, value in kwargs.items():
+                setattr(self, key, value)
+            yield
+        finally:
+            for key, value in original.items():
+                setattr(self, key, value)

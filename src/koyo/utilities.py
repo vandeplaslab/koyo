@@ -54,10 +54,12 @@ def split_tooltip(text: str, max_width: int = 80) -> str:
     """Split tooltip text into multiple lines based on maximum width.
 
     Args:
+    ----
         text: Text to be split
         max_width: Maximum number of characters per line (default: 80)
 
     Returns:
+    -------
         Formatted string with line breaks
     """
     if not text:

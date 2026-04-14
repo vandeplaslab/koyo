@@ -11,7 +11,7 @@ from pathlib import Path, PureWindowsPath
 
 from loguru import logger
 
-from koyo.system import IS_WIN, IS_LINUX, IS_MAC
+from koyo.system import IS_LINUX, IS_MAC, IS_WIN
 from koyo.typing import PathLike
 
 DriveMap = tuple[tuple[str, str], ...]
@@ -41,9 +41,11 @@ def copy_file(src_path: str, dst_path: str) -> None:
                     break
                 offset += sent
         return
-    # Fallback to shutil.copyfile if zero-copy is not available
+    # Fall back to a buffered copy to avoid shutil's platform-specific fast-copy
+    # helpers, which may still try to use os.sendfile internally.
     try:
-        shutil.copyfile(src_path, dst_path)
+        with open(src_path, "rb") as fsrc, open(dst_path, "wb") as fdst:
+            shutil.copyfileobj(fsrc, fdst)
     except FileNotFoundError:
         logger.error(f"Source file '{src_path}' does not exist.")
 
@@ -316,9 +318,10 @@ def is_network_path_unix(path: PathLike) -> bool:
 
 def apply_drive_mapping(file: Path, drive_map: DriveMap = ()) -> str:
     """Apply drive mapping."""
-    file_ = str(file)
+    # Normalize separators so configured mappings behave the same on every OS.
+    file_ = Path(file).as_posix()
     for map_from, map_to in drive_map:
-        file_ = file_.replace(map_from, map_to)
+        file_ = file_.replace(Path(map_from).as_posix(), Path(map_to).as_posix())
     return file_
 
 
@@ -465,34 +468,37 @@ def resolve_links(base_dir: Path, extensions: tuple[str, ...]) -> list[Path]:
     """Resolve Shortcuts on Windows."""
     links = []
     if IS_WIN:
-        from pylnk3 import parse
+        try:
+            from pylnk3 import parse
+        except ImportError:
+            logger.debug("pylnk3 is not installed; skipping .lnk resolution on Windows.")
+        else:
+            paths = list(base_dir.glob("*.lnk"))
+            paths_ = []
+            for path in paths:
+                try:
+                    path_ = parse(str(path)).path
+                except Exception as e:
+                    logger.warning(f"Could not parse link '{path}': {e}")
+                    continue
+                paths_.append(Path(path_))
+            paths_ = [path for path in paths_ if path.exists()]
+            links.extend(path for path in paths_ if path.suffix in extensions)
 
-        paths = list(base_dir.glob("*.lnk"))
-        paths_ = []
-        for path in paths:
-            try:
-                path_ = parse(str(path)).path
-            except Exception as e:
-                logger.warning(f"Could not parse link '{path}': {e}")
-                continue
-            paths_.append(Path(path_))
-        paths_ = [path for path in paths_ if path.exists()]
-        links = [path for path in paths_ if path.suffix in extensions]
-    else:
-        # For non-Windows, resolve .txtlnk files
-        for link_file in base_dir.glob("*.txtlnk"):
-            try:
-                target_path = link_file.read_text().strip()
-                target_path = Path(target_path)
-                if target_path.exists() and target_path.suffix in extensions:
-                    links.append(target_path)
-                else:
-                    logger.warning(
-                        f"Target path '{target_path}' from link '{link_file}' does not exist or has unsupported"
-                        f" extension.",
-                    )
-            except Exception as e:
-                logger.warning(f"Could not read link file '{link_file}': {e}")
+    # Resolve .txtlnk files on every platform as a lightweight fallback.
+    for link_file in base_dir.glob("*.txtlnk"):
+        try:
+            target_path = link_file.read_text().strip()
+            target_path = Path(target_path)
+            if target_path.exists() and target_path.suffix in extensions:
+                links.append(target_path)
+            else:
+                logger.warning(
+                    f"Target path '{target_path}' from link '{link_file}' does not exist or has unsupported"
+                    f" extension.",
+                )
+        except Exception as e:
+            logger.warning(f"Could not read link file '{link_file}': {e}")
     return links
 
 

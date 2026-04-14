@@ -1,17 +1,22 @@
 """Test color functions"""
+
 import warnings
 
 import numpy as np
 import pytest
-
 from koyo.color import (
+    _check_color_dim,
+    colormap_to_hex,
     find_text_color,
     generate_distinct_colors,
+    get_colors_from_colormap,
     get_next_color,
     get_random_hex_color,
     hex_to_rgb,
     hex_to_rgb_1,
     hex_to_rgb_255,
+    make_listed_colormap,
+    mpl_to_rgba_255,
     rgb_1_to_hex,
     rgb_255_to_1,
     rgb_to_hex,
@@ -73,6 +78,10 @@ def test_rgb_1_to_hex_ignores_alpha():
     assert rgb_1_to_hex([1.0, 0.0, 0.0, 0.5]) == "#ff0000"
 
 
+def test_mpl_to_rgba_255_named_color():
+    assert mpl_to_rgba_255("red") == (255, 0, 0, 255)
+
+
 # ---------------------------------------------------------------------------
 # rgb_to_hex
 # ---------------------------------------------------------------------------
@@ -131,6 +140,24 @@ def test_get_next_color_beyond_palette():
     assert color.startswith("#")
 
 
+def test_generate_distinct_colors_with_zero_requested():
+    assert generate_distinct_colors(["#ff0000"], 0) == []
+
+
+def test_colormap_to_hex_length():
+    cmap = make_listed_colormap(["#ff0000", "#00ff00", "#0000ff"])
+    result = colormap_to_hex(cmap)
+    assert result == ["#ff0000", "#00ff00", "#0000ff"]
+
+
+def test_get_colors_from_colormap_reversed():
+    normal = get_colors_from_colormap("viridis", 3, is_reversed=False)
+    reversed_ = get_colors_from_colormap("viridis", 3, is_reversed=True)
+    assert len(normal) == 3
+    assert len(reversed_) == 3
+    assert normal[0] == reversed_[-1]
+
+
 # ---------------------------------------------------------------------------
 # generate_distinct_colors
 # ---------------------------------------------------------------------------
@@ -173,6 +200,17 @@ def test_rgbs_to_hex_values():
     assert result[0] == "#000000ff"
 
 
+def test_check_color_dim_adds_alpha():
+    result = _check_color_dim(np.array([[1.0, 0.5, 0.0]]))
+    assert result.shape == (1, 4)
+    assert result[0, 3] == 1.0
+
+
+def test_check_color_dim_invalid_shape():
+    with pytest.raises(RuntimeError):
+        _check_color_dim(np.array([[1.0, 0.5]]))
+
+
 # ---------------------------------------------------------------------------
 # transform_color
 # ---------------------------------------------------------------------------
@@ -188,6 +226,12 @@ def test_transform_color_0x_prefix():
     result = transform_color("0xff0000")
     assert result is not None
     assert result.shape == (1, 4)
+
+
+def test_transform_color_rgb_string():
+    result = transform_color("rgb(1, 0, 0, 1)")
+    assert result.shape == (1, 4)
+    assert result[0, 0] == 1
 
 
 def test_transform_color_list_255_scale():
