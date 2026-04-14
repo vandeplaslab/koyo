@@ -32,6 +32,8 @@ else:
 
 
 class StringEnumMeta(EnumMeta):
+    """String enum."""
+
     def __getitem__(self, item):
         """Set the item name case to uppercase for name lookup."""
         if isinstance(item, str):
@@ -53,7 +55,10 @@ class StringEnumMeta(EnumMeta):
         # simple value lookup
         if names is None:
             if isinstance(value, str):
-                return super().__call__(value.lower())
+                try:
+                    return super().__call__(value)
+                except ValueError:
+                    return super().__call__(value.lower())
             if isinstance(value, cls):
                 return value
 
@@ -76,12 +81,20 @@ class StringEnumMeta(EnumMeta):
 
 
 class StringEnum(Enum, metaclass=StringEnumMeta):
+    """String enum."""
+
     @staticmethod
     def _generate_next_value_(name: str, start, count, last_values) -> str:
         """Autonaming function assigns each value its own name as a value."""
         return name.lower()
 
     def __str__(self) -> str:
+        """String representation: The string method returns the lowercase
+        string of the Enum name.
+        """
+        return self.value
+
+    def __repr__(self) -> str:
         """String representation: The string method returns the lowercase
         string of the Enum name.
         """
