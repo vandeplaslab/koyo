@@ -22,13 +22,73 @@ def clip_hotspots(img: np.ndarray, quantile: float = 0.99) -> np.ndarray:
 
     """
     mask = np.isnan(img)
-    img = np.nan_to_num(img, posinf=0, neginf=0)
+    np.nan_to_num(img, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
     min_visible = np.max(img) / 256
     if min_visible > 0:
         hotspot_threshold = np.quantile(img[img > min_visible], quantile)
         img = np.clip(img, None, hotspot_threshold)
     img[mask] = np.nan
     return img
+
+
+def clip_hotspots_batch_2d(
+    arr: np.ndarray,
+    quantile: float = 0.99,
+    *,
+    min_visible_fraction: float = 1 / 256,
+) -> np.ndarray:
+    """Remove hotspots from a 2D array channel-by-channel.
+
+    Parameters
+    ----------
+    arr : np.ndarray
+        Array with shape ``(n_px, n_channels)``.
+    quantile : float
+        Quantile at which to clip intensities for each channel.
+    min_visible_fraction : float
+        Fraction of the channel maximum used to define the minimum visible
+        intensity. Values below ``max / 256`` are ignored when estimating the
+        clipping threshold by default.
+
+    Returns
+    -------
+    arr : np.ndarray
+        Clipped array with original NaN positions preserved.
+
+    """
+    if arr.ndim != 2:
+        raise ValueError(f"Expected a 2D array with shape (n_px, n_channels), got {arr.shape}")
+
+    if not 0 < quantile <= 1:
+        raise ValueError("quantile must be in the range (0, 1].")
+
+    # Keep original NaN positions
+    nan_mask = np.isnan(arr)
+
+    # Replace NaN and inf values for robust calculations
+    np.nan_to_num(arr, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+
+    n_channels = arr.shape[1]
+
+    for i in range(n_channels):
+        channel = arr[:, i]
+
+        max_value = channel.max()
+        min_visible = max_value * min_visible_fraction
+
+        if min_visible <= 0:
+            continue
+
+        valid = channel > min_visible
+        if not np.any(valid):
+            continue
+
+        hotspot_threshold = np.quantile(channel[valid], quantile)
+        np.clip(channel, None, hotspot_threshold, out=channel)
+
+    # Restore NaNs
+    arr[nan_mask] = np.nan
+    return arr
 
 
 def reshape_array(array: np.ndarray, image_shape: ty.Tuple[int, int], pixel_index: np.ndarray, fill_value: float = 0):
