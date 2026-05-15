@@ -1,5 +1,7 @@
 """Multi-core utilities."""
 
+from __future__ import annotations
+
 import math
 import time
 import typing as ty
@@ -46,8 +48,7 @@ def estimate_cpu_count_from_size(max_obj_size_in_bytes, keep_free_in_bytes=4_000
     n_cores = round(available_memory / max_obj_size_in_bytes)
     if n_cores < 1:
         raise ValueError(
-            "Based on the amount of RAM available on this system, there is not enough memory to perform"
-            + " this action.",
+            "Based on the amount of RAM available on this system, there is not enough memory to perform this action.",
         )
 
     if n_cores > get_cpu_count():
@@ -214,7 +215,7 @@ class MultiCoreDispatcher:
         #     chunksize = np.max([math.ceil(n_extraction_windows / self._n_cores), 100])
         return chunksize
 
-    def generate_iterable(self) -> ty.List:
+    def generate_iterable(self) -> list:
         """Return iterable which can be consumed by the `generate_args_list` function."""
         return []
 
