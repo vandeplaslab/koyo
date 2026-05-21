@@ -18,6 +18,22 @@ class DownloadDict(ty.TypedDict):
     download_url: str
 
 
+class ChangelogDict(ty.TypedDict):
+    """Changelog dict."""
+
+    name: str
+    body: str
+
+
+class LatestVersionDict(ty.TypedDict):
+    """Latest version dict."""
+
+    version: str
+    win_amd64: DownloadDict
+    macosx_arm64: DownloadDict
+    linux_x86_64: DownloadDict
+
+
 LatestVersion = dict[str, DownloadDict]
 
 
@@ -27,7 +43,7 @@ def get_target() -> str | None:
 
     if platform.system() == "Windows":
         return "win_amd64"
-    elif platform.system() == "Darwin":
+    if platform.system() == "Darwin":
         if platform.processor() == "arm":
             return "macosx_arm64"
         return "macosx_x86_64"
@@ -58,7 +74,14 @@ def format_version(data: dict) -> str:
     published_at = format_datetime_ago(data.get("published_at", ""))
     name = data.get("name", "")
     body = data.get("body", "")
-    return f"# {name}\n**Published:** {published_at}\n**Change log**\n\n{body}"
+    return f"# {name}\n**Published:** {published_at}\n**Changelog**\n\n{body}"
+
+
+def format_changelog(data: dict) -> str:
+    """Format changelog."""
+    name = data.get("name", "")
+    body = data.get("body", "")
+    return f"# {name}\n**Changelog**\n\n{body}"
 
 
 def is_new_version_available(
@@ -93,4 +116,14 @@ def is_new_version_available(
             f"New version available: <b>{git_version}</b> made available <b>{published_at}</b>."
             f" You are using version <b>{current_version}</b>"
         )
+    return False, f"You are using the latest version: '{current_version}'."
+
+
+def compare_versions(current_version: str, latest_version: str) -> tuple[bool, str]:
+    """Compare versions."""
+    from packaging import version
+
+    new_available = version.parse(latest_version) > version.parse(current_version)
+    if new_available:
+        return True, f"New version available: <b>{latest_version}</b> You are using version <b>{current_version}</b>"
     return False, f"You are using the latest version: '{current_version}'."
