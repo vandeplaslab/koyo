@@ -1,8 +1,12 @@
 """Image processing functions."""
 
+from __future__ import annotations
+
 import typing as ty
 
 import numpy as np
+
+from koyo.typing import PathLike
 
 
 def clip_hotspots(img: np.ndarray, quantile: float = 0.99) -> np.ndarray:
@@ -326,3 +330,25 @@ def pearson_similarity(img_a: np.ndarray, img_b: np.ndarray, size: ty.Tuple[int,
     img_b = median_filter(img_b, size)
     mask = (img_a > 0) & (img_b > 0)
     return linregress(img_a[mask], img_b[mask]).rvalue
+
+
+def export_binary_png(path: PathLike, array: np.ndarray) -> None:
+    """Export a 2D uint8 numpy array as a binary PNG without resizing.
+
+    Parameters
+    ----------
+    path : PathLike
+        Output PNG path.
+    array : np.ndarray
+        2D uint8 array. Non-zero values are exported as white, zero as black.
+    """
+    from PIL import Image
+
+    if array.ndim != 2:
+        raise ValueError(f"Expected a 2D array, got shape {array.shape}")
+    if array.dtype != np.uint8:
+        raise TypeError(f"Expected uint8 array, got {array.dtype}")
+
+    binary = np.where(array > 0, 255, 0).astype(np.uint8)
+    img = Image.fromarray(binary, mode="L")
+    img.save(path)

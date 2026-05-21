@@ -71,44 +71,6 @@ jobs:
       - name: Coverage
         uses: codecov/codecov-action@v5
 
-#  test:
-#    uses: pyapp-kit/workflows/.github/workflows/test-pyrepo.yml@v2
-#    secrets: inherit
-#    with:
-#      os: ${{ matrix.os }}
-#      python-version: ${{ matrix.python-version }}
-#      pip-install-pre-release: ${{ github.event_name == 'schedule' }}
-#      report-failures: ${{ github.event_name == 'schedule' }}
-#      extras: 'pptx,test'
-#      # changing this to "artifact" prevents uploading to codecov here,
-#      # instead it uploads an artifact with the coverage data
-#      coverage-upload: artifact
-#
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        os: [ubuntu-latest, windows-latest]
-#        python-version: ["3.10", "3.11", "3.12", "3.13"]
-#        include:
-#          - python-version: "3.9"
-#            os: ubuntu-latest
-#          - python-version: "3.9"
-#            os: macos-13
-#          - python-version: "3.11"
-#            os: macos-latest
-#          - python-version: "3.12"
-#            os: macos-latest
-#
-#
-#  # now add a job to combine and upload the coverage
-#  upload_coverage:
-#    if: always()
-#    needs: [test]
-#    uses: pyapp-kit/workflows/.github/workflows/upload-coverage.yml@v2
-#    secrets:
-#      codecov_token: ${{ secrets.CODECOV_TOKEN }}
-
-
   deploy_testpypi:
     name: Deploy to TestPyPI
     needs: [test, check-manifest]

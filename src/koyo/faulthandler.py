@@ -19,7 +19,7 @@ def submit_sentry_attachment(message: str, path: PathLike) -> None:
         scope.capture_message(message)
     except ImportError:
         logger.exception("Failed to submit attachment to Sentry. Please report this issue to the developers.")
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.exception("Failed to submit attachment to Sentry.")
 
 
@@ -28,10 +28,10 @@ def install_segfault_handler(output_dir: PathLike, filename: str = "segfault.log
     import faulthandler
 
     segfault_path = Path(output_dir) / filename
-    segfault_file = open(segfault_path, "w+")
+    segfault_file = open(segfault_path, "w+")  # noqa: SIM115
     faulthandler.enable(segfault_file, all_threads=True)
     atexit.register(segfault_file.close)
-    logger.trace(f"Enabled fault handler - logging to '{segfault_path}'")
+    logger.trace(f"Installed segfault handler - logging to '{segfault_path}'")
 
 
 # noinspection PyBroadException
@@ -64,5 +64,5 @@ def maybe_submit_segfault(output_dir: PathLike, filename: str = "segfault.log") 
             logger.exception("Failed to backup segfault file.")
             return
 
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.exception("Failed to submit segfault to Sentry.")
