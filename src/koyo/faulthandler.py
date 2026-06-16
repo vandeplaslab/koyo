@@ -35,7 +35,7 @@ def install_segfault_handler(output_dir: PathLike, filename: str = "segfault.log
 
 
 # noinspection PyBroadException
-def maybe_submit_segfault(output_dir: PathLike, filename: str = "segfault.log") -> None:
+def maybe_submit_segfault(output_dir: PathLike, filename: str = "segfault.log", dev: bool = False) -> None:
     """Submit segfault to Sentry if there is an existing segfault file."""
     from datetime import datetime
 
@@ -43,26 +43,22 @@ def maybe_submit_segfault(output_dir: PathLike, filename: str = "segfault.log") 
     if not segfault_path.exists():
         return
 
+    # read segfault data
+    segfault_text = segfault_path.read_text()
+    if not segfault_text:
+        return
+
+    logger.error("There was a segmentation fault previously - submitting to Sentry if it's available.")
     try:
-        # read segfault data
-        segfault_text = segfault_path.read_text()
-        if not segfault_text:
-            return
+        segfault_backup_path = Path(output_dir) / f"segfault_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+        segfault_path.rename(segfault_backup_path)
+    except PermissionError:
+        segfault_path = Path(output_dir) / "segfault.log"
+    if not dev:
+        return
 
-        logger.error("There was a segmentation fault previously - submitting to Sentry if it's available.")
-
-        # create backup of the segfault file
-        try:
-            segfault_backup_path = Path(output_dir) / f"segfault_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
-            segfault_path.rename(segfault_backup_path)
-
-            # submit to Sentry
-            submit_sentry_attachment("Segfault detected", segfault_backup_path)
-        except PermissionError:
-            with suppress(Exception):
-                submit_sentry_attachment("Segfault detected", segfault_path)
-            logger.exception("Failed to backup segfault file.")
-            return
-
+    # create backup of the segfault file
+    try:
+        submit_sentry_attachment("Segfault detected", segfault_path)
     except Exception:  # noqa: BLE001
-        logger.exception("Failed to submit segfault to Sentry.")
+        logger.exception("Failed to backup segfault file.")
