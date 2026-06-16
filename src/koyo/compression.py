@@ -52,12 +52,19 @@ def zip_files(zip_file: PathLike, *files: PathLike, remove_zipped: bool = False)
     """Zip files."""
     logger.debug("Zipping files...")
     zip_file_object = zipfile.ZipFile(zip_file, "w", zipfile.ZIP_DEFLATED)
-    with MeasureTimer() as timer:
-        for file in tqdm(files, desc="Zipping", unit="file"):
-            zip_file_object.write(file, os.path.basename(file))
-            logger.trace(f"Zipped file {file} in {timer(since_last=True)}.")
-    zip_file_object.close()
-    if remove_zipped:
+    try:
+        with MeasureTimer() as timer:
+            for file in tqdm(files, desc="Zipping", unit="file"):
+                zip_file_object.write(file, os.path.basename(file))
+                logger.trace(f"Zipped file {file} in {timer(since_last=True)}.")
+        zip_file_object.close()
+    except FileNotFoundError:
+        logger.warning(f"Failed to zip files {files} to {zip_file}.")
+        remove_zipped = False  # to prevent accidental deletion of files if zip failed
+        zip_file_object.close()
+        zip_file.unlink()
+
+    if remove_zipped and zip_file.exists():
         for file in files:
             Path(file).unlink(missing_ok=True)
             logger.debug(f"Removing zipped file {file}...")
