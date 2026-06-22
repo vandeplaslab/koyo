@@ -143,7 +143,7 @@ def get_loguru_env() -> tuple[str, str, bool, bool]:
 
 
 def get_loguru_config(
-    level: str | int | float,
+    level: str | float,
     no_color: bool,
     enqueue: bool = True,
     fmt: str = LOG_FMT,
@@ -260,3 +260,11 @@ class LoggerMixin:
                     remove=False,
                 )
                 logger.info(f"Setup logging to file - '{self.LOG_PATH!s}'")
+
+
+def _report_exception(exc: Exception) -> bool:
+    """Report an exception before retrying an atomic write."""
+    from loguru import logger
+
+    logger.warning(f"Task failed with {type(exc).__name__}: {exc}", exc_info=True)
+    return True

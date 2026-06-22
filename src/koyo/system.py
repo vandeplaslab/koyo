@@ -8,6 +8,7 @@ import os
 import platform
 import subprocess
 import sys
+import typing as ty
 from functools import lru_cache
 from pathlib import Path
 
@@ -172,13 +173,15 @@ def who_called_me() -> tuple[str, str, int]:
     return file_name, function_name, line_number
 
 
-def who_called_me_stack(n: int = 6) -> None:
+def who_called_me_stack(n: int = 6, func: ty.Callable = print) -> None:
     """Print the call stack up to *n* frames above this function.
 
     Parameters
     ----------
     n : int, optional
         Maximum number of caller frames to display (default 6).
+    func : callable, optional
+        Function to call with the formatted caller information (default ``print``).
     """
     stack = inspect.stack()
     # The stack list starts with the current frame at index 0,
@@ -190,8 +193,8 @@ def who_called_me_stack(n: int = 6) -> None:
         file_name = frame_info.filename
         function_name = frame_info.function
         line_number = frame_info.lineno
-        print(f"Caller #{i}: File '{file_name}', Function '{function_name}', Line {line_number}")
-    print("\n")
+        func(f"Caller #{i}: File '{file_name}', Function '{function_name}', Line {line_number}")
+    func("\n")
 
 
 def _linux_sys_name() -> str:

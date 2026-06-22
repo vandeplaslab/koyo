@@ -29,7 +29,7 @@ if ty.TYPE_CHECKING:
 
 
 def human_readable_byte_size(n_bytes: int) -> str:
-    """
+    """Convert number of bytes to human readable size.
 
     Parameters
     ----------
@@ -46,7 +46,7 @@ def human_readable_byte_size(n_bytes: int) -> str:
     while n_bytes >= 1024 and i < len(suffixes) - 1:
         n_bytes /= 1024.0
         i += 1
-    f = (f"{n_bytes:.2f}").rstrip("0").rstrip(".")
+    f = f"{n_bytes:.2f}".rstrip("0").rstrip(".")
     return f"{f} {suffixes[i]}"
 
 
