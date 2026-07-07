@@ -494,8 +494,7 @@ def resolve_links(base_dir: Path, extensions: tuple[str, ...]) -> list[Path]:
                 links.append(target_path)
             else:
                 logger.warning(
-                    f"Target path '{target_path}' from link '{link_file}' does not exist or has unsupported"
-                    f" extension.",
+                    f"Target path '{target_path}' from link '{link_file}' does not exist or has unsupported extension.",
                 )
         except Exception as e:
             logger.warning(f"Could not read link file '{link_file}': {e}")
@@ -603,6 +602,9 @@ def shorten_path_for_windows(
     parent = p.parent
     original_name = p.name
 
+    if len(str(p)) < max_path:
+        return p
+
     if not original_name:
         raise WindowsPathError("Path has no filename to shorten.")
 
@@ -684,4 +686,6 @@ def shorten_path_for_windows(
             if is_unique(candidate) or candidate == p:
                 return candidate
 
-    raise WindowsPathError(f"Could not produce a valid Windows-safe filename for path: {str(path)!r}")
+    raise WindowsPathError(
+        f"Could not produce a valid Windows-safe filename for path (n={len(str(path))}): {str(path)!r}"
+    )
