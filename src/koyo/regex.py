@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 
-from path import Path
+from pathlib import Path
 
 
 def remove_date_from_filename(filename: str | Path) -> str:
