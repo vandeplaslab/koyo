@@ -328,6 +328,25 @@ def merge_mosaic_from_dir(
     return merge_mosaic(items, title=title, n_cols=n_cols, x_pad=x_pad, y_pad=y_pad, allow_placeholder=allow_placeholder, placeholder_color=placeholder_color)
 
 
+def merge_mosaic_from_files(
+    filelist: list[PathLike],
+    title: str = "",
+    n_cols: int | None = None,
+    x_pad: int = 0,
+    y_pad: int = 0,
+    allow_placeholder: bool = False,
+    placeholder_color: tuple[int, ...] = (0, 0, 0, 255),  # black
+) -> Image:
+    """Merge images from a directory."""
+    items = {}
+    for filename in filelist:
+        if filename.is_file():
+            with open(filename, "rb") as f:
+                items[filename.stem] = io.BytesIO(f.read())
+    return merge_mosaic(items, title=title, n_cols=n_cols, x_pad=x_pad, y_pad=y_pad, allow_placeholder=allow_placeholder, placeholder_color=placeholder_color)
+
+
+
 def merge_mosaic_with_columns(
     image_dir: PathLike | list[io.BytesIO],
     n_cols: int,
