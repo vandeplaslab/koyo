@@ -30,6 +30,7 @@ class LatestVersionDict(ty.TypedDict):
 
     version: str
     win_amd64: DownloadDict
+    win_amd64_exe: DownloadDict
     macosx_arm64: DownloadDict
     linux_x86_64: DownloadDict
 
@@ -37,12 +38,18 @@ class LatestVersionDict(ty.TypedDict):
 LatestVersion = dict[str, DownloadDict]
 
 
-def get_target() -> str | None:
-    """Get target based on the platform."""
+def get_target(installer: bool = False) -> str | None:
+    """Get the release target for the current platform.
+
+    Parameters
+    ----------
+    installer : bool
+        Return the Windows Inno Setup target when available.
+    """
     import platform
 
     if platform.system() == "Windows":
-        return "win_amd64"
+        return "win_amd64_exe" if installer else "win_amd64"
     if platform.system() == "Darwin":
         if platform.processor() == "arm":
             return "macosx_arm64"
