@@ -89,9 +89,7 @@ def cli_parse_paths_sort_auto_glob(ctx, param, value) -> list[str]:
 
 
 def with_plugins(plugins, **kwargs):
-    """
-    A decorator to register external CLI commands to an instance of
-    `click.Group()`.
+    """A decorator to register external CLI commands to an instance of `click.Group()`.
 
     Parameters
     ----------
@@ -107,12 +105,12 @@ def with_plugins(plugins, **kwargs):
 
     def decorator(group):
         if not isinstance(group, click.Group):
-            raise TypeError("Plugins can only be attached to an instance of click.Group()")
+            raise TypeError("Plugins can only be attached to an instance of click.Group()")  # noqa: TRY003
 
         for entry_point in plugins or ():
             try:
                 group.add_command(entry_point.load(), **kwargs)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 # Catch this so a busted plugin doesn't take down the CLI.
                 # Handled by registering a dummy command that does nothing
                 # other than explain the error.
@@ -124,7 +122,8 @@ def with_plugins(plugins, **kwargs):
 
 
 class BrokenCommand(click.Command):
-    """
+    """Broken command.
+
     Rather than completely crash the CLI when a broken plugin is loaded, this
     class provides a modified help message informing the user that the plugin is
     broken and they should contact the owner.  If the user executes the plugin
@@ -280,10 +279,10 @@ def format_value(description: str, args: str, value: ty.Any) -> list[tuple[str, 
 def get_args_from_option(option: ty.Callable) -> str:
     """Return argument information from option."""
     if not hasattr(option, "__closure__"):
-        raise ValueError(f"Option {option} does not have closure.")
+        raise ValueError(f"Option {option} does not have closure.")  # noqa: TRY003
     closure = option.__closure__
     if closure is None:
-        raise ValueError(f"Option {option} does not have closure.")
+        raise ValueError(f"Option {option} does not have closure.")  # noqa: TRY003
 
     option_names: list[str] = []
     for cell in closure:
@@ -292,7 +291,7 @@ def get_args_from_option(option: ty.Callable) -> str:
             if option_names:
                 break
     if not option_names:
-        raise ValueError(f"Could not extract option arguments from {option}.")
+        raise ValueError(f"Could not extract option arguments from {option}.")  # noqa: TRY003
     option_names.sort(key=lambda value: (len(value.lstrip("-")), value))
     return "/".join(option_names)
 
@@ -571,9 +570,9 @@ def parse_arg(arg: str, key: str) -> tuple[str, ty.Any]:
             value = literal_eval(value)
         except SyntaxError:
             pass
-        return name, value
+        return name, value  # noqa: TRY300
     except ValueError:
-        raise ValueError(f"Could not parse argument {arg}")
+        raise ValueError(f"Could not parse argument {arg}")  # noqa: B904,TRY003
 
 
 def parse_extra_args(extra_args: tuple[str, ...] | None) -> dict[str, ty.Any]:
@@ -613,6 +612,7 @@ def parse_args_with_keys(
     fields: tuple[str, ...],
     clean: bool = False,
 ) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
+    """Parse extra parameters."""
     extra_kwargs = {}
     if extra_args is None:
         if clean:
@@ -642,13 +642,11 @@ def parse_fig_args(
 
 
 @ty.overload
-def parse_env_args(extra_args: tuple[str, ...] | None, clean: bool = False) -> dict[str, ty.Any]:
-    """Parse extra environment variables."""
+def parse_env_args(extra_args: tuple[str, ...] | None, clean: bool = False) -> dict[str, ty.Any]: ...
 
 
 @ty.overload
-def parse_env_args(extra_args: tuple[str, ...] | None, clean: bool = False) -> tuple[dict[str, ty.Any], tuple[str]]:
-    """Parse extra environment variables."""
+def parse_env_args(extra_args: tuple[str, ...] | None, clean: bool = False) -> tuple[dict[str, ty.Any], tuple[str]]: ...
 
 
 def parse_env_args(
@@ -723,8 +721,10 @@ def select_from_list(
     auto_select: str = "off",
     default: int = -1,
 ) -> int:
-    """Select file from the list. The list is assumed to be sorted in descending order of creation time meaning that
-    oldest files should be first and newest should be last.
+    """Select file from the list.
+
+    The list is assumed to be sorted in descending order of creation time meaning that oldest files should be first
+     and newest should be last.
     """
     if item_list:
         if len(item_list) == 1:
