@@ -344,7 +344,7 @@ def is_installed(module: str) -> bool:
     try:
         loader = importlib.util.find_spec(module)
     except ModuleNotFoundError:
-        return False
+        return is_installed(module.replace("-", "_"))
     return loader is not None
 
 
