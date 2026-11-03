@@ -19,6 +19,21 @@ from koyo.typing import PathLike
 ALLOW_EXTRA_ARGS = {"help_option_names": ["-h", "--help"], "ignore_unknown_options": True, "allow_extra_args": True}
 
 
+class ByteSize(click.ParamType):
+    """Byte count given as an integer or with a binary suffix, e.g. ``512KiB``, ``1M`` or ``2GB``."""
+
+    name = "size"
+
+    def convert(self, value, param, ctx) -> int:  # type: ignore[no-untyped-def]
+        if isinstance(value, int):
+            return value
+        match = re.fullmatch(r"\s*(\d+(?:\.\d+)?)\s*([kmgt]?)(?:i?b)?\s*", str(value), flags=re.IGNORECASE)
+        if match is None:
+            self.fail(f"{value!r} is not a size such as 4096, 512KiB, 1MiB or 2GiB", param, ctx)
+        number, unit = match.groups()
+        return int(float(number) * 1024 ** ("kmgt".index(unit.lower()) + 1 if unit else 0))
+
+
 def expand_data_dirs(input_dir: str) -> list[str]:
     """Expand a path that may contain a glob wildcard into a list of matches.
 
