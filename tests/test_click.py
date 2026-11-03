@@ -4,8 +4,10 @@ from pathlib import Path
 
 import click
 import pytest
+
 from koyo.click import (
     BrokenCommand,
+    ByteSize,
     Parameter,
     arg_parse_env,
     arg_parse_int_with_range_multi,
@@ -35,6 +37,14 @@ from koyo.click import (
     timed_iterator,
     with_plugins,
 )
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    (("4096", 4096), ("512KiB", 512 * 1024), ("1M", 1024**2), ("1.5gb", int(1.5 * 1024**3)), (" 2 GiB ", 2 * 1024**3)),
+)
+def test_byte_size(value, expected):
+    assert ByteSize().convert(value, None, None) == expected
 
 
 @pytest.mark.parametrize(
