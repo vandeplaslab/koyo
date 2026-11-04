@@ -3,6 +3,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from PIL import Image
+
 from koyo.visuals import (
     _get_alternate_locations,
     _plot_image,
@@ -41,7 +43,6 @@ from koyo.visuals import (
     vertices_to_collection,
     y_tick_fmt,
 )
-from PIL import Image
 
 
 def test_tight_layout_and_close_mpl_figure():

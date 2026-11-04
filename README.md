@@ -66,6 +66,7 @@ from koyo.timer import measure_time
 
 # Find the closest index in a sorted array
 import numpy as np
+
 arr = np.linspace(0, 100, 1000)
 idx = find_nearest_index(arr, 42.7)
 

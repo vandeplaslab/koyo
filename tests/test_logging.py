@@ -3,6 +3,7 @@
 import sys
 
 import pytest
+
 from koyo.logging import (
     get_loguru_config,
     get_loguru_level,
@@ -53,23 +54,23 @@ def test_get_loguru_level_above_max():
 
 
 def test_get_loguru_config_no_color():
-    level, fmt, colorize, enqueue = get_loguru_config(20, no_color=True)
+    level, _fmt, colorize, _enqueue = get_loguru_config(20, no_color=True)
     assert level == "INFO"
     assert colorize is False
 
 
 def test_get_loguru_config_with_color():
-    level, fmt, colorize, enqueue = get_loguru_config(20, no_color=False)
+    _level, _fmt, colorize, _enqueue = get_loguru_config(20, no_color=False)
     assert colorize is True
 
 
 def test_get_loguru_config_level_string():
-    level, fmt, colorize, enqueue = get_loguru_config("warning", no_color=True)
+    level, _fmt, _colorize, _enqueue = get_loguru_config("warning", no_color=True)
     assert level == "WARNING"
 
 
 def test_get_loguru_config_enqueue_default():
-    level, fmt, colorize, enqueue = get_loguru_config(10, no_color=True)
+    _level, _fmt, _colorize, enqueue = get_loguru_config(10, no_color=True)
     # Default enqueue is True
     assert enqueue is True
 
@@ -125,9 +126,14 @@ def test_set_logger_passes_enqueue_and_colorize_in_order(monkeypatch):
     import koyo.logging as klog
 
     calls = {}
-    monkeypatch.setattr(klog, "set_loguru_env", lambda fmt, level, enqueue, colorize: calls.update(
-        enqueue=enqueue, colorize=colorize
-    ))
+    monkeypatch.setattr(
+        klog,
+        "set_loguru_env",
+        lambda fmt, level, enqueue, colorize: calls.update(
+            enqueue=enqueue,
+            colorize=colorize,
+        ),
+    )
     monkeypatch.setattr(klog, "set_loguru_log", lambda *args, **kwargs: None)
     klog.set_logger(verbosity=2, no_color=True, logger=MagicMock())
     assert calls == {"enqueue": True, "colorize": False}

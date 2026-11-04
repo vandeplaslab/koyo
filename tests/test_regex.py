@@ -1,6 +1,7 @@
 """Tests for koyo.regex."""
 
 import pytest
+
 from koyo.regex import remove_date_from_filename
 
 

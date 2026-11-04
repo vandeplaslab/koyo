@@ -1,7 +1,8 @@
 """TOML utility functions."""
 
+from __future__ import annotations
+
 import os
-import typing as ty
 
 import toml
 
@@ -26,7 +27,7 @@ def read_toml_data(filepath: PathLike):
         return toml.load(f_ptr)
 
 
-def write_toml_data(filepath: PathLike, obj: ty.Dict, check_existing: bool = False):
+def write_toml_data(filepath: PathLike, obj: dict, check_existing: bool = False):
     """Write data to TOML file.
 
     Parameters

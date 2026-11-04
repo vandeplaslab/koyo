@@ -5,8 +5,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
-from koyo.pptx_mixin import HAS_PPTX, PPTXMixin
 from PIL import Image
+
+from koyo.pptx_mixin import HAS_PPTX, PPTXMixin
 
 
 class PPTX(PPTXMixin):

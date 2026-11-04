@@ -1,4 +1,5 @@
 import numpy as np
+
 from koyo.rand import get_random_seed, temporary_seed
 
 

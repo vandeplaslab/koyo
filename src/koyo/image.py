@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import typing as ty
-
 import numpy as np
 
 from koyo.typing import PathLike
@@ -97,7 +95,7 @@ def clip_hotspots_batch_2d(
     return arr
 
 
-def reshape_array(array: np.ndarray, image_shape: ty.Tuple[int, int], pixel_index: np.ndarray, fill_value: float = 0):
+def reshape_array(array: np.ndarray, image_shape: tuple[int, int], pixel_index: np.ndarray, fill_value: float = 0):
     """
     Reshape 1D data to 2D heatmap.
 
@@ -138,7 +136,7 @@ def unshape_array(image: np.ndarray, pixel_index: np.ndarray) -> np.ndarray:
 
 def reshape_array_from_coordinates(
     array: np.ndarray,
-    image_shape: ty.Tuple[int, int],
+    image_shape: tuple[int, int],
     coordinates: np.ndarray,
     fill_value: float = 0,
     offset: int = 0,
@@ -174,7 +172,7 @@ def flatten_array_from_coordinates(array: np.ndarray, coordinates: np.ndarray, o
 
 def reshape_array_batch(
     array: np.ndarray,
-    image_shape: ty.Tuple[int, int],
+    image_shape: tuple[int, int],
     pixel_index: np.ndarray,
     fill_value: float = 0,
 ):
@@ -194,7 +192,7 @@ def reshape_array_batch(
 
 def reshape_array_batch_from_coordinates(
     array: np.ndarray,
-    image_shape: ty.Tuple[int, int],
+    image_shape: tuple[int, int],
     coordinates: np.ndarray,
     fill_value: int = 0,
     offset: int = 0,
@@ -217,7 +215,7 @@ def reshape_array_batch_from_coordinates(
     return im
 
 
-def get_coordinates_from_index(index: np.ndarray, shape: ty.Tuple[int, int]) -> np.ndarray:
+def get_coordinates_from_index(index: np.ndarray, shape: tuple[int, int]) -> np.ndarray:
     """Convert frame index to (y, x) coordinates.
 
     Returns an array of shape ``(n, 2)`` with ``(y, x)`` pairs, one row per index value.
@@ -268,7 +266,7 @@ def colocalization(img_a: np.ndarray, img_b: np.ndarray) -> float:
     return cosine_similarity(_preprocess(img_a), _preprocess(img_b))[0, 0]
 
 
-def colocalization_matrix(images: np.ndarray, size: ty.Tuple[int, ...] = (3, 3)) -> np.ndarray:
+def colocalization_matrix(images: np.ndarray, size: tuple[int, ...] = (3, 3)) -> np.ndarray:
     """
     Calculates level of colocalization between all pairs of images in a list of ion images.
     If many checks are needed, it is usually faster to generate the entire matrix than to do
@@ -307,7 +305,7 @@ def colocalization_matrix(images: np.ndarray, size: ty.Tuple[int, ...] = (3, 3))
     return similarity_matrix
 
 
-def pearson_similarity(img_a: np.ndarray, img_b: np.ndarray, size: ty.Tuple[int, int] = (3, 3)) -> float:
+def pearson_similarity(img_a: np.ndarray, img_b: np.ndarray, size: tuple[int, int] = (3, 3)) -> float:
     """Calculate degree of similarity between two images using Pearson correlation.
 
     Parameters

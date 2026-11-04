@@ -1,5 +1,7 @@
 import numpy as np
 import pytest
+from numpy.testing import assert_equal
+
 from koyo.utilities import (
     check_image_orientation,
     check_value_order,
@@ -19,7 +21,6 @@ from koyo.utilities import (
     split_tooltip,
     view_as_blocks,
 )
-from numpy.testing import assert_equal
 
 
 def test_is_installed():

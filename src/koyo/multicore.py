@@ -53,8 +53,7 @@ def estimate_cpu_count_from_size(max_obj_size_in_bytes, keep_free_in_bytes=4_000
             "Based on the amount of RAM available on this system, there is not enough memory to perform this action.",
         )
 
-    if n_cores > get_cpu_count():
-        n_cores = get_cpu_count()
+    n_cores = min(n_cores, get_cpu_count())
     print(
         f"Total RAM: {virtual_memory().total / 1024**3:0f} Gb",
         f"\nReserved memory: {keep_free_in_bytes / 1024**3} Gb",
@@ -84,8 +83,7 @@ def get_cpu_count(keep_free: int = 2, max_cpu: int = 24, n_tasks: int = 0) -> in
         a RuntimeWarning is issued and all cores are used.
     """
     n_cores = cpu_count() - keep_free
-    if n_cores > max_cpu:
-        n_cores = max_cpu
+    n_cores = min(n_cores, max_cpu)
     if n_tasks > 0 and n_cores > n_tasks:
         n_cores = n_tasks
     if n_cores < 1:
@@ -251,8 +249,7 @@ class MultiCoreDispatcher:
             args_list = self.generate_args_list()
         # temporarily limit number of cores to the number of tasks (restored afterwards)
         n_cores = self.n_cores
-        if len(args_list) < self.n_cores:
-            self.n_cores = len(args_list)
+        self.n_cores = min(self.n_cores, len(args_list))
         try:
             if args_list:
                 logger.info(f"{len(args_list)} tasks in the queue...")

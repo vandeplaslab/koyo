@@ -59,7 +59,7 @@ class FigureMixin(PDFMixin, PPTXMixin):
             filename = ".".join(parts[:-1])
         if self.as_pptx:
             return f"{filename}.pptx"
-        elif self.as_pdf:
+        if self.as_pdf:
             return f"{filename}.pdf"
         return filename
 
@@ -177,7 +177,14 @@ class FigureMixin(PDFMixin, PPTXMixin):
             self._add_pil_image_to_pdf(filename, image, pdf=pdf, dpi=dpi, override=override, close=close, **kwargs)
         elif self.as_pptx:
             self._add_pil_image_to_pptx(
-                filename, image, pptx=pptx, dpi=dpi, fmt=fmt, override=override, close=close, **kwargs
+                filename,
+                image,
+                pptx=pptx,
+                dpi=dpi,
+                fmt=fmt,
+                override=override,
+                close=close,
+                **kwargs,
             )
         elif override or not filename.exists():
             image.save(filename, dpi=(dpi, dpi), format=fmt, **kwargs)
@@ -395,8 +402,7 @@ def _ensure_filename_is_not_too_long(filenme: PathLike) -> Path:
         if n - len(str(parent)) > 250:
             raise ValueError("Filename is too long")
         max_length = 250 - len(str(parent)) - len(suffix)
-        if max_length > len(filename.stem):
-            max_length = len(filename.stem)
+        max_length = min(max_length, len(filename.stem))
         filename_ = filename.stem[0:max_length] + suffix
         logger.trace(f"Filename is too long, truncating to {filename_} from {filename.name}")
         return parent / filename_

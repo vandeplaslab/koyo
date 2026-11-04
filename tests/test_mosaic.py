@@ -5,6 +5,8 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from PIL import Image
+
 from koyo.mosaic import (
     RectanglePacker,
     _get_color_rgba255,
@@ -17,7 +19,6 @@ from koyo.mosaic import (
     merge_mosaic_with_columns,
     pack_images,
 )
-from PIL import Image
 
 
 def _image_bytes(color, size=(10, 8)):

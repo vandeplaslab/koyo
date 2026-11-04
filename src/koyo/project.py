@@ -181,7 +181,7 @@ class ProjectBase:
     @property
     def paths(self) -> list[Path]:
         """List paths of the datasets that have been registered to the project."""
-        return list(map(Path,self.project_config.get(self.DATASETS_KEY, {}).values()))
+        return list(map(Path, self.project_config.get(self.DATASETS_KEY, {}).values()))
 
     def dataset_iter(self) -> ty.Iterable[str]:
         """Iterate over dataset names."""

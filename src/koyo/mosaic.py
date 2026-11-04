@@ -326,7 +326,15 @@ def merge_mosaic_from_dir(
         if filename.is_file():
             with open(filename, "rb") as f:
                 items[filename.stem] = io.BytesIO(f.read())
-    return merge_mosaic(items, title=title, n_cols=n_cols, x_pad=x_pad, y_pad=y_pad, allow_placeholder=allow_placeholder, placeholder_color=placeholder_color)
+    return merge_mosaic(
+        items,
+        title=title,
+        n_cols=n_cols,
+        x_pad=x_pad,
+        y_pad=y_pad,
+        allow_placeholder=allow_placeholder,
+        placeholder_color=placeholder_color,
+    )
 
 
 def merge_mosaic_from_files(
@@ -344,8 +352,15 @@ def merge_mosaic_from_files(
         if filename.is_file():
             with open(filename, "rb") as f:
                 items[filename.stem] = io.BytesIO(f.read())
-    return merge_mosaic(items, title=title, n_cols=n_cols, x_pad=x_pad, y_pad=y_pad, allow_placeholder=allow_placeholder, placeholder_color=placeholder_color)
-
+    return merge_mosaic(
+        items,
+        title=title,
+        n_cols=n_cols,
+        x_pad=x_pad,
+        y_pad=y_pad,
+        allow_placeholder=allow_placeholder,
+        placeholder_color=placeholder_color,
+    )
 
 
 def merge_mosaic_with_columns(
@@ -532,8 +547,7 @@ def _get_mosaic_dims(n: int, width: int, height: int, n_cols: int = 0) -> tuple[
             ratio = (_width * n_cols) / height
             n_rows += 1
     else:
-        if n_cols > n:
-            n_cols = n
+        n_cols = min(n_cols, n)
         n_rows = ceil(n / n_cols)
     while n_rows > ceil(n / n_cols):
         n_rows -= 1
@@ -792,7 +806,7 @@ def plot_mosaic_line_individual(
         if placeholder_color is None:
             placeholder_color = _get_color_rgba255(plt.rcParams["axes.facecolor"])
         for key in data:
-            fig, ax = _plot_line(
+            fig, _ax = _plot_line(
                 data[key][0],
                 data[key][1],
                 marker=marker[key] if isinstance(marker, dict) else marker,

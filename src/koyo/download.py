@@ -1,7 +1,8 @@
 """Download functions."""
 
+from __future__ import annotations
+
 import os.path
-import typing as ty
 from pathlib import Path
 from urllib import request
 
@@ -46,8 +47,8 @@ def download_progress(pbar):
 
 def download_file(
     link: str,
-    filename: ty.Optional[PathLike] = None,
-    output_dir: ty.Optional[PathLike] = None,
+    filename: PathLike | None = None,
+    output_dir: PathLike | None = None,
     unzip: bool = True,
     remove_archive: bool = False,
 ):

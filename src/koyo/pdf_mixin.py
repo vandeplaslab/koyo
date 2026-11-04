@@ -146,7 +146,7 @@ class PDFMixin:
         """Inform the user if the figure was empty."""
         if if_empty == "none":
             return
-        elif if_empty == "warn":
+        if if_empty == "warn":
             logger.warning("Figure was empty")
         elif if_empty == "raise":
             raise ValueError("Figure was empty")

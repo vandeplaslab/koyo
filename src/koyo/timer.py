@@ -7,6 +7,8 @@ import typing as ty
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 
+from typing_extensions import Self
+
 PERIODS = [
     ("year", 60 * 60 * 24 * 365 * 1e9),
     ("month", 60 * 60 * 24 * 30 * 1e9),
@@ -116,13 +118,13 @@ def format_time(seconds: float) -> str:
     """Convert time to a nicer format. Value is provided in seconds."""
     if seconds <= 0.01:
         return f"{seconds * 1000000:.0f}us"
-    elif seconds <= 0.1:
+    if seconds <= 0.1:
         return f"{seconds * 1000:.1f}ms"
-    elif seconds > 86400:
+    if seconds > 86400:
         return f"{seconds / 86400:.2f}day"
-    elif seconds > 1800:
+    if seconds > 1800:
         return f"{seconds / 3600:.2f}hr"
-    elif seconds > 60:
+    if seconds > 60:
         return f"{seconds / 60:.2f}min"
     return f"{seconds:.2f}s"
 
@@ -231,7 +233,7 @@ class MeasureTimer:
         """Return nicely formatted execution time."""
         return self()
 
-    def __enter__(self) -> MeasureTimer:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):

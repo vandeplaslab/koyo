@@ -242,7 +242,7 @@ def _linux_sys_name() -> str:
 def _linux_sys_name_lsb_release() -> str:
     """Try to discover linux system name based on lsb_release command output."""
     with contextlib.suppress(subprocess.CalledProcessError):
-        res = subprocess.run(["lsb_release", "-d", "-r"], check=True, capture_output=True)  # noqa: S603,S607
+        res = subprocess.run(["lsb_release", "-d", "-r"], check=True, capture_output=True)  # noqa: S607
         text = res.stdout.decode()
         data = {}
         for line in text.split("\n"):

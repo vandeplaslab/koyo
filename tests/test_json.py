@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+
 from koyo.json import read_json_data, read_json_gzip, write_json_data, write_json_gzip
 
 

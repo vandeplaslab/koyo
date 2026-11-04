@@ -232,16 +232,16 @@ def convert_divider_to_str(value: float, exp_value: int) -> str:
             return f"{value:.4G}"
         if abs(value) <= 1:
             return f"{value:.2G}"
-        elif abs(value) <= 1000:
+        if abs(value) <= 1000:
             if value.is_integer():
                 return f"{value:.0F}"
             return f"{value:.1F}"
         return None
-    elif exp_value in [3, 4, 5]:
+    if exp_value in [3, 4, 5]:
         return f"{value / 1000:.1f}k"
-    elif exp_value in [6, 7, 8]:
+    if exp_value in [6, 7, 8]:
         return f"{value / 1000000:.1f}M"
-    elif exp_value in [9, 10, 11, 12]:
+    if exp_value in [9, 10, 11, 12]:
         return f"{value / 1000000000:.1f}B"
     return None
 
@@ -275,7 +275,7 @@ def add_contours(
     if isinstance(contours, np.ndarray):
         contours = {"": contours}
     color = color if color is not None else plt.rcParams["text.color"]
-    for _key, contour in contours.items():
+    for contour in contours.values():
         ax.plot(contour[:, 0], contour[:, 1], lw=line_width, color=color, zorder=100)
 
 

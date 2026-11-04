@@ -14,14 +14,6 @@ import numpy as np
 from natsort import natsorted
 
 # for compatibility with previous versions of koyo
-from koyo.system import (
-    get_module_path,
-    get_version,
-    is_above_version,
-    is_installed,
-    reraise_exception_if_debug,
-    running_as_pyinstaller_app,
-)
 from koyo.typing import PathLike, SimpleArrayLike
 
 if ty.TYPE_CHECKING:
@@ -520,10 +512,8 @@ def rescale_value(
         if True, the new value will be clipped to fit inside of the new maximum range
     """
     if clip:
-        if value < old_min:
-            value = old_min
-        if value > old_max:
-            value = old_max
+        value = max(value, old_min)
+        value = min(value, old_max)
     if old_max == old_min:
         return new_min
     return ((value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
@@ -885,8 +875,7 @@ def get_distributed_list(
         return np.array([], dtype=np.int32)
 
     # make sure the number of requested frames does not exceed the maximum available frames
-    if n_frames_or_proportion > end:
-        n_frames_or_proportion = end
+    n_frames_or_proportion = min(n_frames_or_proportion, end)
 
     # compute divider
     divider = floor(end / n_frames_or_proportion)

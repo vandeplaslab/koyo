@@ -1,6 +1,7 @@
 import time
 
 import pytest
+
 from koyo.containers import AttributeDict, MutableMapping, MutableSequence, ShortLivedDict, SizedDict, SizedList
 
 

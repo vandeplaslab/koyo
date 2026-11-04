@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 import pytest
+
 from koyo.color import (
     _check_color_dim,
     colormap_to_hex,

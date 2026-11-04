@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from koyo.image import clip_hotspots, pearson_similarity
 
 

@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from koyo.numpy import nanquantile_along_axis, quantile_along_axis
 
 

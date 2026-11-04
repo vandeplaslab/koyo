@@ -1,7 +1,6 @@
 """Fault handler."""
 
 import atexit
-from contextlib import suppress
 from pathlib import Path
 
 from loguru import logger

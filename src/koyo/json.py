@@ -36,13 +36,13 @@ def default(o: ty.Any) -> ty.Any:
     """
     if isinstance(o, (np.int64, np.int32, np.int16, np.integer)):
         return int(o)
-    elif isinstance(o, (np.float64, np.float32, np.float16, np.floating)):
+    if isinstance(o, (np.float64, np.float32, np.float16, np.floating)):
         return float(o)
-    elif isinstance(o, np.ndarray):
+    if isinstance(o, np.ndarray):
         return o.tolist()
-    elif isinstance(o, np.bool_):
+    if isinstance(o, np.bool_):
         return bool(o)
-    elif isinstance(o, Path):
+    if isinstance(o, Path):
         return str(o)
     raise TypeError(f"Could not convert object {o!r} of type {type(o).__name__}")
 

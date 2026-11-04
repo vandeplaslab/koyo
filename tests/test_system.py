@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
 from koyo.system import (
     _is_network_linux,
     _linux_sys_name,
@@ -198,9 +199,7 @@ def test_linux_sys_name_lsb_release(monkeypatch):
 
 def test_is_network_linux_matches_longest_mount(monkeypatch):
     mounts = (
-        "/dev/disk1 / ext4 rw 0 0\n"
-        "server:/share /mnt/share nfs rw 0 0\n"
-        "server:/share/sub /mnt/share/sub ext4 rw 0 0\n"
+        "/dev/disk1 / ext4 rw 0 0\nserver:/share /mnt/share nfs rw 0 0\nserver:/share/sub /mnt/share/sub ext4 rw 0 0\n"
     )
 
     def fake_open(*args, **kwargs):

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import os
 import hashlib
+import os
 import re
 import shutil
 import typing as ty
@@ -502,20 +502,16 @@ def _is_reserved_windows_name(name: str) -> bool:
 
 
 def _is_valid_windows_component(name: str) -> bool:
-    """
-    Validate a single path component for Windows.
-    """
+    """Validate a single path component for Windows."""
     if not name:
         return False
     if name in {".", ".."}:
         return True
     if _WINDOWS_INVALID_CHARS.search(name):
         return False
-    if name.endswith(" ") or name.endswith("."):
+    if name.endswith((" ", ".")):
         return False
-    if _is_reserved_windows_name(name):
-        return False
-    return True
+    return not _is_reserved_windows_name(name)
 
 
 def _is_valid_windows_path(path: str | Path, max_path: int = 260) -> bool:
@@ -613,7 +609,7 @@ def shorten_path_for_windows(
         # but invalid characters should fail immediately.
         if _WINDOWS_INVALID_CHARS.search(original_name) or original_name.endswith((" ", ".")):
             raise WindowsPathError(
-                f"Filename contains Windows-invalid characters or trailing space/dot: {original_name!r}"
+                f"Filename contains Windows-invalid characters or trailing space/dot: {original_name!r}",
             )
 
     # Room available for the filename component based on total path length
@@ -669,10 +665,9 @@ def shorten_path_for_windows(
         hashed_stem = f"{candidate_stem}{hash_suffix}"
         candidate = make_candidate(hashed_stem)
 
-        if is_valid(candidate):
-            if is_unique(candidate) or candidate == p:
-                return candidate
+        if is_valid(candidate) and (is_unique(candidate) or candidate == p):
+            return candidate
 
     raise WindowsPathError(
-        f"Could not produce a valid Windows-safe filename for path (n={len(str(path))}): {str(path)!r}"
+        f"Could not produce a valid Windows-safe filename for path (n={len(str(path))}): {str(path)!r}",
     )
