@@ -208,6 +208,7 @@ ignore = [
     "tests/**/*",
     "**/*_version.py",
     ".claude/**/*",
+    "CLAUDE.md"
 ]
 
 # https://python-semantic-release.readthedocs.io/en/latest/configuration.html
