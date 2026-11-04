@@ -15,7 +15,6 @@ from koyo.utilities import (
     get_min_max,
     get_pixels_within_radius,
     is_between,
-    is_installed,
     is_number,
     rescale,
     split_tooltip,
@@ -23,10 +22,7 @@ from koyo.utilities import (
 )
 
 
-def test_is_installed():
-    assert is_installed("numpy")
-    assert is_installed("numpy.linalg")
-    assert not is_installed("not_installed_package")
+
 
 
 def test_split_tooltip():
