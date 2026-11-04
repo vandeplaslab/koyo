@@ -288,3 +288,18 @@ def test_plot_correlation_if_dependencies_present():
     fig = plot_correlation(corr, annot=True)
     assert fig is not None
     close_mpl_figure(fig)
+
+
+def test_convert_to_vertical_line_input_values():
+    vertices = convert_to_vertical_line_input(np.array([1.0, 2.0]), np.array([3.0, 4.0]))
+    np.testing.assert_array_equal(vertices, [[[1, 0], [1, 3]], [[2, 0], [2, 4]]])
+
+
+def test_mosaic_add_label_returns_text():
+    from koyo.mosaic import add_label as mosaic_add_label
+
+    fig, ax = plt.subplots()
+    text = mosaic_add_label(ax, "label", color="r", size=10)
+    assert text.get_text() == "label"
+    assert text.get_fontsize() == 10
+    plt.close(fig)

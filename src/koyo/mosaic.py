@@ -14,6 +14,7 @@ from tqdm import tqdm
 
 from koyo.typing import PathLike
 from koyo.utilities import rotate
+from koyo.visuals import add_label as _add_label
 from koyo.visuals import fix_style
 
 if ty.TYPE_CHECKING:
@@ -171,18 +172,19 @@ def add_label(
     va: str = "top",
     ha: str = "left",
 ) -> plt.Text:
-    """Add label to the image."""
-    return ax.text(
-        x,
-        y,
+    """Add label to the image (see `koyo.visuals.add_label`; kept for its `color`/`size`/`weight` keywords)."""
+    return _add_label(
+        ax,
         label,
-        transform=ax.transAxes,
-        fontsize=size,
-        fontweight=weight,
-        verticalalignment=va,
-        horizontalalignment=ha,
-        color=color,
+        x=x,
+        y=y,
+        label_color=color,
+        font_size=size,
+        font_weight=weight,
+        va=va,
+        ha=ha,
         bbox=bbox,
+        zorder=None,
     )
 
 

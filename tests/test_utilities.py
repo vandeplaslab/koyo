@@ -246,3 +246,24 @@ def test_split_array_numpy_and_dataframe():
 def test_find_nearest_index_batch_sort_matches_unsorted_input():
     array = np.array([5.0, 1.0, 3.0])
     assert_equal(find_nearest_index_batch(array, [2.9, 4.9, 0.0], sort=True), [2, 0, 1])
+
+
+def test_import_utilities_does_not_import_numba():
+    import subprocess
+    import sys
+
+    code = (
+        "import sys; import koyo.utilities as u; assert 'numba' not in sys.modules; "
+        "from koyo.utilities import find_nearest_index_array; assert 'numba' in sys.modules"
+    )
+    subprocess.run([sys.executable, "-c", code], check=True)
+
+
+def test_find_nearest_index_matches_argmin_loop():
+    rng = np.random.default_rng(0)
+    data = rng.random(500)
+    values = rng.random(300)
+    expected = [np.argmin(np.abs(data - v)) for v in values]
+    assert_equal(find_nearest_index(data, values), expected)
+    assert_equal(find_nearest_index(data, list(values[:3])), expected[:3])
+    assert find_nearest_index(data, values[0]) == expected[0]

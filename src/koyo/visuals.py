@@ -8,7 +8,6 @@ import warnings
 from contextlib import contextmanager, suppress
 
 import matplotlib.pyplot as plt
-import numba as nb
 import numpy as np
 
 from koyo.image import clip_hotspots
@@ -145,10 +144,14 @@ def auto_clear_axes(axs):
             ax.axis("off")
 
 
-@nb.njit()
-def convert_to_vertical_line_input(x: np.ndarray, y: np.ndarray):
-    """Convert two equal-length arrays to [(x, 0), (x, y)] vertex pairs for a matplotlib LineCollection."""
-    return [[(x[i], 0), (x[i], y[i])] for i in range(len(x))]
+def convert_to_vertical_line_input(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Convert two equal-length arrays to [(x, 0), (x, y)] vertex pairs for a matplotlib LineCollection.
+
+    Returns an array of shape (N, 2, 2).
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    return np.stack([np.column_stack([x, np.zeros_like(x)]), np.column_stack([x, y])], axis=1)
 
 
 def vertices_to_collection(
@@ -615,10 +618,13 @@ def add_label(
     va: str = "top",
     ha: str = "left",
     bbox: dict[str, ty.Any] | None = None,
-    zorder: int = 10,
+    zorder: int | None = 10,
 ):
-    """Add label to the image."""
-    ax.text(
+    """Add label to the image (in axes coordinates) and return the text artist.
+
+    `zorder=None` uses matplotlib's default text z-order.
+    """
+    return ax.text(
         x,
         y,
         label,

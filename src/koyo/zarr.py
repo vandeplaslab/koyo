@@ -24,7 +24,7 @@ else:
     zarr = Blosc = BloscCodec = BloscShuffle = ZipStore = None
 
 
-def get_chunk_shape_along_axis(array: np.ndarray, axis: int = 0) -> tuple[int, int]:
+def get_chunk_shape_along_axis(array: np.ndarray, axis: int = 0) -> tuple[int, ...]:
     """Get chunk shape along an axis.
 
     Returns a 1-tuple for 1-D input and ``(256, 256)`` for input with more than 2 dimensions.
@@ -88,7 +88,6 @@ def load_array_from_zip(zip_path: str) -> np.ndarray:
     if not HAS_ZARR:
         raise ImportError("zarr is not installed. Please install it to use this function.")
 
-    zarr.errors.ArrayNotFoundError
     store = ZipStore(zip_path, mode="r")
     array = zarr.open_array(store, mode="r")
     try:

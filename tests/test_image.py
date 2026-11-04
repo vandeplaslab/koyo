@@ -40,3 +40,19 @@ def test_clip_hotspots_does_not_modify_input():
     original = img.copy()
     clip_hotspots(img)
     np.testing.assert_array_equal(img, original)
+
+
+def test_reshape_array_batch_from_coordinates_matches_loop():
+    from koyo.image import reshape_array_batch, reshape_array_batch_from_coordinates
+
+    rng = np.random.default_rng(0)
+    coordinates = np.array([[0, 0], [1, 2], [3, 1]])  # (x, y)
+    array = rng.random((3, 4))
+    result = reshape_array_batch_from_coordinates(array, (3, 4), coordinates)
+    for i in range(4):
+        expected = np.zeros((3, 4))
+        expected[coordinates[:, 1], coordinates[:, 0]] = array[:, i]
+        np.testing.assert_array_equal(result[i], expected)
+    batch = reshape_array_batch(array, (3, 4), np.array([0, 5, 7]))
+    assert batch.shape == (4, 3, 4)
+    np.testing.assert_array_equal(batch.reshape(4, -1)[:, [0, 5, 7]], array.T)

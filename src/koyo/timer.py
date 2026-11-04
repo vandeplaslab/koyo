@@ -7,7 +7,8 @@ import typing as ty
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 
-from typing_extensions import Self
+if ty.TYPE_CHECKING:
+    from typing_extensions import Self
 
 PERIODS = [
     ("year", 60 * 60 * 24 * 365 * 1e9),

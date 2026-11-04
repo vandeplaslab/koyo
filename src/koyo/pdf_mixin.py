@@ -9,12 +9,12 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
-from PIL import Image
 
 from koyo.typing import PathLike
 
 if ty.TYPE_CHECKING:
     from matplotlib.backends.backend_pdf import PdfPages
+    from PIL.Image import Image
 
 
 class PDFMixin:

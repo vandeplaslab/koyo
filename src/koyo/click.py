@@ -437,7 +437,7 @@ def arg_split_int(ctx, param, value):
 
 
 # noinspection PyUnusedLocal
-def arg_parse_env(ctx, param, value) -> tuple[str | None, ty.Any | None]:
+def arg_parse_env(ctx, param, value) -> list[list[str]] | tuple[None, None]:
     """Split argument into environment variables."""
     if value is None:
         return None, None
@@ -627,7 +627,7 @@ def parse_args_with_keys(
     extra_args: tuple[str] | None,
     fields: tuple[str, ...],
     clean: bool = False,
-) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
+) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], list[str] | tuple[str, ...] | None]:
     """Parse extra parameters."""
     extra_kwargs = {}
     if extra_args is None:
@@ -652,23 +652,25 @@ def parse_args_with_keys(
 def parse_fig_args(
     extra_args: tuple[str] | None,
     clean: bool = False,
-) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
+) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], list[str] | tuple[str, ...] | None]:
     """Parse extra parameters."""
     return parse_args_with_keys(extra_args, ("--fig:", "--f:"), clean)
 
 
 @ty.overload
-def parse_env_args(extra_args: tuple[str, ...] | None, clean: bool = False) -> dict[str, ty.Any]: ...
+def parse_env_args(extra_args: tuple[str, ...] | None, clean: ty.Literal[False] = False) -> dict[str, ty.Any]: ...
 
 
 @ty.overload
-def parse_env_args(extra_args: tuple[str, ...] | None, clean: bool = False) -> tuple[dict[str, ty.Any], tuple[str]]: ...
+def parse_env_args(
+    extra_args: tuple[str, ...] | None, clean: ty.Literal[True]
+) -> tuple[dict[str, ty.Any], list[str] | tuple[str, ...] | None]: ...
 
 
 def parse_env_args(
     extra_args: tuple[str, ...] | None,
     clean: bool = False,
-) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
+) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], list[str] | tuple[str, ...] | None]:
     """Parse extra environment variables."""
     env_kwargs = {}
     if extra_args is None:

@@ -72,14 +72,8 @@ def dir_iter(path: PathLike) -> ty.Generator[Path, None, None]:
 
 def uri_to_path(uri: str) -> Path:
     """Convert URI to path."""
-    try:
-        from urllib.parse import unquote, urlparse
-        from urllib.request import url2pathname
-    except ImportError:
-        # backwards compatability
-        from urllib import unquote, url2pathname
-
-        from urlparse import urlparse
+    from urllib.parse import unquote, urlparse
+    from urllib.request import url2pathname
 
     parsed = urlparse(uri)
     host = f"{os.path.sep}{os.path.sep}{parsed.netloc}{os.path.sep}"

@@ -17,7 +17,8 @@ from loguru import logger
 IS_WIN = sys.platform == "win32"
 IS_LINUX = sys.platform == "linux"
 IS_MAC = sys.platform == "darwin"
-IS_MAC_ARM = IS_MAC and platform.processor() == "arm"
+# `platform.machine()` reads `os.uname()`; `platform.processor()` would spawn `uname -p` on every import
+IS_MAC_ARM = IS_MAC and platform.machine() == "arm64"
 IS_PYINSTALLER = getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 
@@ -65,7 +66,7 @@ def is_envvar(key: str, value: str) -> bool:
     return key in os.environ and os.environ[key] == str(value)
 
 
-def is_envvar_set(key: str) -> bool:
+def is_envvar_set(key: str) -> str | bool:
     """Check whether an environment variable exists and has a non-empty value.
 
     Parameters
@@ -326,7 +327,7 @@ def reraise_exception_if_debug(exc, message: str = "Exception occurred", env_key
 @lru_cache(maxsize=4)
 def running_as_briefcase_app() -> bool:
     """Infer whether we are running as a briefcase bundle."""
-    import importlib_metadata
+    import importlib.metadata as importlib_metadata
 
     # https://github.com/beeware/briefcase/issues/412
     # https://github.com/beeware/briefcase/pull/425

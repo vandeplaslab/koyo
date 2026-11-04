@@ -7,13 +7,25 @@ import time
 import typing as ty
 import warnings
 
-from joblib import Parallel as _Parallel
 from loguru import logger
 from psutil import cpu_count, virtual_memory
 from tqdm import tqdm
 
 from koyo.system import running_as_pyinstaller_app
 from koyo.timer import report_time
+
+try:
+    from joblib import Parallel as _Parallel
+
+    HAS_JOBLIB = True
+except ImportError:  # joblib is optional (`pip install koyo[joblib]`)
+    HAS_JOBLIB = False
+
+    class _Parallel:  # type: ignore[no-redef]
+        """Placeholder for `joblib.Parallel` when joblib is not installed."""
+
+        def __init__(self, *args: ty.Any, **kwargs: ty.Any):
+            raise ImportError("joblib is required for `Parallel`. Install it with `pip install koyo[joblib]`.")
 
 
 def estimate_cpu_count_from_size(max_obj_size_in_bytes, keep_free_in_bytes=4_000_000):

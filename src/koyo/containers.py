@@ -5,18 +5,12 @@ from __future__ import annotations
 import time
 import typing as ty
 from abc import abstractmethod
-from keyword import iskeyword
 from typing import overload
 
 from koyo.utilities import is_valid_python_name
 
 _T = ty.TypeVar("_T")
 _K = ty.TypeVar("_K")
-
-
-def is_valid_python_name(name):
-    """Check whether the key is valid identifier."""
-    return name.isidentifier() and not iskeyword(name)
 
 
 class AttributeDict:

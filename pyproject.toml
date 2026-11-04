@@ -43,6 +43,7 @@ dependencies = [
     "requests",
     "tabulate",
     "psutil",
+    "tqdm",
 ]
 
 # extras
@@ -62,6 +63,9 @@ clipboard = [
 ]
 image = [
     "scikit-learn",
+]
+joblib = [
+    "joblib",
 ]
 test = [
     "pytest>=6.0",

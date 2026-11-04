@@ -196,5 +196,8 @@ class JSONCache:
         self.write(data)
 
     def get_for_keys(self, keys: list[str], default: ty.Any = None) -> dict[str, ty.Any]:
-        """Get values for specified keys."""
-        return {k: self.get_key(k, default) for k in keys}
+        """Get values for specified keys (the cache file is read only once)."""
+        if not self.exists():
+            self._set_default()
+        data = self.read()
+        return {k: data.get(k, default) for k in keys}

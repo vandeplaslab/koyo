@@ -13,7 +13,7 @@ from functools import partial, wraps
 
 def retry(
     func: ty.Callable | None = None,
-    exception: Exception = Exception,
+    exception: type[BaseException] | tuple[type[BaseException], ...] = Exception,
     n_tries: int = 5,
     delay: float = 5,
     backoff: int = 1,
