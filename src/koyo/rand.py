@@ -27,7 +27,7 @@ def temporary_seed(seed: int | None, skip_if_negative_one: bool = False):
         yield
         return
     state = np.random.get_state()
-    np.random.default_rng(seed)
+    np.random.seed(seed)
     try:
         yield
     finally:

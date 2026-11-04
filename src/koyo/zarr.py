@@ -25,7 +25,10 @@ else:
 
 
 def get_chunk_shape_along_axis(array: np.ndarray, axis: int = 0) -> tuple[int, int]:
-    """Get chunk size."""
+    """Get chunk shape along an axis.
+
+    Returns a 1-tuple for 1-D input and ``(256, 256)`` for input with more than 2 dimensions.
+    """
     if array.ndim == 1:
         return (array.shape[0],)
     if array.ndim == 2:

@@ -56,3 +56,36 @@ def test_pdf(tmp_path):
         image = Image.fromarray(array)
         pdf._add_pil_image_to_pdf(tmp / "test.png", image, pdf=page)
     assert (tmp / "test3.pdf").exists()
+
+
+def test_add_content_to_pdf_adds_page(tmp_path):
+    pdf = PDF(tmp_path / "test.pdf", as_pdf=True)
+    page = pdf._make_pdf(tmp_path / "content.pdf")
+    n_figs = len(plt.get_fignums())
+    pdf._add_content_to_pdf("Some content", "Title", pdf=page)
+    assert page.get_pagecount() == 1
+    assert len(plt.get_fignums()) == n_figs  # figure was closed
+    pdf._save_pdf(page)
+
+
+def test_add_mpl_figure_to_pdf_saves_given_figure(tmp_path, monkeypatch):
+    pdf = PDF(tmp_path / "test.pdf", as_pdf=True)
+    page = pdf._make_pdf(tmp_path / "figs.pdf")
+    fig1 = plt.figure()
+    fig2 = plt.figure()  # becomes the "current" figure
+    saved = []
+    original = page.savefig
+    monkeypatch.setattr(page, "savefig", lambda figure=None, **kw: (saved.append(figure), original(figure, **kw)))
+    pdf._add_mpl_figure_to_pdf(tmp_path / "x.png", fig1, pdf=page)
+    assert saved == [fig1]
+    plt.close(fig1)
+    plt.close(fig2)
+    pdf._save_pdf(page)
+
+
+def test_export_pdf_figures_propagates_errors(tmp_path):
+    import pytest
+
+    pdf = PDF(tmp_path / "test.pdf", as_pdf=True)
+    with pytest.raises(KeyError), pdf._export_pdf_figures(tmp_path / "err.pdf"):
+        raise KeyError("boom")

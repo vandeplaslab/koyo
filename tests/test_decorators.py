@@ -90,3 +90,20 @@ def test_renamed_parameter_validate_new_names():
 
     with pytest.raises(ValueError):
         build_bad_decorator()
+
+
+def test_deprecated_restores_warning_filters():
+    import warnings
+
+    from koyo.decorators import deprecated
+
+    @deprecated
+    def old():
+        return 1
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        filters = list(warnings.filters)
+        with pytest.warns(DeprecationWarning):
+            assert old() == 1
+        assert warnings.filters == filters

@@ -52,11 +52,11 @@ def logger_hook(type, value, tb) -> None:
     # we are NOT in interactive mode, print the exception...
     with suppress(Exception):
         traceback.print_exception(type, value, tb)
-        logger.exception(value)
+        logger.opt(exception=(type, value, tb)).error(f"Uncaught exception: {value}")
 
 
 def install_logger_hook() -> None:
-    """Activate the debugger hook."""
+    """Activate the logger hook, which logs uncaught exceptions."""
     global DEFAULT_HOOK
     os.environ["KOYO_LOG_MODE"] = "1"
     os.environ["LOG_MODE"] = "1"
@@ -67,7 +67,7 @@ def install_logger_hook() -> None:
 
 
 def uninstall_logger_hook() -> None:
-    """Deactivate the debugger hook."""
+    """Deactivate the logger hook and restore the default exception hook."""
     global DEFAULT_HOOK
     os.environ["KOYO_LOG_MODE"] = "0"
     os.environ["LOG_MODE"] = "0"
@@ -79,7 +79,10 @@ def uninstall_logger_hook() -> None:
 
 @contextmanager
 def catch_if_debug():
-    """Catch exception if debugging."""
+    """Suppress exceptions unless the DEV_MODE environment variable is set (to a value other than "0").
+
+    In development mode (DEV_MODE set) exceptions propagate.
+    """
     if os.environ.get("DEV_MODE", "0") == "0":
         with suppress(Exception):
             yield

@@ -70,12 +70,38 @@ def format_datetime_ago(datetime_str: str) -> str:
 
 
 def format_human_time_s(seconds: float, n_max: int = 2) -> str:
-    """Format time so its human-readable."""
+    """Format time in seconds so it is human-readable.
+
+    Parameters
+    ----------
+    seconds : float
+        Duration in seconds.
+    n_max : int, optional
+        Maximum number of time components to include, by default 2.
+
+    Returns
+    -------
+    str
+        Human-readable duration, e.g. ``"1h 2min"``.
+    """
     return format_human_time(seconds * 1e9, n_max)
 
 
 def format_human_time(nanoseconds: float, n_max: int = 2) -> str:
-    """Format time so its human-readable."""
+    """Format time in nanoseconds so it is human-readable.
+
+    Parameters
+    ----------
+    nanoseconds : float
+        Duration in nanoseconds.
+    n_max : int, optional
+        Maximum number of time components to include, by default 2.
+
+    Returns
+    -------
+    str
+        Human-readable duration, e.g. ``"1h 2min"``.
+    """
     values = []
     for period_name, period_seconds in PERIODS:
         if nanoseconds > period_seconds:
@@ -216,14 +242,17 @@ class MeasureTimer:
 
 @contextmanager
 def measure_time():
-    """Function that measures how long a function took place.
+    """Context manager that measures elapsed wall-clock time.
+
+    Yields a callable that returns the time in seconds elapsed since entering the block.
 
     Examples
     --------
-    func = lambda: time.sleep(1)
-    with measure_time() as t:
-        func()
-    t()
+    >>> import time
+    >>> func = lambda: time.sleep(1)
+    >>> with measure_time() as t:
+    ...     func()
+    >>> t()  # elapsed seconds
     """
     start = time.perf_counter()
     yield lambda: time.perf_counter() - start
@@ -231,7 +260,11 @@ def measure_time():
 
 @contextmanager
 def report_measure_time(human: bool = True) -> ty.Generator[ty.Callable, None, None]:
-    """Report measured time and print it."""
+    """Context manager that yields a callable returning the elapsed time since entering the block.
+
+    Nothing is printed. The time is formatted with `format_human_time` if `human` is True,
+    otherwise with `format_time`.
+    """
     if human:
         start = time.perf_counter_ns()
         yield lambda: format_human_time(time.perf_counter_ns() - start)
@@ -284,7 +317,7 @@ def time_average(t_start: float, n_total: int) -> str:
     t_start : float
         starting time of the task
     n_total : int
-        total number of items
+        index of the current item (0-based). The average is computed by dividing by ``n_total + 1``.
 
     Returns
     -------
@@ -358,7 +391,7 @@ class Timer:
         return sep.join(reversed(timings))
 
     def show(self, add_total=True, sep="\n"):
-        """Returns computed timings."""
+        """Compute timings (the result of `get` is discarded)."""
         self.get(add_total, sep)
 
     def last(self):

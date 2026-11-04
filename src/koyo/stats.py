@@ -38,7 +38,7 @@ def pairwise_spearmanr(
     correlation_matrix = (
         am.T
         @ bm
-        / (np.sqrt(np.sum(am**2, axis=0, keepdims=True) + 1).T * np.sqrt(np.sum(bm**2, axis=0, keepdims=True)) + 1)
+        / (np.sqrt(np.sum(am**2, axis=0, keepdims=True)).T * np.sqrt(np.sum(bm**2, axis=0, keepdims=True)))
     )
     if columns_one is not None and columns_two is not None:
         correlation_matrix = pd.DataFrame(correlation_matrix, index=columns_one, columns=columns_two)

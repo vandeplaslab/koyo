@@ -197,3 +197,55 @@ def test_format_size():
     assert format_size(2**30) == "1.0G"
     assert format_size(2**40) == "1.0T"
     assert format_size(2**50) == "1.0P"
+
+
+def test_find_nearest_index_batch_unsorted_with_sort():
+    array = np.array([3.0, 1.0, 2.0, 10.0, 0.0])
+    values = np.array([2.1, 0.2, 9.0, 3.4])
+    result = find_nearest_index_batch(array, values, sort=True)
+    expected = [np.argmin(np.abs(array - v)) for v in values]
+    assert_equal(result, expected)
+
+
+def test_filter_array_preserves_order():
+    from koyo.utilities import filter_array
+
+    array = np.arange(100_000, dtype=np.float64)
+    result = filter_array(array, array, 10.0, 20_000.0)
+    assert_equal(result, array[(array >= 10) & (array <= 20_000)])
+
+
+def test_get_pixels_within_radius_non_square():
+    grid = np.arange(1000, dtype=float).reshape(100, 10)
+    result = get_pixels_within_radius(grid, x=5, y=50, radius=1)
+    assert sorted(result) == sorted(grid[49:52, 4:7].ravel())
+
+
+def test_rescale_constant_and_int_dtype():
+    assert_equal(rescale(np.ones(3), 0, 255, dtype=np.uint8), [0, 0, 0])
+    assert_equal(rescale([0.2, 0.4, 0.6], 0, 100, dtype=np.uint8), [0, 50, 100])
+
+
+def test_get_distributed_list_int_one_is_single_frame():
+    from koyo.utilities import get_distributed_list
+
+    assert len(get_distributed_list(10, 1, as_index=True)) == 1
+    assert len(get_distributed_list(10, 1.0, as_index=True)) == 10
+    assert len(get_distributed_list(10, 0.3, as_index=True, trim=True)) == 3
+    assert len(get_distributed_list(10, 0, as_index=True)) == 0
+
+
+def test_split_array_numpy_and_dataframe():
+    from koyo.utilities import split_array
+
+    arr = np.arange(20).reshape(10, 2)
+    assert [len(c) for c in split_array(arr, 4)] == [4, 4, 2]
+    assert [c.shape[1] for c in split_array(arr.T, 4, axis=1)] == [4, 4, 2]
+    pd = pytest.importorskip("pandas")
+    df = pd.DataFrame(arr)
+    assert [len(c) for c in split_array(df, 4)] == [4, 4, 2]
+
+
+def test_find_nearest_index_batch_sort_matches_unsorted_input():
+    array = np.array([5.0, 1.0, 3.0])
+    assert_equal(find_nearest_index_batch(array, [2.9, 4.9, 0.0], sort=True), [2, 0, 1])

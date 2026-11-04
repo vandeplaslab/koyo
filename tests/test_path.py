@@ -198,7 +198,7 @@ def test_create_directory_already_exists(tmp_path):
     existing = tmp_path / "existing"
     existing.mkdir()
     result = create_directory(str(existing))
-    assert result is None
+    assert result == existing
 
 
 def test_uri_to_path_file_uri():
@@ -367,3 +367,17 @@ def test_open_directory_universal_macos_directory(monkeypatch, tmp_path):
     monkeypatch.setattr("subprocess.run", lambda args, check: calls.append((args, check)))
     open_directory_universal(tmp_path)
     assert calls == [(["open", str(tmp_path)], True)]
+
+
+def test_copy_file_native_platform(tmp_path):
+    # no monkeypatching - exercises the real platform code path (sendfile on Linux, buffered elsewhere)
+    src = tmp_path / "src.txt"
+    dst = tmp_path / "dst.txt"
+    src.write_text("hello world")
+    copy_file(str(src), str(dst))
+    assert dst.read_text() == "hello world"
+
+
+def test_copy_file_missing_source_raises(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        copy_file(str(tmp_path / "missing.txt"), str(tmp_path / "dst.txt"))

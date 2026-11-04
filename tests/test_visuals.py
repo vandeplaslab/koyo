@@ -226,7 +226,8 @@ def test_get_row_col_and_ticks_with_unit():
 
     ticks_unit, labels_unit = get_ticks_with_unit(0, 10, unit="ms", n=4)
     assert len(ticks_unit) == 5
-    assert "ms" in ticks_unit
+    assert all(isinstance(t, float) for t in ticks_unit)  # positions stay numeric
+    assert labels_unit[2] == "ms"  # unit replaces the middle label
     assert len(labels_unit) == 5
 
 

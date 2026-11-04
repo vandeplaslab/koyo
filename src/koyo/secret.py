@@ -36,12 +36,12 @@ def uuid_iterable(iterable: ty.Iterable) -> str:
 
 
 def uuid_parameters(**kwargs) -> str:
-    """Hash iterable object."""
+    """Hash keyword parameters (see `hash_parameters`) and format the result as a UUID string."""
     return str(uuid.UUID(hash_parameters(**kwargs)))
 
 
 def hash_obj(data: ty.Iterable | list | dict | tuple | Path | str | int | float, n_in_hash: int = 0) -> str:
-    """Hash python object."""
+    """Hash python object via MD5 of its ``repr`` (note: ``repr`` truncates numpy arrays > 1000 elements)."""
     hash_id = hashlib.md5()
     hash_id.update(repr(data).encode("utf-8"))
     value = hash_id.hexdigest()
@@ -64,7 +64,16 @@ def _natsort_if_iterable(value: ty.Any) -> ty.Any:
 
 
 def hash_parameters(n_in_hash: int = 0, exclude_keys: tuple[str, ...] = (), **kwargs: ty.Any) -> str:
-    """Hash parameters."""
+    """Hash keyword parameters (MD5 hex digest, optionally truncated to `n_in_hash` characters).
+
+    Notes
+    -----
+    Kept unchanged for backward compatibility of existing hashes, so be aware of these collision risks:
+    - only the values are hashed (keys are only used for ordering), with no separator between them,
+      e.g. ``hash_parameters(a=1, b=23) == hash_parameters(x=12, y=3)``
+    - iterables are natsorted, so element order is ignored
+    - values are hashed via ``repr``, which truncates numpy arrays with more than 1000 elements
+    """
     if exclude_keys is None:
         exclude_keys = ()
     hash_id = hashlib.md5()

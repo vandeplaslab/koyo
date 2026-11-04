@@ -20,3 +20,22 @@ def test_pearson_similarity(size):
 
     with pytest.raises(ValueError):
         pearson_similarity(img, img, (3, 3, 3))
+
+
+def test_colocalization_matrix_matches_pairwise():
+    pytest.importorskip("sklearn")
+    from koyo.image import colocalization, colocalization_matrix
+
+    rng = np.random.default_rng(0)
+    images = rng.random((3, 20, 20))
+    matrix = colocalization_matrix(images)
+    for i in range(3):
+        for j in range(3):
+            assert matrix[i, j] == pytest.approx(colocalization(images[i], images[j]), abs=1e-6)
+
+
+def test_clip_hotspots_does_not_modify_input():
+    img = np.array([[1.0, np.inf], [3.0, np.nan]])
+    original = img.copy()
+    clip_hotspots(img)
+    np.testing.assert_array_equal(img, original)

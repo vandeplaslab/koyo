@@ -21,30 +21,30 @@ IS_MAC_ARM = IS_MAC and platform.processor() == "arm"
 IS_PYINSTALLER = getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
 
 
-@lru_cache
-def check_available_space(path: str, min_required) -> bool:
+def check_available_space(path: str, min_required: int) -> bool:
     """Check available disk space at a specified path.
 
     Parameters
     ----------
     path : str
-        Filesystem path to check (the drive/mount point is derived from it).
+        Filesystem path to check. If it does not exist yet, the closest existing parent directory is used.
     min_required : int
         Minimum number of free bytes required.
 
     Returns
     -------
     bool
-        ``True`` if free space exceeds *min_required*, or if the drive cannot
-        be determined (e.g. on a path without a drive letter).
+        ``True`` if free space exceeds *min_required*, or if the disk usage cannot be determined.
     """
     from psutil import disk_usage
 
-    path = Path(path).drive
-    if path:
-        hdd = disk_usage(path)
-        return hdd.free > min_required
-    return True
+    path_ = Path(path)
+    while not path_.exists() and path_ != path_.parent:
+        path_ = path_.parent
+    try:
+        return disk_usage(str(path_)).free > min_required
+    except OSError:
+        return True
 
 
 def is_envvar(key: str, value: str) -> bool:
@@ -75,8 +75,8 @@ def is_envvar_set(key: str) -> bool:
 
     Returns
     -------
-    bool
-        ``True`` if the variable is present and its value is not empty.
+    str or bool
+        The variable's value (a non-empty, truthy string) if it is set, otherwise ``False``.
     """
     return key in os.environ and os.environ[key]
 
@@ -103,7 +103,21 @@ def get_cli_path(name: str, env_key: str = "", default: str = "") -> str:
     1. Check whether environment variable ``{env_key}_{name.upper()}_PATH`` is set.
     2. Check whether we are running as a PyInstaller bundle.
     3. Check whether the executable is on the Python environment's PATH.
-    4. Raise ``RuntimeError`` if the executable cannot be found.
+    4. Return ``default`` if it is set, otherwise raise ``RuntimeError``.
+
+    Parameters
+    ----------
+    name : str
+        Name of the executable (without ``.exe`` on Windows).
+    env_key : str, optional
+        Prefix for the environment variable that can point to the executable, by default "".
+    default : str, optional
+        Value returned if the executable cannot be found, by default "".
+
+    Returns
+    -------
+    str
+        Path to the executable (or ``default``).
     """
     from koyo.system import running_as_pyinstaller_app
 
@@ -176,10 +190,12 @@ def who_called_me() -> tuple[str, str, int]:
 def who_called_me_stack(n: int = 6, func: ty.Callable = print) -> None:
     """Print the call stack up to *n* frames above this function.
 
+    Prints ``n - 1`` callers (as limited by the stack depth).
+
     Parameters
     ----------
     n : int, optional
-        Maximum number of caller frames to display (default 6).
+        Stack depth limit; ``n - 1`` callers are displayed (default 6).
     func : callable, optional
         Function to call with the formatted caller information (default ``print``).
     """
@@ -338,13 +354,21 @@ def is_installed(module: str) -> bool:
     -------
     bool
         ``True`` if the module can be found on ``sys.path``.
+
+    Notes
+    -----
+    For dotted names, ``importlib.util.find_spec`` imports the parent package (e.g. ``"numpy.linalg"`` imports numpy).
     """
     import importlib.util
 
     try:
         loader = importlib.util.find_spec(module)
     except ModuleNotFoundError:
-        return is_installed(module.replace("-", "_"))
+        # parent package is missing; retry with dashes replaced (only once to avoid infinite recursion)
+        alt_module = module.replace("-", "_")
+        if alt_module == module:
+            return False
+        return is_installed(alt_module)
     return loader is not None
 
 
@@ -406,7 +430,7 @@ def is_above_version(module: str, version: str) -> bool:
 def is_network_path(path: str | os.PathLike) -> bool:
     """Return True if *path* lives on a network / remote filesystem.
 
-    Works on Windows, macOS, and Linux without third-party dependencies.
+    Works on Windows (drive type), macOS (mount table via psutil) and Linux (``/proc/mounts``).
     """
     path = os.path.abspath(path)
 
@@ -432,8 +456,6 @@ def _is_network_windows(path: str) -> bool:
 
 
 def _is_network_macos(path: str) -> bool:
-    import subprocess
-
     # Network fs types commonly seen on macOS
     NETWORK_FS_TYPES = {
         "nfs",
@@ -447,22 +469,19 @@ def _is_network_macos(path: str) -> bool:
         "macfuse",
     }
 
-    try:
-        result = subprocess.run(
-            ["df", "-P", "-T", path],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        # df -T output: "Filesystem Type ..."  — type is second column of data row
-        lines = result.stdout.strip().splitlines()
-        if len(lines) >= 2:
-            fs_type = lines[1].split()[1].lower()
-            return fs_type in NETWORK_FS_TYPES
-    except (subprocess.TimeoutExpired, FileNotFoundError, IndexError):
-        pass
+    # BSD `df -T` filters by type instead of printing it, so look up the mount point via psutil instead
+    from psutil import disk_partitions
 
-    return False
+    path = os.path.realpath(path)
+    best_match = ""
+    best_fs_type = ""
+    for partition in disk_partitions(all=True):
+        mount_point = partition.mountpoint
+        is_under_mount = path == mount_point or path.startswith(mount_point.rstrip("/") + "/")
+        if is_under_mount and len(mount_point) > len(best_match):
+            best_match = mount_point
+            best_fs_type = partition.fstype.lower()
+    return best_fs_type in NETWORK_FS_TYPES
 
 
 def _is_network_linux(path: str) -> bool:
@@ -501,7 +520,8 @@ def _is_network_linux(path: str) -> bool:
             continue
         mount_point = parts[1]
         fs_type = parts[2].lower()
-        if path.startswith(mount_point) and len(mount_point) > len(best_match):
+        is_under_mount = path == mount_point or path.startswith(mount_point.rstrip("/") + "/")
+        if is_under_mount and len(mount_point) > len(best_match):
             best_match = mount_point
             best_fs_type = fs_type
 

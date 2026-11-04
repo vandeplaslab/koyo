@@ -33,6 +33,9 @@ class AttributeDict:
         return self._data[key]
 
     def __getattr__(self, item: str | int) -> ty.Any:
+        # `_data` is not set yet (e.g. during copy/unpickling) - avoid infinite recursion
+        if item == "_data":
+            raise AttributeError(item)
         # allow access to group members via dot notation
         try:
             return self.__getitem__(item)
@@ -58,7 +61,7 @@ class MutableSequence(ty.MutableSequence[_T]):
             self.extend(data)
 
     def insert(self, index: int, value: _T) -> None:
-        """Insert formula."""
+        """Insert a validated value at `index`."""
         self._list.insert(index, self._check(value))
 
     @ty.overload
@@ -200,13 +203,35 @@ class ShortLivedDict(dict):
         self._check_expired()
         return super().get(key, default)
 
+    def __contains__(self, key: object) -> bool:
+        self._check_expired()
+        return super().__contains__(key)
+
+    def __len__(self) -> int:
+        self._check_expired()
+        return super().__len__()
+
+    def __iter__(self) -> ty.Iterator[_K]:
+        self._check_expired()
+        return super().__iter__()
+
+    def pop(self, key: _K, *args: ty.Any) -> _T:
+        """Remove key and return its value (expired entries are cleared first)."""
+        self._check_expired()
+        return super().pop(key, *args)
+
     def keys(self) -> ty.KeysView[_K]:
-        """Get items."""
+        """Get keys (expired entries are cleared first)."""
         self._check_expired()
         return super().keys()
 
+    def values(self) -> ty.ValuesView[_T]:
+        """Get values (expired entries are cleared first)."""
+        self._check_expired()
+        return super().values()
+
     def items(self) -> ty.ItemsView[_K, _T]:
-        """Get items."""
+        """Get items (expired entries are cleared first). The whole dictionary is cleared once the TTL expires."""
         self._check_expired()
         return super().items()
 
@@ -219,10 +244,10 @@ class ShortLivedDict(dict):
 class SizedList(ty.MutableSequence[_T]):
     """Sized list."""
 
-    def __init__(self, *args: ty.Iterable[_T], maxsize: int = -1, **kwargs: ty.Any):
+    def __init__(self, iterable: ty.Iterable[_T] = (), maxsize: int = -1):
         self._maxsize = maxsize
-        self._list: list[_T] = []
-        super().__init__(*args, **kwargs)
+        self._list: list[_T] = list(iterable)
+        self._check_size()
 
     @overload
     @abstractmethod
@@ -255,10 +280,10 @@ class SizedList(ty.MutableSequence[_T]):
                 self.pop(0)
 
     def __setitem__(self, key: int, value: _T) -> None:
-        super().__setitem__(key, value)
+        self._list[key] = value
         self._check_size()
 
     def insert(self, index: int, value: _T):
-        """Insert items."""
+        """Insert item at `index`, dropping the oldest items if `maxsize` is exceeded."""
         self._list.insert(index, value)
         self._check_size()

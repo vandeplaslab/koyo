@@ -52,6 +52,7 @@ def maybe_submit_segfault(output_dir: PathLike, filename: str = "segfault.log", 
     try:
         segfault_backup_path = Path(output_dir) / f"segfault_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         segfault_path.rename(segfault_backup_path)
+        segfault_path = segfault_backup_path  # attach the renamed file
     except PermissionError:
         segfault_path = Path(output_dir) / "segfault.log"
     if not dev:

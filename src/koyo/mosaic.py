@@ -41,7 +41,8 @@ class RectanglePacker:
     def place_rectangle(self, rect_width: int, rect_height: int) -> tuple[int, int]:
         """
         Place a rectangle of size (rect_width, rect_height) in the packing area.
-        Returns the (x, y) position if placed, or raises an error if no space is available.
+        Returns the (x, y) position. If no free space fits, the canvas is expanded and placement is retried,
+        so this never raises.
         """
         padded_width = rect_width + self.x_pad * 2
         padded_height = rect_height + self.y_pad * 2
@@ -193,7 +194,7 @@ def fig_to_bytes(
     close: bool = False,
     transparent: bool = True,
 ) -> io.BytesIO:
-    """Convert matplotlib figure to bytes."""
+    """Convert a matplotlib figure (saved as JPEG) or a PIL image (saved as PNG) to a BytesIO buffer."""
     buf = io.BytesIO()
     if isinstance(fig, plt.Figure):
         fig.savefig(
@@ -284,7 +285,7 @@ def merge_mosaic_packed(
     x_pad: int = 0,
     y_pad: int = 0,
 ):
-    """Pack images tightly into a grid."""
+    """Merge images into a mosaic using rectangle packing (not a fixed grid)."""
     from PIL import Image
 
     images = [Image.open(buf) for buf in items.values()]
@@ -337,7 +338,7 @@ def merge_mosaic_from_files(
     allow_placeholder: bool = False,
     placeholder_color: tuple[int, ...] = (0, 0, 0, 255),  # black
 ) -> Image:
-    """Merge images from a directory."""
+    """Merge images from a list of files."""
     items = {}
     for filename in filelist:
         if filename.is_file():
@@ -556,7 +557,7 @@ def plot_mosaic(
     auto_rotate: bool = False,
     **kwargs: ty.Any,
 ) -> Image:
-    """Plot mosaic."""
+    """Plot a mosaic of 2D images with a colormap and optional colorbar, returned as a PIL Image."""
     from koyo.visuals import _plot_or_update_image
 
     img, cbar = None, None
@@ -658,7 +659,7 @@ def plot_mosaic_individual(
     auto_rotate: bool = False,
     **kwargs: ty.Any,
 ) -> Image:
-    """Plot mosaic."""
+    """Plot a mosaic in which each image is rendered as its own tile, with per-image border and title colors."""
     from koyo.visuals import _plot_image
 
     border_color = {} if border_color is None else border_color
@@ -715,7 +716,7 @@ def plot_mosaic_with_mask_individual(
     auto_rotate: bool = False,
     **kwargs: ty.Any,
 ) -> Image:
-    """Plot mosaic."""
+    """Plot a mosaic of images with an optional per-image mask overlay, each image as its own tile."""
     from koyo.visuals import _plot_image
 
     border_color = {} if border_color is None else border_color
@@ -778,7 +779,7 @@ def plot_mosaic_line_individual(
     color: tuple[int, int, int, int] | None = None,
     placeholder_color: tuple[int, int, int, int] | None = None,
 ) -> Image:
-    """Plot mosaic."""
+    """Plot a mosaic of line plots from (x, y) pairs, one tile per entry."""
     from koyo.visuals import _plot_line
 
     border_color = {} if border_color is None else border_color
@@ -840,7 +841,7 @@ def convert_array_to_image(
     min_val: float | None = None,
     max_val: float | None = None,
 ) -> Image:
-    """Convert a 2D array to a PNG image using a specified colormap."""
+    """Convert a 2D array to a PIL Image using a specified colormap."""
     from matplotlib.colors import Normalize, to_hex
     from PIL import Image
 
@@ -849,8 +850,9 @@ def convert_array_to_image(
 
     # Normalize the array excluding NaNs or zeros
     valid_mask = ~np.isnan(array) & (array != 0)
-    min_val = min_val if min_val is not None else np.min(array[valid_mask])
-    max_val = max_val if max_val is not None else np.max(array[valid_mask])
+    has_valid = bool(valid_mask.any())  # all-zero/all-NaN tiles have no valid pixels
+    min_val = min_val if min_val is not None else (np.min(array[valid_mask]) if has_valid else 0.0)
+    max_val = max_val if max_val is not None else (np.max(array[valid_mask]) if has_valid else 1.0)
     norm = Normalize(vmin=min_val, vmax=max_val)
 
     # Create the normalized array
@@ -893,4 +895,5 @@ def export_array_as_bytes(array: np.ndarray, colormap: str = "viridis") -> io.By
     image = convert_array_to_image(array, colormap)
     output = io.BytesIO()
     image.save(output, format="PNG")
+    output.seek(0)
     return output

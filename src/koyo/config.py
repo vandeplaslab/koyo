@@ -43,7 +43,11 @@ class BaseConfig(BaseModel):
             if hasattr(self, key):
                 old_value = getattr(self, key)
                 try:
-                    setattr(self, key, value)
+                    if key in self.__class__.model_fields:
+                        # validate (and coerce, e.g. str -> Path/Enum) like on model construction
+                        self.__pydantic_validator__.validate_assignment(self, key, value)
+                    else:
+                        setattr(self, key, value)
                     if old_value != getattr(self, key):
                         changed = True
                 except Exception as e:
@@ -53,7 +57,7 @@ class BaseConfig(BaseModel):
         return changed
 
     def update(self, save: bool = True, **kwargs: ty.Any) -> None:
-        """Update configuration and  pip install save to file."""
+        """Update configuration and, if `save` is True and anything changed, save it to file."""
         changed = self._set_values(**kwargs)
         if save and changed:
             with suppress(OSError, PermissionError):

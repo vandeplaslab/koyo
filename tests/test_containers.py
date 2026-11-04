@@ -166,3 +166,28 @@ def test_short_lived_dict_clear_resets_timer(monkeypatch):
     d.clear()
     # _created should be refreshed
     assert d._created >= original_created
+
+
+def test_sized_list_init_and_setitem():
+    data = SizedList([1, 2, 3], maxsize=2)
+    assert list(data) == [2, 3]
+    data[0] = 10
+    assert list(data) == [10, 3]
+
+
+def test_attribute_dict_copy_no_recursion():
+    import copy
+    import pickle
+
+    d = AttributeDict({"a": 1})
+    assert copy.copy(d).a == 1
+    assert pickle.loads(pickle.dumps(d)).a == 1
+
+
+def test_short_lived_dict_contains_respects_ttl():
+    d = ShortLivedDict(ttl=0.05)
+    d["a"] = 1
+    assert "a" in d
+    time.sleep(0.1)
+    assert "a" not in d
+    assert len(d) == 0

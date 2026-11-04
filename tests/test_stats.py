@@ -142,3 +142,16 @@ def test_get_n_significant_correlations_dataframe():
     anti, corr = get_n_significant_correlations(df, n=1)
     assert len(anti) == 1
     assert len(corr) == 1
+
+
+def test_pairwise_spearmanr_matches_scipy():
+    from scipy.stats import spearmanr
+
+    arr = np.random.default_rng(2).random((25, 4))
+    expected = spearmanr(arr).statistic
+    np.testing.assert_allclose(pairwise_spearmanr(arr), expected, atol=1e-10)
+
+
+def test_pairwise_spearmanr_perfect_correlation():
+    x = np.arange(10.0).reshape(-1, 1)
+    np.testing.assert_allclose(pairwise_spearmanr(x, x), [[1.0]])

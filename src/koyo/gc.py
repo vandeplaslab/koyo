@@ -24,13 +24,17 @@ def _gc_debug_callback(phase, info):
         # Snapshot what's currently uncollectable
         snapshot = []
         for obj in gc.garbage:
+            try:
+                weak = weakref.ref(obj)
+            except TypeError:  # e.g. dict, list and tuple don't support weak references
+                weak = None
             snapshot.append(
                 {
                     "type": type(obj),
                     "repr": repr(obj)[:300],
                     "id": id(obj),
                     # store weakref so we don't keep it alive ourselves
-                    "weak": weakref.ref(obj),
+                    "weak": weak,
                 },
             )
 
@@ -44,7 +48,7 @@ def _gc_debug_callback(phase, info):
 
         # Optional: print a little detail to console for quick triage
         for entry in snapshot[:5]:  # don't spam if it's huge
-            logger.warning("   ->", entry["type"], entry["repr"])
+            logger.warning("   -> {} {}", entry["type"], entry["repr"])
 
 
 def install_gc_debugging() -> None:

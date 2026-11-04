@@ -25,7 +25,13 @@ class JSONCache:
         return self._dir_path.name
 
     def __getattr__(self, item: str):
-        return self[item]
+        # private/dunder attributes are never cache keys (also avoids recursion during copy/unpickling)
+        if item.startswith("_"):
+            raise AttributeError(item)
+        try:
+            return self[item]
+        except KeyError as err:
+            raise AttributeError(item) from err
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}<{self.as_str()}>"
@@ -65,7 +71,7 @@ class JSONCache:
         self.write(data)
 
     def clear(self):
-        """Remove existing tags."""
+        """Remove all keys from the cache."""
         self.write({})
 
     def keys(self):
@@ -88,15 +94,15 @@ class JSONCache:
 
     @property
     def path(self) -> Path:
-        """Get the path of flag's data."""
+        """Get the path of the cache file."""
         return self._dir_path / self.FILENAME
 
     def exists(self) -> bool:
-        """Check whether flags file exists."""
+        """Check whether the cache file exists."""
         return self.path.exists()
 
     def as_str(self, sep="; ", exclude: tuple[str, ...] | None = None) -> str:
-        """Get string representation of the flags."""
+        """Get string representation of the cache entries."""
         if exclude is None:
             exclude = ()
         if self.exists():
@@ -164,25 +170,25 @@ class JSONCache:
         write_json(self.path, data)
 
     def save(self, path: PathLike):
-        """Save data to disk."""
+        """Save a copy of the cache to another path."""
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         write_json(path, self.read())
 
     def get_key(self, key: str, default=None):
-        """Read a flag from the flag file."""
+        """Read a key from the cache file, returning `default` if the key is missing."""
         if not self.exists():
             self._set_default()
         return self.read().get(key, default)
 
     def read_key(self, key: str):
-        """Read a flag from the flag file."""
+        """Read a key from the cache file. Raises KeyError if the key is missing."""
         if not self.exists():
             self._set_default()
         return self.read()[key]
 
     def write_key(self, key: str, value: float | str | bool):
-        """Write a flag to the flag file."""
+        """Write a key to the cache file."""
         if not self.exists():
             self._set_default()
         data = self.read()

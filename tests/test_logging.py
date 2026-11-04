@@ -97,3 +97,37 @@ def test_get_stdout_is_sys_stdout():
 
 def test_get_stderr_is_sys_stderr():
     assert get_stderr() is sys.stderr
+
+
+def test_timed_call_is_context_manager():
+    from koyo.logging import timed_call
+
+    messages = []
+    with timed_call(messages.append, "done"):
+        pass
+    assert len(messages) == 1
+    assert messages[0].startswith("done in ")
+
+
+def test_get_loguru_env_parses_false(monkeypatch):
+    from koyo.logging import get_loguru_env
+
+    monkeypatch.setenv("LOGURU_COLORIZE", "False")
+    monkeypatch.setenv("LOGURU_ENQUEUE", "False")
+    _, _, enqueue, colorize = get_loguru_env()
+    assert enqueue is False
+    assert colorize is False
+
+
+def test_set_logger_passes_enqueue_and_colorize_in_order(monkeypatch):
+    from unittest.mock import MagicMock
+
+    import koyo.logging as klog
+
+    calls = {}
+    monkeypatch.setattr(klog, "set_loguru_env", lambda fmt, level, enqueue, colorize: calls.update(
+        enqueue=enqueue, colorize=colorize
+    ))
+    monkeypatch.setattr(klog, "set_loguru_log", lambda *args, **kwargs: None)
+    klog.set_logger(verbosity=2, no_color=True, logger=MagicMock())
+    assert calls == {"enqueue": True, "colorize": False}

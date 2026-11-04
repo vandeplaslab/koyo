@@ -39,7 +39,7 @@ class ProjectBase:
         if self.project_dir.suffix != self.PROJECT_SUFFIX:
             self.project_dir = self.project_dir.with_suffix(self.PROJECT_SUFFIX)
         self.project_dir.mkdir(exist_ok=True, parents=True)
-        self._cache_dir = cache_dir
+        self._cache_dir = Path(cache_dir) if cache_dir is not None else None
         self._log_dir = self.project_dir / "Logs"
         self._figures_dir = self.project_dir / "Figures"
         self._results_dir = self.project_dir / "Results"
@@ -58,7 +58,7 @@ class ProjectBase:
     @classmethod
     def new(cls, output_dir: PathLike, name: str = "Project", open_if_exists: bool = True) -> ProjectBase:
         """Create new project."""
-        project_dir = (Path(output_dir) / name).with_suffix(".annotine")
+        project_dir = (Path(output_dir) / name).with_suffix(cls.PROJECT_SUFFIX)
         if project_dir.exists():
             if open_if_exists:
                 return cls(project_dir)
@@ -96,7 +96,7 @@ class ProjectBase:
 
     @property
     def results_dir(self) -> Path:
-        """Get path or dictionary of paths."""
+        """Return path to Results directory (created if it does not exist)."""
         results_dir = self.project_dir / "Results"
         results_dir.mkdir(exist_ok=True, parents=True)
         return results_dir
@@ -143,7 +143,10 @@ class ProjectBase:
 
     @contextmanager
     def autosave(self) -> ty.Generator[None, None, None]:
-        """Context manager to automatically save project configuration."""
+        """Context manager that saves the project configuration after the block.
+
+        The configuration is only saved if the block finishes without an exception.
+        """
         yield
         self._export()
 
@@ -177,11 +180,11 @@ class ProjectBase:
 
     @property
     def paths(self) -> list[Path]:
-        """List set of available datasets that have been registered to the project."""
-        return list(map(Path, self.project_config.get(self.DATASETS_KEY, {}).values()))
+        """List paths of the datasets that have been registered to the project."""
+        return list(map(Path,self.project_config.get(self.DATASETS_KEY, {}).values()))
 
     def dataset_iter(self) -> ty.Iterable[str]:
-        """Iterate dataset name and path."""
+        """Iterate over dataset names."""
         yield from self.project_config.get(self.DATASETS_KEY, {}).keys()
 
     def dataset_path_iter(self) -> ty.Iterator[tuple[str, Path]]:
