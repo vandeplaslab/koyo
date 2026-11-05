@@ -14,9 +14,9 @@ A utility library of reusable Python functions used throughout various projects 
 |---|---|
 | `koyo.click` | CLI helpers: path parsing, plugin loading, parameter tables, timed iterators |
 | `koyo.system` | Platform detection, environment variable helpers, version checks, disk-space checks |
-| `koyo.utilities` | Generic utils: nearest-index search (Numba-accelerated), array rescaling, chunking, size formatting |
+| `koyo.utilities` | Generic utils: nearest-index search (`*_array`/`*_single` variants are Numba-jitted), array rescaling, chunking, size formatting |
 | `koyo.timer` | Human-readable timing and `measure_time` context manager |
-| `koyo.multicore` | `joblib`-backed multi-core helpers with RAM-aware CPU count |
+| `koyo.multicore` | `mpire`-based multi-core helpers by default (`joblib` optional); only `estimate_cpu_count_from_size` is RAM-aware |
 | `koyo.logging` | `loguru`-based logging configuration |
 | `koyo.color` | RGB/hex conversions and matplotlib colour utilities |
 | `koyo.path` | File-system helpers: zero-copy `sendfile`, glob utilities, URI handling |
@@ -26,7 +26,7 @@ A utility library of reusable Python functions used throughout various projects 
 | `koyo.fig_mixin` | `FigureMixin` for composable figure export |
 | `koyo.pdf_mixin` | PDF export backend |
 | `koyo.pptx_mixin` | PowerPoint export backend (requires `pptx` extra) |
-| `koyo.spectrum` | Spectroscopy (mass-spectrometry) utilities |
+| `koyo.spectrum` | Spectroscopy (mass-spectrometry) utilities (deprecated, use `ims_utils`) |
 | `koyo.mosaic` | Rectangle-packing algorithm for image/figure mosaics |
 | `koyo.decorators` | `retry` decorator with exponential back-off |
 | `koyo.json` | JSON serialisation helpers |
@@ -66,6 +66,7 @@ from koyo.timer import measure_time
 
 # Find the closest index in a sorted array
 import numpy as np
+
 arr = np.linspace(0, 100, 1000)
 idx = find_nearest_index(arr, 42.7)
 

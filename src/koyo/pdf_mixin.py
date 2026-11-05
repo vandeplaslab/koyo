@@ -9,12 +9,12 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from loguru import logger
-from PIL import Image
 
 from koyo.typing import PathLike
 
 if ty.TYPE_CHECKING:
     from matplotlib.backends.backend_pdf import PdfPages
+    from PIL.Image import Image
 
 
 class PDFMixin:
@@ -77,6 +77,7 @@ class PDFMixin:
             yield pdf
         except Exception as e:
             logger.error(f"Error exporting PDF: {e}")
+            raise
         finally:
             if self.as_pdf:
                 self._save_pdf(pdf, reset=reset)
@@ -99,12 +100,10 @@ class PDFMixin:
         add_content_to_pdf(pdf, content, title)
 
     def _save_pdf(self, pdf: PdfPages, reset: bool = False) -> None:
-        """Save PPTX."""
+        """Close (and thereby save) the PDF."""
         if pdf and hasattr(pdf, "close"):
             pdf.close()
-        if pdf and hasattr(pdf, "filename"):
-            Path(pdf.filename)
-        logger.debug(f"Saved PDF to {self.pdf_filename}")
+            logger.debug("Saved PDF.")
         if reset:
             self._pdf = None
 
@@ -138,7 +137,7 @@ class PDFMixin:
         pdf: PdfPages | None = None,
         **kwargs: ty.Any,
     ) -> None:
-        """Export figure to file."""
+        """Add a PIL image to the PDF (or export it to file)."""
         pdf = pdf or self.pdf
         add_pil_image_to_pdf(pdf, filename, image, override=override, close=close, **kwargs)
 
@@ -147,30 +146,32 @@ class PDFMixin:
         """Inform the user if the figure was empty."""
         if if_empty == "none":
             return
-        elif if_empty == "warn":
+        if if_empty == "warn":
             logger.warning("Figure was empty")
         elif if_empty == "raise":
             raise ValueError("Figure was empty")
 
 
 def add_title_to_pdf(pdf: PdfPages | None, title: str) -> None:
-    """Export title."""
+    """Add a title page to the PDF. Nothing is added if `title` is empty or `pdf` is None."""
     if title and pdf is not None:
         fig = plt.figure(figsize=(11.69, 8.27))
         fig.clf()
         fig.text(0.5, 0.5, title, transform=fig.transFigure, size=24, ha="center")
-        pdf.savefig()
+        pdf.savefig(fig)
         plt.close(fig)
 
 
 def add_content_to_pdf(pdf: PdfPages | None, content: str, title: str = "") -> None:
-    """Export content."""
+    """Add a page with text `content` (and optional `title`) to the PDF."""
     if content and pdf is not None:
         fig = plt.figure(figsize=(11.69, 8.27))
         fig.clf()
         if title:
             fig.text(0.5, 0.9, title, transform=fig.transFigure, size=16, ha="center")
         fig.text(0.5, 0.5, content, transform=fig.transFigure, size=12, ha="center")
+        pdf.savefig(fig)
+        plt.close(fig)
 
 
 def add_mpl_figure_to_pdf(
@@ -185,10 +186,13 @@ def add_mpl_figure_to_pdf(
     format: str = "jpg",
     **kwargs: ty.Any,
 ) -> None:
-    """Export figure to file."""
+    """Add a matplotlib figure to the PDF if `pdf` is given (`filename` is ignored), otherwise save it to `filename`.
+
+    When saving to disk, the default `format` is "jpg". Existing files are only overwritten if `override` is True.
+    """
     face_color = face_color if face_color is not None else fig.get_facecolor()
     if pdf is not None:
-        pdf.savefig(dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
+        pdf.savefig(fig, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
     else:
         if override or not Path(filename).exists():
             fig.savefig(filename, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, format=format, **kwargs)

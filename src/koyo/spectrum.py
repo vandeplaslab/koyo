@@ -1,4 +1,7 @@
-"""Utilities for spectrum analysis."""
+"""Utilities for spectrum analysis.
+
+Deprecated: this module emits a deprecation warning on import. Use ims_utils.spectrum instead.
+"""
 
 from warnings import warn
 

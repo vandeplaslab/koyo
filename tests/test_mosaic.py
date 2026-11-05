@@ -5,6 +5,8 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from PIL import Image
+
 from koyo.mosaic import (
     RectanglePacker,
     _get_color_rgba255,
@@ -17,7 +19,6 @@ from koyo.mosaic import (
     merge_mosaic_with_columns,
     pack_images,
 )
-from PIL import Image
 
 
 def _image_bytes(color, size=(10, 8)):
@@ -89,6 +90,14 @@ def test_convert_array_to_image_and_export_bytes():
     payload = export_array_as_bytes(array)
     assert image.size == (2, 2)
     assert payload.getbuffer().nbytes > 0
+    assert payload.read(8) == b"\x89PNG\r\n\x1a\n"  # stream is rewound
+
+
+def test_convert_array_to_image_all_zero():
+    from koyo.mosaic import convert_array_to_image
+
+    image = convert_array_to_image(np.zeros((4, 4)))
+    assert image.size == (4, 4)
 
 
 def test_get_color_rgba255():

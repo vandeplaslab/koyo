@@ -59,3 +59,24 @@ def test_zip_directory(tmp_path):
     assert unzipped_file2.exists()
     assert unzipped_file1.read_text() == "This is file 1."
     assert unzipped_file2.read_text() == "This is file 2."
+
+
+def test_zip_files_str_path_remove_zipped(tmp_path):
+    file1 = tmp_path / "file1.txt"
+    file1.write_text("1")
+    zip_path = tmp_path / "test.zip"
+    zip_files(str(zip_path), file1, remove_zipped=True)
+    assert zip_path.exists()
+    assert not file1.exists()
+
+
+def test_zip_directory_does_not_include_itself(tmp_path):
+    import zipfile
+
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "a.txt").write_text("a")
+    zip_path = src / "archive.zip"
+    zip_directory(src, zip_path)
+    with zipfile.ZipFile(zip_path) as zf:
+        assert zf.namelist() == ["a.txt"]

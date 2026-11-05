@@ -21,7 +21,7 @@ def read_csv_with_comments(path: PathLike) -> pd.DataFrame:
         first_col = df.iloc[:, 0]
         # check whether any of the values start with # (comment)
         for value in first_col:
-            if value.startswith("# "):
+            if isinstance(value, str) and value.startswith("# "):
                 df = df[~first_col.str.contains("# ")]
                 df.reset_index(drop=True, inplace=True)
                 df.columns = df.iloc[0]
@@ -36,9 +36,9 @@ def read_csv_with_comments(path: PathLike) -> pd.DataFrame:
             if row.startswith("#"):
                 start_index += 1
                 continue
-            elif not row:
+            if not row:
                 end_index += 1
-        df = pd.read_csv(StringIO("\n".join(data[start_index:-end_index])), sep=",")
-    except Exception:
-        raise pd.errors.ParserError(f"Failed to parse grid '{path}'.")
+        df = pd.read_csv(StringIO("\n".join(data[start_index : len(data) - end_index])), sep=",")
+    except Exception as e:
+        raise pd.errors.ParserError(f"Failed to parse CSV '{path}'.") from e
     return df

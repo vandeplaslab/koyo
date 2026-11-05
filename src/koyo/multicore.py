@@ -7,7 +7,6 @@ import time
 import typing as ty
 import warnings
 
-from joblib import Parallel as _Parallel
 from loguru import logger
 from psutil import cpu_count, virtual_memory
 from tqdm import tqdm
@@ -15,17 +14,32 @@ from tqdm import tqdm
 from koyo.system import running_as_pyinstaller_app
 from koyo.timer import report_time
 
+try:
+    from joblib import Parallel as _Parallel
+
+    HAS_JOBLIB = True
+except ImportError:  # joblib is optional (`pip install koyo[joblib]`)
+    HAS_JOBLIB = False
+
+    class _Parallel:  # type: ignore[no-redef]
+        """Placeholder for `joblib.Parallel` when joblib is not installed."""
+
+        def __init__(self, *args: ty.Any, **kwargs: ty.Any):
+            raise ImportError("joblib is required for `Parallel`. Install it with `pip install koyo[joblib]`.")
+
 
 def estimate_cpu_count_from_size(max_obj_size_in_bytes, keep_free_in_bytes=4_000_000):
     """Get number of cores based on the amount of RAM and maximum size of an object.
 
+    A summary of the RAM calculation is printed to stdout.
+
     Parameters
     ----------
     max_obj_size_in_bytes : int
-        maximum size of an object in bytes. If specified in GB, it will be automatically converted to bytes
+        maximum size of an object in bytes. Values with 2 digits or fewer are treated as GB and converted to bytes
     keep_free_in_bytes : int, optional
         minimal amount of RAM reserved for the OS and other actions, by default 4000000
-        If specified in Gb, it will be automatically converted to bytes
+        Values with 2 digits or fewer are treated as GB and converted to bytes
 
     Returns
     -------
@@ -51,8 +65,7 @@ def estimate_cpu_count_from_size(max_obj_size_in_bytes, keep_free_in_bytes=4_000
             "Based on the amount of RAM available on this system, there is not enough memory to perform this action.",
         )
 
-    if n_cores > get_cpu_count():
-        n_cores = get_cpu_count()
+    n_cores = min(n_cores, get_cpu_count())
     print(
         f"Total RAM: {virtual_memory().total / 1024**3:0f} Gb",
         f"\nReserved memory: {keep_free_in_bytes / 1024**3} Gb",
@@ -78,21 +91,16 @@ def get_cpu_count(keep_free: int = 2, max_cpu: int = 24, n_tasks: int = 0) -> in
     Returns
     -------
     n_cores : int
-        number of cores to be used by any multicore enabled function
-
-    Raises
-    ------
-    ValueError
-        raises ValueError if number of cores is less than 1
+        number of cores to be used by any multicore enabled function. If fewer than 1 core would remain,
+        a RuntimeWarning is issued and all cores are used.
     """
     n_cores = cpu_count() - keep_free
-    if n_cores > max_cpu:
-        n_cores = max_cpu
+    n_cores = min(n_cores, max_cpu)
     if n_tasks > 0 and n_cores > n_tasks:
         n_cores = n_tasks
     if n_cores < 1:
         warnings.warn(
-            f"Tried to reserve `{keep_free}` cores free ut failed be cores. Action will use all cores.",
+            f"Tried to reserve `{keep_free}` cores free but failed. Action will use all cores.",
             RuntimeWarning,
             stacklevel=2,
         )
@@ -192,7 +200,11 @@ class MultiCoreDispatcher:
         # check whether we should optimize it in first place
         if n_cores in [-1, 0, 512]:
             if array_size is not None:
-                return estimate_cpu_count_from_size(array_size, 30)
+                try:
+                    return estimate_cpu_count_from_size(array_size, 30)
+                except ValueError:
+                    logger.warning("Not enough memory to reserve 30 GB for the OS - falling back to a single core.")
+                    return 1
             return get_cpu_count(4)
         if not isinstance(n_cores, int):
             raise ValueError("The value of 'n_cores' must be an integer!")
@@ -209,7 +221,7 @@ class MultiCoreDispatcher:
 
     @staticmethod
     def optimize_chunksize(chunksize, n_cores):
-        """Optimize chunksize."""
+        """Optimize chunksize. Currently a no-op that returns `chunksize` unchanged."""
         # if chunk size is set to -1, set it to maximise speed by using maximum number of cores
         # if chunksize == -1:
         #     chunksize = np.max([math.ceil(n_extraction_windows / self._n_cores), 100])
@@ -237,7 +249,7 @@ class MultiCoreDispatcher:
 
         Notes
         -----
-        Arguments have to pickleable
+        Arguments have to be pickleable
         """
         t_start = time.time()
         if pre_process:
@@ -247,23 +259,29 @@ class MultiCoreDispatcher:
             args_list = self.generate_args_list(post_process)
         except TypeError:
             args_list = self.generate_args_list()
-        if len(args_list) < self.n_cores:
-            self.n_cores = len(args_list)
-        if args_list:
-            logger.info(f"{len(args_list)} tasks in the queue...")
-            if self.n_cores == 1:
-                self._single_executor(func, args_list)
-            elif self.backend == "joblib":
-                self._joblib_executor(func, args_list)
+        # temporarily limit number of cores to the number of tasks (restored afterwards)
+        n_cores = self.n_cores
+        self.n_cores = min(self.n_cores, len(args_list))
+        try:
+            if args_list:
+                logger.info(f"{len(args_list)} tasks in the queue...")
+                if self.n_cores == 1:
+                    self._single_executor(func, args_list)
+                elif self.backend == "joblib":
+                    self._joblib_executor(func, args_list)
+                elif self.backend == "multiprocessing":
+                    self._multiprocessing_executor(func, args_list)
+                else:
+                    self._mpire_executor(func, args_list)
+
             else:
-                self._mpire_executor(func, args_list)
+                logger.info("There are no jobs to be done.")
 
-        else:
-            logger.info("There are no jobs to be done.")
-
-        # post-process
-        if post_process and args_list and self.n_cores > 0:
-            self.post_process()
+            # post-process
+            if post_process and args_list and self.n_cores > 0:
+                self.post_process()
+        finally:
+            self.n_cores = n_cores
         logger.info(f"*** COMPLETED ACTION IN {report_time(t_start)} ***")
 
     def _single_executor(self, func, args_list):
@@ -294,9 +312,6 @@ class MultiCoreDispatcher:
             with multiprocessing.Pool(processes=self.n_cores, maxtasksperchild=self._maxtasksperchild) as pool:
                 # map function with tuple of arguments
                 pool.starmap(func, args_list)
-            # close pool and join it until all jobs have finished
-            pool.close()
-            pool.join()
 
     def _mpire_executor(self, func, args_list):
         """MPIRE executor."""
@@ -324,7 +339,7 @@ class Parallel(_Parallel):
     """Parallel."""
 
     def __init__(self, *args, **kwargs):
-        if "backend" in kwargs and kwargs["backed"] == "loky" and running_as_pyinstaller_app():
+        if "backend" in kwargs and kwargs["backend"] == "loky" and running_as_pyinstaller_app():
             kwargs["backend"] = "multiprocessing"
         if "backend" not in kwargs and running_as_pyinstaller_app():
             kwargs["backend"] = "multiprocessing"

@@ -4,6 +4,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+
 from koyo.system import (
     _is_network_linux,
     _linux_sys_name,
@@ -117,8 +118,19 @@ def test_running_as_pyinstaller_app_false():
     assert not running_as_pyinstaller_app()
 
 
-def test_check_available_space_no_drive_returns_true():
-    assert check_available_space("/path/without/a/drive", 10**18)
+def test_check_available_space_uses_existing_parent(tmp_path):
+    missing = tmp_path / "does" / "not" / "exist"
+    assert check_available_space(str(missing), 1)
+    assert not check_available_space(str(missing), 10**18)
+
+
+def test_is_network_linux_requires_path_boundary(monkeypatch):
+    from io import StringIO
+
+    mounts = "/dev/disk1 / ext4 rw 0 0\nserver:/share /mnt/nas nfs rw 0 0\n"
+    monkeypatch.setattr("builtins.open", lambda *args, **kwargs: StringIO(mounts))
+    assert _is_network_linux("/mnt/nas/file.txt")
+    assert not _is_network_linux("/mnt/nas2/file.txt")
 
 
 def test_get_cli_path_from_env(monkeypatch, tmp_path):
@@ -187,9 +199,7 @@ def test_linux_sys_name_lsb_release(monkeypatch):
 
 def test_is_network_linux_matches_longest_mount(monkeypatch):
     mounts = (
-        "/dev/disk1 / ext4 rw 0 0\n"
-        "server:/share /mnt/share nfs rw 0 0\n"
-        "server:/share/sub /mnt/share/sub ext4 rw 0 0\n"
+        "/dev/disk1 / ext4 rw 0 0\nserver:/share /mnt/share nfs rw 0 0\nserver:/share/sub /mnt/share/sub ext4 rw 0 0\n"
     )
 
     def fake_open(*args, **kwargs):
@@ -210,3 +220,10 @@ def test_is_network_linux_matches_longest_mount(monkeypatch):
 def test_is_network_path_local(tmp_path):
     # A local temp directory is never a network path
     assert not is_network_path(str(tmp_path))
+
+
+def test_is_installed_missing_dotted_module_no_recursion():
+    from koyo.system import is_installed
+
+    assert is_installed("definitely_missing_pkg_xyz.sub") is False
+    assert is_installed("definitely-missing-pkg-xyz.sub") is False

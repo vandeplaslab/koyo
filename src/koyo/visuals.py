@@ -8,7 +8,6 @@ import warnings
 from contextlib import contextmanager, suppress
 
 import matplotlib.pyplot as plt
-import numba as nb
 import numpy as np
 
 from koyo.image import clip_hotspots
@@ -47,16 +46,18 @@ def close_pil_image(fig: Image) -> None:
 
 
 @contextmanager
-def disable_bomb_protection() -> None:
-    """Disable PIL decompression bomb protection."""
+def disable_bomb_protection() -> ty.Generator[None, None, None]:
+    """Temporarily raise PIL's decompression bomb limit to 30k x 30k pixels (restored on exit, even on error)."""
     from PIL import Image
 
     max_size = Image.MAX_IMAGE_PIXELS
     # disable decompression bomb protection
     Image.MAX_IMAGE_PIXELS = 30_000 * 30_000  # 30k x 30k pixels
-    yield
-    # re-enable decompression bomb protection
-    Image.MAX_IMAGE_PIXELS = max_size
+    try:
+        yield
+    finally:
+        # re-enable decompression bomb protection
+        Image.MAX_IMAGE_PIXELS = max_size
 
 
 def save_rgb(path: PathLike, image: np.ndarray) -> None:
@@ -143,10 +144,14 @@ def auto_clear_axes(axs):
             ax.axis("off")
 
 
-@nb.njit()
-def convert_to_vertical_line_input(x: np.ndarray, y: np.ndarray):
-    """Convert two arrays of the same length to list of [x, 0, y, y] vertices used by the matplotlib LineCollection."""
-    return [[(x[i], 0), (x[i], y[i])] for i in range(len(x))]
+def convert_to_vertical_line_input(x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Convert two equal-length arrays to [(x, 0), (x, y)] vertex pairs for a matplotlib LineCollection.
+
+    Returns an array of shape (N, 2, 2).
+    """
+    x = np.asarray(x, dtype=float)
+    y = np.asarray(y, dtype=float)
+    return np.stack([np.column_stack([x, np.zeros_like(x)]), np.column_stack([x, y])], axis=1)
 
 
 def vertices_to_collection(
@@ -205,7 +210,10 @@ def add_centroids(ax: plt.Axes, x: np.ndarray, y: np.ndarray, color: str = "b", 
 
 
 def compute_divider(value: float) -> int:
-    """Compute divider."""
+    """Compute the exponent (number of trailing zeros) of the divider for `value`, e.g. 3 for thousands.
+
+    Returns 1 if `value` is zero.
+    """
     divider = 1_000_000_000
     value = abs(value)
     if value == 0:
@@ -227,16 +235,16 @@ def convert_divider_to_str(value: float, exp_value: int) -> str:
             return f"{value:.4G}"
         if abs(value) <= 1:
             return f"{value:.2G}"
-        elif abs(value) <= 1000:
+        if abs(value) <= 1000:
             if value.is_integer():
                 return f"{value:.0F}"
             return f"{value:.1F}"
         return None
-    elif exp_value in [3, 4, 5]:
+    if exp_value in [3, 4, 5]:
         return f"{value / 1000:.1f}k"
-    elif exp_value in [6, 7, 8]:
+    if exp_value in [6, 7, 8]:
         return f"{value / 1000000:.1f}M"
-    elif exp_value in [9, 10, 11, 12]:
+    if exp_value in [9, 10, 11, 12]:
         return f"{value / 1000000000:.1f}B"
     return None
 
@@ -270,7 +278,7 @@ def add_contours(
     if isinstance(contours, np.ndarray):
         contours = {"": contours}
     color = color if color is not None else plt.rcParams["text.color"]
-    for _key, contour in contours.items():
+    for contour in contours.values():
         ax.plot(contour[:, 0], contour[:, 1], lw=line_width, color=color, zorder=100)
 
 
@@ -536,42 +544,17 @@ def add_legend(
 
 
 def find_text_color(base_color, dark_color="black", light_color="white", coef_choice=0):
-    """
-    Takes a background color and returns the appropriate light or dark text color.
-    Users can specify the dark and light text color, or accept the defaults of 'black' and 'white'
-    base_color: The color of the background. This must be
-        specified in RGBA with values between 0 and 1 (note, this is the default
-        return value format of a call to base_color = cmap(number) to get the
-        color corresponding to a desired number). Note, the value of `A` in RGBA
-        is not considered in determining light/dark.
-    dark_color: Any valid matplotlib color value.
-        Function will return this value if the text should be colored dark
-    light_color: Any valid matplotlib color value.
-        Function will return this value if thet text should be colored light.
-    coef_choice: slightly different approaches to calculating brightness. Currently two options in
-        a list, user can enter 0 or 1 as list index. 0 is default.
-    """
-    # Coefficients:
-    # option 0: http://www.nbdtech.com/Blog/archive/2008/04/27/Calculating-the-Perceived-Brightness-of-a-Color.aspx
-    # option 1: http://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color
-    coef_options = [
-        np.array((0.241, 0.691, 0.068, 0)),
-        np.array((0.299, 0.587, 0.114, 0)),
-    ]
+    """Return dark or light text color for a given RGB(A) background (see `koyo.color.find_text_color`)."""
+    from koyo.color import find_text_color as _find_text_color
 
-    coefs = coef_options[coef_choice]
-    rgb = np.array(base_color) * 255
-    brightness = np.sqrt(np.dot(coefs, rgb**2))
-
-    # Threshold from option 0 link; determined by trial and error.
-    # base is light
-    if brightness > 130:
-        return dark_color
-    return light_color
+    return _find_text_color(base_color, dark_color=dark_color, light_color=light_color, coef_choice=coef_choice)
 
 
 def stitch_mosaic(filename: str, filelist, n_cols: int):
-    """Merge images of the same size and shape."""
+    """Merge images into a grid with `n_cols` columns and save it to `filename`.
+
+    Images of different sizes are pasted at the top-left of cells of the maximum size.
+    """
     import math
 
     from PIL import Image
@@ -602,7 +585,7 @@ def stitch_mosaic(filename: str, filelist, n_cols: int):
 
 
 def make_image_plot(heatmap, outfname: str | None = None, close: bool = False):
-    """Generate simple heatmap."""
+    """Generate simple heatmap, optionally saving it. Returns the figure (or None if `close=True`)."""
     from koyo.utilities import calculate_quantile_without_zeros
 
     fig, ax = plt.subplots(figsize=(12, 12))
@@ -614,6 +597,8 @@ def make_image_plot(heatmap, outfname: str | None = None, close: bool = False):
 
     if close:
         plt.close(fig)
+        return None
+    return fig
 
 
 def get_row_col(count, n_rows: int) -> tuple[int, int]:
@@ -633,10 +618,13 @@ def add_label(
     va: str = "top",
     ha: str = "left",
     bbox: dict[str, ty.Any] | None = None,
-    zorder: int = 10,
+    zorder: int | None = 10,
 ):
-    """Add label to the image."""
-    ax.text(
+    """Add label to the image (in axes coordinates) and return the text artist.
+
+    `zorder=None` uses matplotlib's default text z-order.
+    """
+    return ax.text(
         x,
         y,
         label,
@@ -674,9 +662,9 @@ def get_ticks_with_unit(
         between = np.linspace(min_val, max_val, n)
         ticks = between.tolist()
         tick_labels = [y_tick_fmt(t) for t in between]
-        # in the middle insert the unit
+        # in the middle insert the unit (label only - tick positions must stay numeric)
         middle = n // 2
-        ticks[middle] = unit
+        tick_labels[middle] = unit
     return ticks, tick_labels
 
 
@@ -797,10 +785,13 @@ def _annotate_heatmap(g: _HeatMapper, ax: plt.Axes, mesh) -> None:
             lum = relative_luminance(color)
             text_color = ".15" if lum > 0.408 else "w"
             annotation = f"{val:.2f}"
-            if val > 0:
-                annotation = "1" if annotation in "1.00" else annotation.replace("0.", ".")
-            else:
-                annotation = "-1" if annotation in "-1.00" else annotation.replace("0.", ".")
+            # drop the leading zero only (e.g. 0.50 -> .50, -0.50 -> -.50, but 10.50 stays as-is)
+            if annotation in ("1.00", "-1.00"):
+                annotation = annotation[:-3]
+            elif annotation.startswith("0."):
+                annotation = annotation[1:]
+            elif annotation.startswith("-0."):
+                annotation = "-" + annotation[2:]
             text_kwargs = {"color": text_color, "ha": "center", "va": "center"}
             text_kwargs.update(g.annot_kws)
             ax.text(x, y, annotation, **text_kwargs)
@@ -859,8 +850,8 @@ def _plot_image(
             title,
             x=0.01,
             y=0.95,
-            color="k",
-            size=16,
+            label_color="k",
+            font_size=16,
             bbox={"boxstyle": "square", "facecolor": "white", "alpha": 0.75, "lw": 0},
         )
     if title_color:
@@ -933,8 +924,8 @@ def _plot_or_update_image(
             title,
             x=0.01,
             y=0.95,
-            color="k",
-            size=16,
+            label_color="k",
+            font_size=16,
             bbox={"boxstyle": "square", "facecolor": "white", "alpha": 0.75, "lw": 0},
         )
     return img, cbar
@@ -982,7 +973,7 @@ def plot_multiple_images(
     min_val: float | None = None,
     max_val: float | None = None,
 ) -> Image:
-    """Plot a pair of images."""
+    """Plot any number of images as a mosaic."""
     from koyo.mosaic import plot_mosaic
 
     if one_row:

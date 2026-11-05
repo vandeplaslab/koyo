@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import typing as ty
-
 import numpy as np
 
 from koyo.typing import PathLike
@@ -26,7 +24,7 @@ def clip_hotspots(img: np.ndarray, quantile: float = 0.99) -> np.ndarray:
 
     """
     mask = np.isnan(img)
-    np.nan_to_num(img, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+    img = np.nan_to_num(img, nan=0.0, posinf=0.0, neginf=0.0)  # copy - don't modify the caller's array
     min_visible = np.max(img) / 256
     if min_visible > 0:
         hotspot_threshold = np.quantile(img[img > min_visible], quantile)
@@ -42,6 +40,8 @@ def clip_hotspots_batch_2d(
     min_visible_fraction: float = 1 / 256,
 ) -> np.ndarray:
     """Remove hotspots from a 2D array channel-by-channel.
+
+    `arr` is modified in place (NaN/inf values are replaced) and the same array is returned.
 
     Parameters
     ----------
@@ -95,7 +95,7 @@ def clip_hotspots_batch_2d(
     return arr
 
 
-def reshape_array(array: np.ndarray, image_shape: ty.Tuple[int, int], pixel_index: np.ndarray, fill_value: float = 0):
+def reshape_array(array: np.ndarray, image_shape: tuple[int, int], pixel_index: np.ndarray, fill_value: float = 0):
     """
     Reshape 1D data to 2D heatmap.
 
@@ -136,14 +136,14 @@ def unshape_array(image: np.ndarray, pixel_index: np.ndarray) -> np.ndarray:
 
 def reshape_array_from_coordinates(
     array: np.ndarray,
-    image_shape: ty.Tuple[int, int],
+    image_shape: tuple[int, int],
     coordinates: np.ndarray,
     fill_value: float = 0,
     offset: int = 0,
 ):
     """Reshape array based on xy coordinates.
 
-    This function assumes that the coordinates are 1-indexed.
+    Coordinates are used as-is after subtracting `offset` (default 0).
     """
     dtype = np.float32 if np.isnan(fill_value) else array.dtype
     im = np.full(image_shape, fill_value=fill_value, dtype=dtype)
@@ -172,7 +172,7 @@ def flatten_array_from_coordinates(array: np.ndarray, coordinates: np.ndarray, o
 
 def reshape_array_batch(
     array: np.ndarray,
-    image_shape: ty.Tuple[int, int],
+    image_shape: tuple[int, int],
     pixel_index: np.ndarray,
     fill_value: float = 0,
 ):
@@ -184,22 +184,21 @@ def reshape_array_batch(
     dtype = np.float32 if isinstance(fill_value, float) else array.dtype
 
     im_array = np.full((count, np.prod(image_shape)), dtype=dtype, fill_value=fill_value)
-    for i in range(count):
-        im_array[i, pixel_index] = array[:, i]
+    im_array[:, pixel_index] = array.T
     # reshape data
     return np.reshape(im_array, (count, *image_shape))
 
 
 def reshape_array_batch_from_coordinates(
     array: np.ndarray,
-    image_shape: ty.Tuple[int, int],
+    image_shape: tuple[int, int],
     coordinates: np.ndarray,
     fill_value: int = 0,
     offset: int = 0,
 ):
     """Batch reshape image.
 
-    This function assumes that the coordinates are 1-indexed.
+    Coordinates are used as-is after subtracting `offset` (default 0).
     """
     if array.ndim != 2:
         raise ValueError("Expected 2-D array.")
@@ -207,16 +206,17 @@ def reshape_array_batch_from_coordinates(
     dtype = np.float32 if np.isnan(fill_value) else array.dtype
     im = np.full((n_features, *image_shape), fill_value=fill_value, dtype=dtype)
     try:
-        for i in range(n_features):
-            im[i, coordinates[:, 1] - offset, coordinates[:, 0] - offset] = array[:, i]
+        im[:, coordinates[:, 1] - offset, coordinates[:, 0] - offset] = array.T
     except IndexError:
-        for i in range(n_features):
-            im[i, coordinates[:, 0] - offset, coordinates[:, 1] - offset] = array[:, i]
+        im[:, coordinates[:, 0] - offset, coordinates[:, 1] - offset] = array.T
     return im
 
 
-def get_coordinates_from_index(index: np.ndarray, shape: ty.Tuple[int, int]) -> np.ndarray:
-    """Convert frame index to xy coordinates."""
+def get_coordinates_from_index(index: np.ndarray, shape: tuple[int, int]) -> np.ndarray:
+    """Convert frame index to (y, x) coordinates.
+
+    Returns an array of shape ``(n, 2)`` with ``(y, x)`` pairs, one row per index value.
+    """
     index = np.asarray(index)
     # generate image shape
     index_im = reshape_array(index, shape, index)
@@ -263,7 +263,7 @@ def colocalization(img_a: np.ndarray, img_b: np.ndarray) -> float:
     return cosine_similarity(_preprocess(img_a), _preprocess(img_b))[0, 0]
 
 
-def colocalization_matrix(images: np.ndarray, size: ty.Tuple[int, ...] = (3, 3)) -> np.ndarray:
+def colocalization_matrix(images: np.ndarray, size: tuple[int, ...] = (3, 3)) -> np.ndarray:
     """
     Calculates level of colocalization between all pairs of images in a list of ion images.
     If many checks are needed, it is usually faster to generate the entire matrix than to do
@@ -273,8 +273,8 @@ def colocalization_matrix(images: np.ndarray, size: ty.Tuple[int, ...] = (3, 3))
 
     Parameters
     ----------
-    images : List[np.ndarray]
-        list of ion images
+    images : np.ndarray
+        3D array of ion images with shape (n_images, height, width)
     size : Tuple[int, ...]
         size of the median filter.
 
@@ -286,7 +286,7 @@ def colocalization_matrix(images: np.ndarray, size: ty.Tuple[int, ...] = (3, 3))
     from scipy.ndimage import median_filter
     from sklearn.metrics.pairwise import pairwise_kernels
 
-    assert images.ndim == 3, "Expected 2D array."  # flat images
+    assert images.ndim == 3, "Expected 3D array."  # flat images
 
     count = images.shape[0]
     if count == 0:
@@ -297,12 +297,12 @@ def colocalization_matrix(images: np.ndarray, size: ty.Tuple[int, ...] = (3, 3))
         h, w = images[0].shape
         flat_images = np.vstack([i.flatten() for i in images])
         flat_images[flat_images < np.quantile(flat_images, 0.5, axis=1, keepdims=True)] = 0
-        filtered_images = median_filter(images.reshape((count, h, w)), (1, *size)).reshape((count, h * w))
+        filtered_images = median_filter(flat_images.reshape((count, h, w)), (1, *size)).reshape((count, h * w))
         similarity_matrix = pairwise_kernels(filtered_images, metric="cosine")
     return similarity_matrix
 
 
-def pearson_similarity(img_a: np.ndarray, img_b: np.ndarray, size: ty.Tuple[int, int] = (3, 3)) -> float:
+def pearson_similarity(img_a: np.ndarray, img_b: np.ndarray, size: tuple[int, int] = (3, 3)) -> float:
     """Calculate degree of similarity between two images using Pearson correlation.
 
     Parameters

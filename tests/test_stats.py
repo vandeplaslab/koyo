@@ -142,3 +142,35 @@ def test_get_n_significant_correlations_dataframe():
     anti, corr = get_n_significant_correlations(df, n=1)
     assert len(anti) == 1
     assert len(corr) == 1
+
+
+def test_pairwise_spearmanr_matches_scipy():
+    from scipy.stats import spearmanr
+
+    arr = np.random.default_rng(2).random((25, 4))
+    expected = spearmanr(arr).statistic
+    np.testing.assert_allclose(pairwise_spearmanr(arr), expected, atol=1e-10)
+
+
+def test_pairwise_spearmanr_perfect_correlation():
+    x = np.arange(10.0).reshape(-1, 1)
+    np.testing.assert_allclose(pairwise_spearmanr(x, x), [[1.0]])
+
+
+def test_correlation_pair_helpers_match_loops():
+    rng = np.random.default_rng(3)
+    mat = rng.uniform(-1, 1, (6, 6))
+    expected = sorted(
+        [(i, j, float(mat[i, j])) for i in range(6) for j in range(6) if abs(mat[i, j]) > 0.5], key=lambda x: x[2]
+    )
+    assert get_significant_correlations(mat, threshold=0.5) == expected
+    upper = sorted([(i, j, float(mat[i, j])) for i in range(6) for j in range(i + 1, 6)], key=lambda x: x[2])
+    anti, corr = get_n_significant_correlations(mat, 3)
+    assert anti == upper[:3]
+    assert corr == upper[::-1][:3]
+    assert get_n_significant_correlations(mat, 0) == ([], [])
+
+
+def test_pairwise_spearmanr_without_pandas_input_returns_array():
+    arr = np.random.default_rng(4).random((10, 2))
+    assert isinstance(pairwise_spearmanr(arr), np.ndarray)

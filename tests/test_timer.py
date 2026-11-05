@@ -1,6 +1,7 @@
 import time
 
 import pytest
+
 from koyo.timer import MeasureTimer, format_datetime_ago, format_human_time, format_time, time_average, time_loop
 
 

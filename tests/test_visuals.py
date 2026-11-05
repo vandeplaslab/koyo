@@ -3,6 +3,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
+from PIL import Image
+
 from koyo.visuals import (
     _get_alternate_locations,
     _plot_image,
@@ -41,7 +43,6 @@ from koyo.visuals import (
     vertices_to_collection,
     y_tick_fmt,
 )
-from PIL import Image
 
 
 def test_tight_layout_and_close_mpl_figure():
@@ -226,7 +227,8 @@ def test_get_row_col_and_ticks_with_unit():
 
     ticks_unit, labels_unit = get_ticks_with_unit(0, 10, unit="ms", n=4)
     assert len(ticks_unit) == 5
-    assert "ms" in ticks_unit
+    assert all(isinstance(t, float) for t in ticks_unit)  # positions stay numeric
+    assert labels_unit[2] == "ms"  # unit replaces the middle label
     assert len(labels_unit) == 5
 
 
@@ -286,3 +288,18 @@ def test_plot_correlation_if_dependencies_present():
     fig = plot_correlation(corr, annot=True)
     assert fig is not None
     close_mpl_figure(fig)
+
+
+def test_convert_to_vertical_line_input_values():
+    vertices = convert_to_vertical_line_input(np.array([1.0, 2.0]), np.array([3.0, 4.0]))
+    np.testing.assert_array_equal(vertices, [[[1, 0], [1, 3]], [[2, 0], [2, 4]]])
+
+
+def test_mosaic_add_label_returns_text():
+    from koyo.mosaic import add_label as mosaic_add_label
+
+    fig, ax = plt.subplots()
+    text = mosaic_add_label(ax, "label", color="r", size=10)
+    assert text.get_text() == "label"
+    assert text.get_fontsize() == 10
+    plt.close(fig)

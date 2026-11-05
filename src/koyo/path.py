@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import os
 import hashlib
+import os
 import re
 import shutil
 import typing as ty
@@ -28,9 +28,13 @@ _WINDOWS_RESERVED_NAMES = {
 
 
 def copy_file(src_path: str, dst_path: str) -> None:
-    """Copy a file from src_path to dst_path using zero-copy os.sendfile()."""
-    # Try zero-copy if available
-    if hasattr(os, "sendfile"):
+    """Copy a file from src_path to dst_path.
+
+    On Linux, zero-copy ``os.sendfile`` is used. On other platforms (e.g. macOS, where ``sendfile`` only supports
+    sockets) a buffered copy is used. Raises ``FileNotFoundError`` if the source does not exist.
+    """
+    # Try zero-copy if available (file-to-file sendfile is only supported on Linux)
+    if IS_LINUX and hasattr(os, "sendfile"):
         with open(src_path, "rb") as fsrc, open(dst_path, "wb") as fdst:
             size = os.fstat(fsrc.fileno()).st_size
             offset = 0
@@ -43,11 +47,8 @@ def copy_file(src_path: str, dst_path: str) -> None:
         return
     # Fall back to a buffered copy to avoid shutil's platform-specific fast-copy
     # helpers, which may still try to use os.sendfile internally.
-    try:
-        with open(src_path, "rb") as fsrc, open(dst_path, "wb") as fdst:
-            shutil.copyfileobj(fsrc, fdst)
-    except FileNotFoundError:
-        logger.error(f"Source file '{src_path}' does not exist.")
+    with open(src_path, "rb") as fsrc, open(dst_path, "wb") as fdst:
+        shutil.copyfileobj(fsrc, fdst)
 
 
 def mglob(path: Path, *patterns: str, recursive: bool = False) -> ty.Generator[Path, None, None]:
@@ -71,14 +72,8 @@ def dir_iter(path: PathLike) -> ty.Generator[Path, None, None]:
 
 def uri_to_path(uri: str) -> Path:
     """Convert URI to path."""
-    try:
-        from urllib.parse import unquote, urlparse
-        from urllib.request import url2pathname
-    except ImportError:
-        # backwards compatability
-        from urllib import unquote, url2pathname
-
-        from urlparse import urlparse
+    from urllib.parse import unquote, urlparse
+    from urllib.request import url2pathname
 
     parsed = urlparse(uri)
     host = f"{os.path.sep}{os.path.sep}{parsed.netloc}{os.path.sep}"
@@ -114,7 +109,10 @@ def remove_file(file: PathLike) -> None:
 
 
 def empty_directory(path: PathLike, remove_parent: bool = True) -> None:
-    """Recursively clear directory."""
+    """Recursively clear the contents of a directory.
+
+    If `remove_parent` is True (default), the directory itself is also deleted.
+    """
     path = Path(path)
     if not path.exists():
         return
@@ -251,45 +249,36 @@ def get_subdirectories(path: PathLike) -> list[Path]:
 
 
 def create_directory(*path: str) -> Path:
-    """Create directory.
+    """Create directory (including parents) if it does not exist.
 
     Parameters
     ----------
     path : str
-        directory path
+        directory path components, joined with ``os.path.join``
+
+    Returns
+    -------
+    Path
+        the directory path, whether it was created now or already existed. Failure to create is logged, not raised.
     """
-    path = Path(os.path.join(*path))
-    if not path.exists():
-        try:
-            path.mkdir(parents=True)
-        except OSError:
-            logger.warning("Failed to create directory")
-        finally:
-            return path
-    return None
+    path_ = Path(os.path.join(*path))
+    try:
+        path_.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        logger.warning(f"Failed to create directory '{path_}'")
+    return path_
 
 
 def is_network_path(path: PathLike) -> bool:
-    """Check if the path is a network path."""
-    if os.name == "nt":
-        return is_network_path_win(path)
-    return is_network_path_unix(path)
+    """Check if the path is on a network drive/mount (delegates to `koyo.system.is_network_path`)."""
+    from koyo.system import is_network_path as _is_network_path
+
+    return _is_network_path(path)
 
 
 def is_network_path_win(path: PathLike) -> bool:
-    """Check if the path is a network path."""
-    import os
-
-    import win32file
-
-    # Get the root path (e.g., "C:\\" from "C:\\path\\to\\file")
-    root_path = os.path.splitdrive(path)[0] + "\\"
-
-    # Get the drive type
-    drive_type = win32file.GetDriveType(root_path)
-
-    # Check if the drive type is network
-    return bool(drive_type == win32file.DRIVE_REMOTE)
+    """Check if the path is a network path on Windows (delegates to `koyo.system.is_network_path`)."""
+    return is_network_path(path)
 
 
 def get_mount_point(path: PathLike) -> str:
@@ -301,19 +290,8 @@ def get_mount_point(path: PathLike) -> str:
 
 
 def is_network_path_unix(path: PathLike) -> bool:
-    """Checks if the path is on a network-mounted filesystem."""
-    import subprocess
-
-    mount_point = get_mount_point(path)
-    # On Linux, you might directly parse /proc/mounts for more detailed info
-    # For simplicity, we use df
-    df_output = subprocess.check_output(["df", mount_point], universal_newlines=True)
-    filesystem_type = df_output.split("\n")[1].split()[0]
-
-    # This is a simple heuristic, you may need to adjust the types based on your needs
-    network_filesystems = ["nfs", "smbfs", "cifs", "fuse.sshfs"]
-
-    return any(fs_type in filesystem_type for fs_type in network_filesystems)
+    """Check if the path is on a network-mounted filesystem (delegates to `koyo.system.is_network_path`)."""
+    return is_network_path(path)
 
 
 def apply_drive_mapping(file: Path, drive_map: DriveMap = ()) -> str:
@@ -432,7 +410,7 @@ def create_link_txtlnk(
     link_name: str | None = None,
     drive_map: DriveMap = (),
 ) -> Path:
-    """Create a link cross-platform.
+    """Create a cross-platform link as a `.txtlnk` text file that points to `target`.
 
     Rather than creating a symbolic link or a shortcut, we will save the path to a text file with the same name as
     the target, where the content of the text file is the path to the target. This way, we can achieve a similar
@@ -465,7 +443,10 @@ def create_link_txtlnk(
 
 
 def resolve_links(base_dir: Path, extensions: tuple[str, ...]) -> list[Path]:
-    """Resolve Shortcuts on Windows."""
+    """Resolve Windows shortcuts (.lnk) and .txtlnk link files in `base_dir`.
+
+    .lnk files are only resolved on Windows (requires pylnk3). .txtlnk files are resolved on all platforms.
+    """
     links = []
     if IS_WIN:
         try:
@@ -515,20 +496,16 @@ def _is_reserved_windows_name(name: str) -> bool:
 
 
 def _is_valid_windows_component(name: str) -> bool:
-    """
-    Validate a single path component for Windows.
-    """
+    """Validate a single path component for Windows."""
     if not name:
         return False
     if name in {".", ".."}:
         return True
     if _WINDOWS_INVALID_CHARS.search(name):
         return False
-    if name.endswith(" ") or name.endswith("."):
+    if name.endswith((" ", ".")):
         return False
-    if _is_reserved_windows_name(name):
-        return False
-    return True
+    return not _is_reserved_windows_name(name)
 
 
 def _is_valid_windows_path(path: str | Path, max_path: int = 260) -> bool:
@@ -570,7 +547,7 @@ def shorten_path_for_windows(
 
     Strategy
     --------
-    1. If already valid, return as-is.
+    1. If the path is shorter than `max_path`, return it as-is (filename components are not validated).
     2. Shorten the filename stem while preserving the extension.
     3. If the shortened candidate collides with an existing file, use a short hash.
     4. If no valid candidate can be produced, raise WindowsPathError.
@@ -626,7 +603,7 @@ def shorten_path_for_windows(
         # but invalid characters should fail immediately.
         if _WINDOWS_INVALID_CHARS.search(original_name) or original_name.endswith((" ", ".")):
             raise WindowsPathError(
-                f"Filename contains Windows-invalid characters or trailing space/dot: {original_name!r}"
+                f"Filename contains Windows-invalid characters or trailing space/dot: {original_name!r}",
             )
 
     # Room available for the filename component based on total path length
@@ -682,10 +659,9 @@ def shorten_path_for_windows(
         hashed_stem = f"{candidate_stem}{hash_suffix}"
         candidate = make_candidate(hashed_stem)
 
-        if is_valid(candidate):
-            if is_unique(candidate) or candidate == p:
-                return candidate
+        if is_valid(candidate) and (is_unique(candidate) or candidate == p):
+            return candidate
 
     raise WindowsPathError(
-        f"Could not produce a valid Windows-safe filename for path (n={len(str(path))}): {str(path)!r}"
+        f"Could not produce a valid Windows-safe filename for path (n={len(str(path))}): {str(path)!r}",
     )

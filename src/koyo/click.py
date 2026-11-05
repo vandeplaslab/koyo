@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import glob
 import os
+import re
 import sys
 import traceback
 import typing as ty
@@ -87,17 +88,17 @@ def parse_paths(input_dirs: list[PathLike], absolute: bool = False, sort: bool =
 
 
 def cli_parse_paths(ctx, param, value) -> list[str]:
-    """Parse paths."""
+    """Click callback that expands glob patterns in the given paths (unsorted)."""
     return parse_paths(value)
 
 
 def cli_parse_paths_sort(ctx, param, value) -> list[str]:
-    """Parse paths."""
+    """Click callback that expands glob patterns in the given paths and returns them naturally sorted."""
     return parse_paths(value, sort=True)
 
 
 def cli_parse_paths_sort_auto_glob(ctx, param, value) -> list[str]:
-    """Parse paths."""
+    """Click callback that, if a single directory is given, expands it to its contents, then sorts naturally."""
     if len(value) == 1 and Path(value[0]).is_dir():
         value = [f"{value[0]}/*"]
     return parse_paths(value, sort=True)
@@ -109,13 +110,14 @@ def with_plugins(plugins, **kwargs):
     Parameters
     ----------
     plugins : iter
-        An iterable producing one `pkg_resources.EntryPoint()` per iteration.
+        An iterable of entry-point-like objects, each with a `load()` method and a `name`.
     kwargs : **kwargs, optional
-        Additional keyword arguments for instantiating `click.Group()`.
+        Additional keyword arguments passed to `group.add_command`.
 
     Returns
     -------
-    click.Group()
+    decorator
+        A function that takes a `click.Group()`, registers the plugins on it and returns the group.
     """
 
     def decorator(group):
@@ -178,8 +180,7 @@ _verbosity_options = [
         "verbosity",
         default=1,
         count=True,
-        help="Verbose output. This is additive flag so `-vvv` will print `INFO` messages and -vvvv will print `DEBUG`"
-        " information.",
+        help="Verbose output. This is an additive flag, e.g. `-vvv`.",
     ),
     click.option("--quiet", "-q", "verbosity", flag_value=0, help="Minimal output"),
     click.option("--debug", "verbosity", flag_value=5, help="Maximum output"),
@@ -360,7 +361,7 @@ def print_parameters(*parameters: Parameter, log: bool = True, silent: bool = Fa
 
 
 def exception_msg(msg: str):
-    """Display error message."""
+    """Log an error message together with the current exception traceback."""
     logger.exception(msg)
 
 
@@ -397,7 +398,7 @@ def expand_dirs(input_dir: str) -> ty.Sequence[str]:
 
 # noinspection PyUnusedLocal
 def arg_parse_path(ctx, param, value) -> list[Path]:
-    """Split arguments."""
+    """Click callback that strips quotes and trailing slashes, expands glob patterns and returns absolute Paths."""
     if value is None:
         return []
     res: list[str] = []
@@ -413,7 +414,7 @@ def arg_parse_path(ctx, param, value) -> list[Path]:
 
 # noinspection PyUnusedLocal
 def arg_split_str(ctx, param, value):
-    """Split arguments."""
+    """Split a comma-separated string into a list of stripped strings (or None)."""
     if value is None:
         return None
     return [arg.strip() for arg in value.split(",")]
@@ -421,7 +422,7 @@ def arg_split_str(ctx, param, value):
 
 # noinspection PyUnusedLocal
 def arg_split_float(ctx, param, value):
-    """Split arguments."""
+    """Split a comma-separated string into a list of floats (or None)."""
     if value is None:
         return None
     return [float(arg.strip()) for arg in value.split(",")]
@@ -429,14 +430,14 @@ def arg_split_float(ctx, param, value):
 
 # noinspection PyUnusedLocal
 def arg_split_int(ctx, param, value):
-    """Split arguments."""
+    """Split a comma-separated string into a list of ints (or None)."""
     if value is None:
         return None
     return [int(arg.strip()) for arg in value.split(",")]
 
 
 # noinspection PyUnusedLocal
-def arg_parse_env(ctx, param, value) -> tuple[str | None, ty.Any | None]:
+def arg_parse_env(ctx, param, value) -> list[list[str]] | tuple[None, None]:
     """Split argument into environment variables."""
     if value is None:
         return None, None
@@ -489,21 +490,21 @@ def parse_int_with_range(int_range: str) -> list[int]:
 
 # noinspection PyUnusedLocal
 def arg_parse_int_with_range(ctx, param, value: str):
-    """Parse framelist."""
+    """Click callback that parses an integer range string (see `parse_int_with_range`) into a list of ints."""
     if value is None:
         return None
     return parse_int_with_range(value)
 
 
 def arg_parse_int_with_range_multi(ctx, param, value: tuple[str]):
-    """Parse framelist."""
+    """Click callback that parses several integer range strings, returning one list of ints per entry."""
     if value is None:
         return None
     return [parse_int_with_range(v) for v in value]
 
 
 def arg_parse_int_with_range_multi_merge(ctx, param, value: tuple[str]):
-    """Parse framelist."""
+    """Click callback that parses several integer range strings and merges them into one flat list of ints."""
     if value is None:
         return None
 
@@ -626,7 +627,7 @@ def parse_args_with_keys(
     extra_args: tuple[str] | None,
     fields: tuple[str, ...],
     clean: bool = False,
-) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
+) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], list[str] | tuple[str, ...] | None]:
     """Parse extra parameters."""
     extra_kwargs = {}
     if extra_args is None:
@@ -651,23 +652,25 @@ def parse_args_with_keys(
 def parse_fig_args(
     extra_args: tuple[str] | None,
     clean: bool = False,
-) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
+) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], list[str] | tuple[str, ...] | None]:
     """Parse extra parameters."""
     return parse_args_with_keys(extra_args, ("--fig:", "--f:"), clean)
 
 
 @ty.overload
-def parse_env_args(extra_args: tuple[str, ...] | None, clean: bool = False) -> dict[str, ty.Any]: ...
+def parse_env_args(extra_args: tuple[str, ...] | None, clean: ty.Literal[False] = False) -> dict[str, ty.Any]: ...
 
 
 @ty.overload
-def parse_env_args(extra_args: tuple[str, ...] | None, clean: bool = False) -> tuple[dict[str, ty.Any], tuple[str]]: ...
+def parse_env_args(
+    extra_args: tuple[str, ...] | None, clean: ty.Literal[True]
+) -> tuple[dict[str, ty.Any], list[str] | tuple[str, ...] | None]: ...
 
 
 def parse_env_args(
     extra_args: tuple[str, ...] | None,
     clean: bool = False,
-) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], tuple[str]]:
+) -> dict[str, ty.Any] | tuple[dict[str, ty.Any], list[str] | tuple[str, ...] | None]:
     """Parse extra environment variables."""
     env_kwargs = {}
     if extra_args is None:
@@ -722,7 +725,7 @@ def filter_kwargs(*allowed: str, **kwargs: ty.Any) -> dict[str, ty.Any]:
 
 
 def exit_with_error(skip_error: bool = False) -> int | None:
-    """Skip error or exit with error."""
+    """Exit the process via `sys.exit`, with code 0 if `skip_error` is True, otherwise 1. Never returns."""
     import sys
 
     if skip_error:
@@ -736,10 +739,11 @@ def select_from_list(
     auto_select: str = "off",
     default: int = -1,
 ) -> int:
-    """Select file from the list.
+    """Select an index from the list.
 
-    The list is assumed to be sorted in descending order of creation time meaning that oldest files should be first
-     and newest should be last.
+    The list is assumed to be sorted in ascending order of creation time, so the oldest item is first and the
+    newest is last. A single-item list always returns index 0. With ``auto_select="off"`` the user is prompted,
+    ``"newest"`` returns the last index and ``"oldest"`` returns the first index. Otherwise ``default`` is returned.
     """
     if item_list:
         if len(item_list) == 1:

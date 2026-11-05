@@ -1,7 +1,8 @@
 """Download functions."""
 
+from __future__ import annotations
+
 import os.path
-import typing as ty
 from pathlib import Path
 from urllib import request
 
@@ -46,32 +47,32 @@ def download_progress(pbar):
 
 def download_file(
     link: str,
-    filename: ty.Optional[PathLike] = None,
-    output_dir: ty.Optional[PathLike] = None,
+    filename: PathLike | None = None,
+    output_dir: PathLike | None = None,
     unzip: bool = True,
     remove_archive: bool = False,
 ):
     """Download a file.
 
-    By default, this function download a file to ~/explorer_data.
+    By default, the file is downloaded to the koyo package directory. Existing files are not downloaded again.
 
     Parameters
     ----------
     link : str
-        Name of the file to download or url.
+        URL to download. A ValueError is raised if it does not contain 'http'.
     filename : PathLike
-        Name of the file to be saved in case of url.
+        Name of the file to be saved. If None, it is taken from the URL.
     output_dir : PathLike
         Download file to the path specified.
-    unzip : bool | False
-        Unzip archive if needed.
-    remove_archive : bool | False
-        Remove archive after unzip.
+    unzip : bool, optional
+        Unzip archive if needed, by default True.
+    remove_archive : bool, optional
+        Remove archive after unzip, by default False.
 
     Returns
     -------
     path_to_file : Path
-        Path to the downloaded file.
+        Path to the downloaded file. If `unzip` is True, the path returned by `unzip_directory` is returned instead.
     """
     out_path = Path(__file__).parent
     if "http" in link:

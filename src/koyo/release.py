@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import typing as ty
 
-import requests
 from loguru import logger
 
 from koyo.timer import format_datetime_ago
@@ -66,8 +65,13 @@ def get_latest_release(user: str = "vandeplaslab", package: str = "koyo") -> str
 
 
 def get_latest_git(user: str = "vandeplaslab", package: str = "koyo") -> dict[str, ty.Any]:
-    """Get latest release from GitHub."""
-    response = requests.get(f"https://api.github.com/repos/{user}/{package}/releases/latest")
+    """Get latest release metadata from GitHub (empty dict on failure or timeout)."""
+    import requests
+
+    try:
+        response = requests.get(f"https://api.github.com/repos/{user}/{package}/releases/latest", timeout=10)
+    except requests.RequestException:
+        return {}
     if response.status_code == 200:
         return response.json()
     return {}

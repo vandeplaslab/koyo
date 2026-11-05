@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+
 from koyo.json import read_json_data, read_json_gzip, write_json_data, write_json_gzip
 
 
@@ -45,3 +46,22 @@ def test_write_json_gzip_preserves_existing_gz_suffix(tmp_path):
     written = write_json_gzip(path, {"A": 1})
     assert written == path
     assert written.exists()
+
+
+def test_write_json_compress_is_single_line(tmp_path):
+    from koyo.json import read_json, write_json
+
+    path = tmp_path / "data.json"
+    write_json(path, {"a": [1, 2]}, compress=True)
+    assert "\n" not in path.read_text()
+    assert read_json(path) == {"a": [1, 2]}
+    assert list(tmp_path.iterdir()) == [path]  # no temporary file left behind
+
+
+def test_write_json_check_existing_keeps_order_and_unhashable(tmp_path):
+    from koyo.json import read_json, write_json
+
+    path = tmp_path / "data.json"
+    write_json(path, [{"a": [1]}, {"b": 2}])
+    write_json(path, [{"c": 3}, {"a": [1]}], check_existing=True)
+    assert read_json(path) == [{"a": [1]}, {"b": 2}, {"c": 3}]

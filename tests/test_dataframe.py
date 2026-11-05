@@ -29,3 +29,11 @@ def test_read_csv_with_comments_handles_bad_input_without_crashing(tmp_path):
     result = read_csv_with_comments(path)
     assert list(result.columns) == ["Unnamed: 0"]
     assert result.empty
+
+
+def test_read_csv_with_comments_numeric_first_column(tmp_path):
+    path = tmp_path / "numeric.csv"
+    path.write_text("a,b\n1,2\n3,4\n")
+    df = read_csv_with_comments(path)
+    assert list(df.columns) == ["a", "b"]
+    assert len(df) == 2

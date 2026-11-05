@@ -1,5 +1,7 @@
 """All utility functions that deal with JSON files."""
 
+import os
+import threading
 import typing as ty
 from pathlib import Path
 
@@ -24,8 +26,9 @@ def default(o: ty.Any) -> ty.Any:
 
     Returns
     -------
-    int / float
-        converted object
+    int / float / list / bool / str
+        converted object (numpy integers and floats become int and float, arrays become lists,
+        numpy bools become bool and Paths become str)
 
     Raises
     ------
@@ -33,19 +36,19 @@ def default(o: ty.Any) -> ty.Any:
     """
     if isinstance(o, (np.int64, np.int32, np.int16, np.integer)):
         return int(o)
-    elif isinstance(o, (np.float64, np.float32, np.float16, np.floating)):
+    if isinstance(o, (np.float64, np.float32, np.float16, np.floating)):
         return float(o)
-    elif isinstance(o, np.ndarray):
+    if isinstance(o, np.ndarray):
         return o.tolist()
-    elif isinstance(o, np.bool_):
+    if isinstance(o, np.bool_):
         return bool(o)
-    elif isinstance(o, Path):
+    if isinstance(o, Path):
         return str(o)
     raise TypeError(f"Could not convert object {o!r} of type {type(o).__name__}")
 
 
 def read_json(filepath: PathLike) -> ty.Any:
-    """Read JSON data and metadata.
+    """Read JSON data.
 
     Parameters
     ----------
@@ -56,7 +59,7 @@ def read_json(filepath: PathLike) -> ty.Any:
     -------
     loaded json data
     """
-    with open(filepath) as f_ptr:
+    with open(filepath, encoding="utf-8") as f_ptr:
         return json.load(f_ptr)
 
 
@@ -74,16 +77,31 @@ def write_json(filepath: PathLike, obj, indent: int = 4, check_existing: bool = 
     check_existing : bool, optional
         if True, existing JSON file data will be merged with the new data object
     compress : bool, optional
+        if True, data is written without indentation or whitespace (`indent` is ignored)
+
+    Notes
+    -----
+    When not merging with existing data, the file is written to a temporary file first and then atomically
+    moved into place, so concurrent readers never see a partially written file.
     """
-    kws = {} if not compress else {"separators": (",", ":")}
-    indent = 1 if compress else indent
+    kws: dict[str, ty.Any] = {"default": default}
+    if compress:
+        if json.__name__ == "json":  # ujson output is compact by default
+            kws["separators"] = (",", ":")
+    else:
+        kws["indent"] = indent
 
     filepath = Path(filepath)
     if not check_existing or not filepath.exists():
-        with open(filepath, "w") as f_ptr:
-            json.dump(obj, f_ptr, indent=indent, default=default, **kws)
+        tmp_filepath = filepath.with_name(f".{filepath.name}.{os.getpid()}.{threading.get_ident()}.tmp")
+        try:
+            with open(tmp_filepath, "w", encoding="utf-8") as f_ptr:
+                json.dump(obj, f_ptr, **kws)
+            os.replace(tmp_filepath, filepath)
+        finally:
+            tmp_filepath.unlink(missing_ok=True)
     else:
-        with open(filepath, "r+") as f_ptr:
+        with open(filepath, "r+", encoding="utf-8") as f_ptr:
             data = json.load(f_ptr)
 
             if isinstance(data, list):
@@ -95,7 +113,7 @@ def write_json(filepath: PathLike, obj, indent: int = 4, check_existing: bool = 
             data = _remove_duplicates_from_dict(data)
 
             f_ptr.seek(0)  # rewind
-            json.dump(data, f_ptr, indent=indent, default=default, **kws)
+            json.dump(data, f_ptr, **kws)
             f_ptr.truncate()
     return filepath
 

@@ -59,7 +59,7 @@ class FigureMixin(PDFMixin, PPTXMixin):
             filename = ".".join(parts[:-1])
         if self.as_pptx:
             return f"{filename}.pptx"
-        elif self.as_pdf:
+        if self.as_pdf:
             return f"{filename}.pdf"
         return filename
 
@@ -113,7 +113,7 @@ class FigureMixin(PDFMixin, PPTXMixin):
         pdf: PdfPages | None = None,
         pptx: Presentation | None = None,
     ) -> None:
-        """Add title to pptx."""
+        """Add a content slide (PPTX) or page (PDF) with the given text and title."""
         if self.as_pptx:
             self._add_content_to_pptx(content, title, pptx=pptx)
         elif self.as_pdf:
@@ -144,10 +144,17 @@ class FigureMixin(PDFMixin, PPTXMixin):
             logger.warning("Figure is None, skipping export")
             return
 
+        common = {
+            "face_color": face_color,
+            "bbox_inches": bbox_inches,
+            "dpi": dpi,
+            "override": override,
+            "close": close,
+        }
         if self.as_pdf:
-            self._add_mpl_figure_to_pdf(filename, fig, pdf=pdf, **kwargs)
+            self._add_mpl_figure_to_pdf(filename, fig, pdf=pdf, **common, **kwargs)
         elif self.as_pptx:
-            self._add_mpl_figure_to_pptx(filename, fig, pptx=pptx, **kwargs)
+            self._add_mpl_figure_to_pptx(filename, fig, pptx=pptx, **common, **kwargs)
         elif override or not filename.exists():
             fig.savefig(filename, dpi=dpi, facecolor=face_color, bbox_inches=bbox_inches, **kwargs)
             if close:
@@ -167,9 +174,18 @@ class FigureMixin(PDFMixin, PPTXMixin):
     ) -> None:
         """Export PIL image to file."""
         if self.as_pdf:
-            self._add_pil_image_to_pdf(filename, image, pdf=pdf, **kwargs)
+            self._add_pil_image_to_pdf(filename, image, pdf=pdf, dpi=dpi, override=override, close=close, **kwargs)
         elif self.as_pptx:
-            self._add_pil_image_to_pptx(filename, image, pptx=pptx, **kwargs)
+            self._add_pil_image_to_pptx(
+                filename,
+                image,
+                pptx=pptx,
+                dpi=dpi,
+                fmt=fmt,
+                override=override,
+                close=close,
+                **kwargs,
+            )
         elif override or not filename.exists():
             image.save(filename, dpi=(dpi, dpi), format=fmt, **kwargs)
             if close:
@@ -185,14 +201,14 @@ class FigureExporter(FigureMixin):
 
     @property
     def pdf_filename(self) -> Path:
-        """Return the PDF filename."""
+        """Return the filename with the configured extension (.pptx if as_pptx, else .pdf)."""
         if not self.filename:
             raise ValueError("Filename not set")
         return Path(self.get_pptx_or_pdf_filename(self.filename))
 
     @property
     def pptx_filename(self) -> Path:
-        """Return the PPTX filename."""
+        """Return the filename with the configured extension (.pptx if as_pptx, else .pdf)."""
         if not self.filename:
             raise ValueError("Filename not set")
         return Path(self.get_pptx_or_pdf_filename(self.filename))
@@ -276,7 +292,7 @@ class PptxPdfWrapper:
             add_title_to_pptx(self.ppt_or_pdf, title)  # type: ignore[arg-type]
 
     def add_content(self, content: str, title: str = "") -> None:
-        """Add title slide or page."""
+        """Add a content slide (PPTX) or page (PDF) with the given text and optional title."""
         if self.as_pptx:
             from koyo.pptx_mixin import add_content_to_pptx
 
@@ -301,11 +317,21 @@ class PptxPdfWrapper:
         if self.as_pdf:
             from koyo.pdf_mixin import add_pil_image_to_pdf
 
-            add_pil_image_to_pdf(self.ppt_or_pdf, filename, image, override=override, **kwargs)
+            add_pil_image_to_pdf(self.ppt_or_pdf, filename, image, override=override, dpi=dpi, close=close, **kwargs)
         elif self.as_pptx:
             from koyo.pptx_mixin import add_pil_image_to_pptx
 
-            add_pil_image_to_pptx(self.ppt_or_pdf, filename, image, override=override, title=title, **kwargs)
+            add_pil_image_to_pptx(
+                self.ppt_or_pdf,
+                filename,
+                image,
+                dpi=dpi,
+                fmt=fmt,
+                override=override,
+                close=close,
+                title=title,
+                **kwargs,
+            )
         elif override or not Path(filename).exists():
             image.save(filename, dpi=(dpi, dpi), format=fmt, **kwargs)
             if close:
@@ -376,8 +402,7 @@ def _ensure_filename_is_not_too_long(filenme: PathLike) -> Path:
         if n - len(str(parent)) > 250:
             raise ValueError("Filename is too long")
         max_length = 250 - len(str(parent)) - len(suffix)
-        if max_length > len(filename.stem):
-            max_length = len(filename.stem)
+        max_length = min(max_length, len(filename.stem))
         filename_ = filename.stem[0:max_length] + suffix
         logger.trace(f"Filename is too long, truncating to {filename_} from {filename.name}")
         return parent / filename_

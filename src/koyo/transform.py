@@ -77,14 +77,19 @@ def warp_channel(
     use_cv2: bool | None = None,
 ) -> np.ndarray:
     """Warp image."""
-    import cv2
+    from importlib.util import find_spec
+
     from scipy.ndimage import affine_transform
 
     assert image.ndim == 2, "Only 2D images are supported for warping in this function."
-    use_cv2 = max(max(image.shape), max(output_shape)) < 32767 if use_cv2 is None else use_cv2
+    if use_cv2 is None:
+        # OpenCV is optional and limited to images smaller than 32767 pixels in each dimension
+        use_cv2 = max(max(image.shape), max(output_shape)) < 32767 and find_spec("cv2") is not None
     if not silent:
         logger.trace(f"Using {'cv2' if use_cv2 else 'scipy'} for warping.")
     if use_cv2:
+        import cv2
+
         image = _convert_array_to_numpy(image)
         image = ensure_opencv_dtype(image)
         warped = cv2.warpAffine(
@@ -114,7 +119,9 @@ def warp_channels(
     return warped
 
 
-def warp_coordinates_from_image(image: np.ndarray, affine_inv: np.ndarray, output_shape: tuple[int, int]) -> np.ndarray:
+def warp_coordinates_from_image(
+    image: np.ndarray, affine_inv: np.ndarray, output_shape: tuple[int, int]
+) -> tuple[np.ndarray, np.ndarray]:
     """Warp coordinates from an image."""
     tmp = warp_channel(image, affine_inv, output_shape=output_shape)
     y, x = np.where(tmp > 0)

@@ -9,23 +9,28 @@ from math import ceil, floor
 from pathlib import Path
 from random import shuffle
 
-import numba as nb
 import numpy as np
 from natsort import natsorted
 
 # for compatibility with previous versions of koyo
-from koyo.system import (
-    get_module_path,
-    get_version,
-    is_above_version,
-    is_installed,
-    reraise_exception_if_debug,
-    running_as_pyinstaller_app,
-)
 from koyo.typing import PathLike, SimpleArrayLike
 
 if ty.TYPE_CHECKING:
+    import pandas as pd
+
     from koyo.fig_mixin import PptxPdfWrapper
+
+
+_NUMBA_FUNCTIONS = ("filter_array", "find_nearest_index_array", "find_nearest_index_single", "get_array_mask_")
+
+
+def __getattr__(name: str) -> ty.Any:
+    """Lazily load numba-jitted helpers so that importing this module doesn't import numba."""
+    if name in _NUMBA_FUNCTIONS:
+        from koyo import _utilities_numba
+
+        return getattr(_utilities_numba, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def human_readable_byte_size(n_bytes: int) -> str:
@@ -120,8 +125,9 @@ def clean_path(path: str) -> Path:
     path = str(path)
     # replace Windows backslashes with forward slashes
     path = path.replace("\\", "/")
-    # replace MacOS network path with local path and resolve the network drive if it exists
-    path = path.replace("/Volumes/", "/")
+    # replace MacOS network path with local path, but only if the path does not exist as-is
+    if "/Volumes/" in path and not Path(path).exists():
+        path = path.replace("/Volumes/", "/")
     return Path(path)
 
 
@@ -136,7 +142,7 @@ def get_delimiter(suffix: str) -> str:
 
 
 def ensure_list(array: np.ndarray | list[np.ndarray]) -> list[np.ndarray]:
-    """Ensure that the input is a list."""
+    """Wrap a single ndarray in a list. Other inputs, including tuples, are returned unchanged."""
     if isinstance(array, np.ndarray):
         return [array]
     return array
@@ -256,52 +262,24 @@ def find_nearest_index(data: SimpleArrayLike, value: float | np.ndarray | Iterab
     """
     data = np.asarray(data)
     if isinstance(value, Iterable):
-        return np.asarray([np.argmin(np.abs(data - _value)) for _value in value], dtype=np.int64)
-    return np.argmin(np.abs(data - value))
-
-
-@nb.njit()
-def find_nearest_index_array(data: SimpleArrayLike, value: np.ndarray | ty.Iterable) -> np.ndarray:
-    """Find nearest index of asked value.
-
-    Parameters
-    ----------
-    data : ArrayLike
-        input array (e.g. m/z values)
-    value : Union[int, float, np.ndarray]
-        asked value
-
-    Returns
-    -------
-    index :
-        index value
-    """
-    data = np.asarray(data)
-    return np.asarray([np.argmin(np.abs(data - _value)) for _value in value])
-
-
-@nb.njit()
-def find_nearest_index_single(data: SimpleArrayLike, value: float):
-    """Find nearest index of asked value.
-
-    Parameters
-    ----------
-    data : ArrayLike
-        input array (e.g. m/z values)
-    value : Union[int, float, np.ndarray]
-        asked value
-
-    Returns
-    -------
-    index :
-        index value
-    """
+        values = np.asarray(list(value) if not isinstance(value, np.ndarray) else value).ravel()
+        result = np.empty(values.size, dtype=np.int64)
+        if values.size == 0:
+            return result
+        # vectorized in chunks to bound memory (~8M elements per chunk); same result as argmin per value
+        chunk_size = max(1, 8_000_000 // max(data.size, 1))
+        for start in range(0, values.size, chunk_size):
+            chunk = values[start : start + chunk_size]
+            result[start : start + chunk.size] = np.argmin(np.abs(data[None, :] - chunk[:, None]), axis=1)
+        return result
     return np.argmin(np.abs(data - value))
 
 
 def find_nearest_value_single(data: SimpleArrayLike, value: float) -> int | float:
     """Find nearest value."""
     data = np.asarray(data)
+    from koyo._utilities_numba import find_nearest_index_single
+
     idx = find_nearest_index_single(data, value)
     return data[idx]
 
@@ -320,9 +298,11 @@ def find_nearest_index_batch(array: SimpleArrayLike, values: SimpleArrayLike, so
     if not array.size or not values.size:
         return np.array([], dtype=np.int64)
 
-    # get insert positions
+    # get insert positions (comparisons below must be done in sorted order)
     sorter = np.argsort(array) if sort else None
-    indices = np.searchsorted(array, values, side="left", sorter=sorter)
+    if sorter is not None:
+        array = array[sorter]
+    indices = np.searchsorted(array, values, side="left")
 
     # find indexes where previous index is closer
     prev_idx_is_less = (indices == len(array)) | (
@@ -346,9 +326,9 @@ def get_pixels_within_radius(grid: np.ndarray, x: int, y: int, radius: int = 0) 
     """Get pixels within radius."""
     # Get the bounds for the sub-grid (handling edge cases)
     y_min = max(0, y - radius)
-    y_max = min(grid.shape[1], y + radius + 1)
+    y_max = min(grid.shape[0], y + radius + 1)
     x_min = max(0, x - radius)
-    x_max = min(grid.shape[0], x + radius + 1)
+    x_max = min(grid.shape[1], x + radius + 1)
 
     # Extract the sub-grid around the point (y, x)
     sub_grid = grid[y_min:y_max, x_min:x_max].flatten()
@@ -481,10 +461,10 @@ def rescale(
         old_min = min([min_val, old_min])
     if max_val is not None:
         old_max = max([max_val, old_max])
-    # check if dtype is integer and new dtype is float, in this case, you can cast it
-    if np.issubdtype(dtype, np.integer) and np.issubdtype(values.dtype, np.floating):
-        values = values.astype(dtype)
-    # actually rescale
+    # constant input - avoid division by zero
+    if old_max == old_min:
+        return np.full(values.shape, new_min).astype(dtype)
+    # actually rescale (cast to the requested dtype only at the end)
     new_values = ((values - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
     return new_values.astype(dtype)
 
@@ -515,15 +495,15 @@ def rescale_value(
         if True, the new value will be clipped to fit inside of the new maximum range
     """
     if clip:
-        if value < old_min:
-            value = old_min
-        if value > old_max:
-            value = old_max
+        value = max(value, old_min)
+        value = min(value, old_max)
+    if old_max == old_min:
+        return new_min
     return ((value - old_min) / (old_max - old_min)) * (new_max - new_min) + new_min
 
 
 def chunks(item_list: ty.Iterable[ty.Any], n_items: int = 0, n_tasks: int = 0) -> ty.Generator:
-    """Yield successive n-sized chunks from `item_list`.
+    """Generate successive n-sized chunks from `item_list`.
 
     Parameters
     ----------
@@ -534,8 +514,8 @@ def chunks(item_list: ty.Iterable[ty.Any], n_items: int = 0, n_tasks: int = 0) -
     n_tasks : int
         number of tasks to be performed
 
-    Returns
-    -------
+    Yields
+    ------
     chunk : list
         list of items
     """
@@ -562,7 +542,7 @@ def random_chunks(item_list: ty.Iterable[ty.Any], n_items: int = 0, n_tasks: int
 
 
 def zip_chunks(item_list, n_items: int = 0, n_tasks: int = 0, *items):
-    """Yield successive n-sized chunks from `item_list`."""
+    """Yield tuples of chunks: chunks of `item_list` zipped with chunks of each extra `*items` sequence."""
     yield from zip(
         chunks(item_list, n_items=n_items, n_tasks=n_tasks),
         *[chunks(x, n_items=n_items, n_tasks=n_tasks) for x in items],
@@ -649,44 +629,6 @@ def get_array_mask(array: np.ndarray, min_val: float, max_val: float):
     return np.logical_and(array >= min_val, array <= max_val)
 
 
-@nb.njit(parallel=True)
-def get_array_mask_(array: np.ndarray, min_val: float, max_val: float) -> np.ndarray:
-    """Return mask for array."""
-    mask = np.empty(array.shape, dtype=np.bool_)
-    for i in nb.prange(array.size):
-        val = array[i]
-        mask[i] = min_val <= val <= max_val
-    return mask
-
-
-@nb.njit(parallel=True)
-def filter_array(
-    array: np.ndarray,
-    array_to_mask: np.ndarray,
-    min_val: float,
-    max_val: float,
-) -> np.ndarray:
-    """Filter array based on another array."""
-    # First, count how many elements pass the condition
-    count = 0
-    for i in nb.prange(array_to_mask.size):
-        val = array_to_mask[i]
-        if min_val <= val <= max_val:
-            count += 1
-
-    # Allocate an output array of the required size
-    result = np.zeros(count, dtype=array.dtype)
-
-    # Second pass: fill the result with filtered values
-    idx = 0
-    for i in nb.prange(array_to_mask.size):
-        val = array_to_mask[i]
-        if min_val <= val <= max_val:
-            result[idx] = array[i]
-            idx += 1
-    return result
-
-
 def get_array_window(array: np.ndarray, min_val: float, max_val: float, *arrays: np.ndarray) -> list[np.ndarray]:
     """Get narrower view of array based on upper and lower limits.
 
@@ -701,20 +643,21 @@ def get_array_window(array: np.ndarray, min_val: float, max_val: float, *arrays:
     return _arrays
 
 
-def split_array(array: np.ndarray, chunk_size: int, axis=0):
-    """Split array according to chunk size."""
+def split_array(array: np.ndarray | pd.DataFrame, chunk_size: int, axis: int = 0) -> ty.Generator:
+    """Split numpy array or pandas DataFrame into chunks of `chunk_size` along `axis` (0 or 1)."""
     n = array.shape[axis]
     while True:
         if n <= chunk_size:
             yield array
             break
         else:
+            indexer = array.iloc if hasattr(array, "iloc") else array
             if axis == 0:
-                yield array.iloc[:chunk_size]
-                array = array.iloc[chunk_size:]
+                yield indexer[:chunk_size]
+                array = indexer[chunk_size:]
             else:
-                yield array[:, :chunk_size]
-                array = array[:, chunk_size:]
+                yield indexer[:, :chunk_size]
+                array = indexer[:, chunk_size:]
             n -= chunk_size
 
 
@@ -724,7 +667,12 @@ def _remove_duplicates_from_dict(data):
     if isinstance(data, list):
         # check if list of dictionaries
         if all(isinstance(d, dict) for d in data):
-            return [dict(t) for t in {tuple(d.items()) for d in data}]
+            # order-preserving and works with unhashable values (e.g. lists inside the dictionaries)
+            unique: list[dict] = []
+            for d in data:
+                if d not in unique:
+                    unique.append(d)
+            return unique
     return data
 
 
@@ -756,7 +704,7 @@ class Cycler:
         return self._c[self._index]
 
     def current(self):
-        """Get current index."""
+        """Return the current item."""
         return self._c[self._index]
 
     def set_current(self, index: int):
@@ -794,7 +742,7 @@ def get_close_matches_case_msg(word: str, possibilities: ty.Iterable[str]) -> st
 
 
 def calculate_array_size(a, as_str: bool = True):
-    """Calculate the size of an array in Mb."""
+    """Calculate the size of an array and return it as a formatted string (or as bytes if `as_str=False`)."""
     if not hasattr(a, "nbytes"):
         try:
             n_bytes = a.data.nbytes + a.indptr_col.nbytes + a.indices_row.nbytes
@@ -846,13 +794,13 @@ def get_distributed_list(
     total: int
         total number of frames available
     n_frames_or_proportion : int / float
-        number of frames or proportion of frames
+        number of frames (an integer is always a number of frames) or proportion of frames (a float <= 1.0)
     framelist : Optional[List, np.ndarray]
         list of frames to use for sub-sampling
     as_index : bool, optional
         if `True`, the distributed framelist will consist of indices rather than actual frame IDs
     trim : bool, optional
-        if `True`, the distributed framelist will be trimmed to the maximum available frame
+        if `True`, the distributed framelist will be trimmed to `n_frames_or_proportion` frames
     offset : int
         Offset  to apply to the start of the frame list.
 
@@ -865,13 +813,14 @@ def get_distributed_list(
     start += offset
     end = total
 
-    # check whether n_frames is not a fraction
-    if n_frames_or_proportion <= 1.0:
+    # floats <= 1.0 are treated as a proportion (integers are always a number of frames)
+    if not isinstance(n_frames_or_proportion, (int, np.integer)) and n_frames_or_proportion <= 1.0:
         n_frames_or_proportion = total * n_frames_or_proportion
+    if n_frames_or_proportion <= 0 or end <= 0:
+        return np.array([], dtype=np.int32)
 
     # make sure the number of requested frames does not exceed the maximum available frames
-    if n_frames_or_proportion > end:
-        n_frames_or_proportion = end
+    n_frames_or_proportion = min(n_frames_or_proportion, end)
 
     # compute divider
     divider = floor(end / n_frames_or_proportion)
@@ -884,7 +833,7 @@ def get_distributed_list(
         framelist = np.asarray(framelist)
         distributed = framelist[distributed]
     if trim and len(distributed) > n_frames_or_proportion:
-        distributed = distributed[:n_frames_or_proportion]
+        distributed = distributed[: int(n_frames_or_proportion)]
     return distributed
 
 
@@ -1034,7 +983,7 @@ def prettify_name(mz_min: float, mz_max: float, prefix: str = "", suffix: str = 
 
 
 def prettify_ion_name(mz_min: float, mz_max: float):
-    """Prettify name."""
+    """Prettify an ion name from an m/z range, e.g. with a " Da" suffix."""
     return prettify_name(mz_min, mz_max, suffix=" Da", n_decimals=3)
 
 
@@ -1065,8 +1014,13 @@ def bunch_integers(rois: list[int]) -> str:
     return ",".join(parts)
 
 
-def reverse_mapping(mapping: dict[str, list[Path]], return_both: bool = False) -> dict[str, dict[str, Path]]:
-    """Reverse mapping."""
+def reverse_mapping(
+    mapping: dict[str, list[Path]], return_both: bool = False
+) -> dict[str, dict[str, Path]] | tuple[dict[str, dict[str, Path]], dict[str, list[Path]]]:
+    """Reverse a mapping of {dataset: [paths]} into {basename: {dataset: path}}.
+
+    If `return_both` is True, a tuple ``(reversed, original)`` is returned instead.
+    """
     new_mapping: dict[str, dict[str, str]] = {}
     if mapping is None:
         if return_both:

@@ -1,7 +1,8 @@
 """TOML utility functions."""
 
+from __future__ import annotations
+
 import os
-import typing as ty
 
 import toml
 
@@ -10,7 +11,7 @@ from koyo.utilities import _remove_duplicates_from_dict
 
 
 def read_toml_data(filepath: PathLike):
-    """Read TOML data and metadata.
+    """Read TOML data.
 
     Parameters
     ----------
@@ -22,11 +23,11 @@ def read_toml_data(filepath: PathLike):
     data : dict
         dictionary with TOML data
     """
-    with open(filepath) as f_ptr:
+    with open(filepath, encoding="utf-8") as f_ptr:
         return toml.load(f_ptr)
 
 
-def write_toml_data(filepath: PathLike, obj: ty.Dict, check_existing: bool = False):
+def write_toml_data(filepath: PathLike, obj: dict, check_existing: bool = False):
     """Write data to TOML file.
 
     Parameters
@@ -36,13 +37,13 @@ def write_toml_data(filepath: PathLike, obj: ty.Dict, check_existing: bool = Fal
     obj : dict
         object containing data
     check_existing : bool, optional
-        if True, existing JSON file data will be merged with the new data object
+        if True, existing TOML file data will be merged with the new data object
     """
     if not check_existing or not os.path.exists(filepath):
-        with open(filepath, "w") as f_ptr:
+        with open(filepath, "w", encoding="utf-8") as f_ptr:
             toml.dump(obj, f_ptr)
     else:
-        with open(filepath, "r+") as f_ptr:
+        with open(filepath, "r+", encoding="utf-8") as f_ptr:
             try:
                 data = toml.load(f_ptr)
             except toml.decoder.TomlDecodeError:

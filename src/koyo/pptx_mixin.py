@@ -190,6 +190,7 @@ class PPTXMixin:
             yield pptx
         except Exception as exc:
             logger.exception(f"Error exporting to PPTX: {exc}")
+            raise
         finally:
             if self.as_pptx:
                 self._save_pptx(pptx, filename, reset)  # type: ignore[arg-type]

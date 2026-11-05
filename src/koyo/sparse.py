@@ -1,5 +1,5 @@
 import numpy as np
-import scipy.sparse as sparse
+from scipy import sparse
 
 
 def get_index_dtype(arrays=(), maxval=None, check_contents=False):
@@ -40,7 +40,7 @@ def get_index_dtype(arrays=(), maxval=None, check_contents=False):
                 if arr.size == 0:
                     # a bigger type not needed
                     continue
-                elif np.issubdtype(arr.dtype, np.integer):
+                if np.issubdtype(arr.dtype, np.integer):
                     maxval = arr.max()
                     minval = arr.min()
                     if minval >= int32min and maxval <= int32max:
@@ -86,7 +86,7 @@ def check_ellipsis(index):
     """Process indices with Ellipsis. Returns modified index."""
     if index is Ellipsis:
         return (slice(None), slice(None))
-    elif isinstance(index, tuple):
+    if isinstance(index, tuple):
         # Find first ellipsis
         for j, v in enumerate(index):
             if v is Ellipsis:
@@ -100,14 +100,12 @@ def check_ellipsis(index):
             # Shortcuts
             if len(index) == 1:
                 return (slice(None), slice(None))
-            elif len(index) == 2:
+            if len(index) == 2:
                 if first_ellipsis == 0:
                     if index[1] is Ellipsis:
                         return (slice(None), slice(None))
-                    else:
-                        return (slice(None), index[1])
-                else:
-                    return (index[0], slice(None))
+                    return (slice(None), index[1])
+                return (index[0], slice(None))
 
             # General case
             tail = ()
@@ -136,7 +134,7 @@ def unpack_index(index):
 
 def extractor(indices, N, fmt="csr"):
     """
-    row = np.arange(500)
+    Row = np.arange(500)
     P = extractor(row, shape[0]).
     """
     indices = asindices(indices).copy()

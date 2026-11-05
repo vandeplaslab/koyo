@@ -95,6 +95,16 @@ def rgb_255_to_1(color: tuple | list | str, decimals: int = 3) -> list[float]:
     return list((color / 255).round(decimals))
 
 
+def _parse_hex(hex_str: str) -> list[int]:
+    """Parse ``#rgb``, ``#rgba``, ``#rrggbb`` or ``#rrggbbaa`` (leading ``#`` optional) into 0-255 channel values."""
+    hex_color = hex_str.lstrip("#")
+    if len(hex_color) in (3, 4):  # shorthand, e.g. #f00 -> #ff0000
+        hex_color = "".join(c * 2 for c in hex_color)
+    if len(hex_color) not in (6, 8):
+        raise ValueError(f"Invalid hex color: {hex_str!r}")
+    return [int(hex_color[i : i + 2], 16) for i in range(0, len(hex_color), 2)]
+
+
 def hex_to_rgb_1(
     hex_str: str,
     decimals: int = 3,
@@ -116,13 +126,8 @@ def hex_to_rgb_1(
     list of float
         RGB (or RGBA) channel values in ``[0, 1]``.
     """
-    hex_color = hex_str.lstrip("#")
-    channel_width = len(hex_color) // 3
-    rgb = [
-        round(int(hex_color[i : i + channel_width], 16) / 255.0, decimals)
-        for i in range(0, len(hex_color), channel_width)
-    ]
-    if with_alpha:
+    rgb = [round(value / 255.0, decimals) for value in _parse_hex(hex_str)]
+    if with_alpha and len(rgb) == 3:
         return [*rgb, 1.0]
     return rgb
 
@@ -140,9 +145,7 @@ def hex_to_rgb_255(hex_str: str) -> list[int]:
     list of int
         RGB channel values, each in ``[0, 255]``.
     """
-    hex_color = hex_str.lstrip("#")
-    channel_width = len(hex_color) // 3
-    return [int(hex_color[i : i + channel_width], 16) for i in range(0, len(hex_color), channel_width)]
+    return _parse_hex(hex_str)
 
 
 def rgb_to_hex(colors: tuple | list, multiplier: int = 255) -> str:
@@ -194,10 +197,9 @@ def hex_to_rgb(
         If ``alpha`` equals ``1``, since this function expects alpha in
         the ``[0, 255]`` range.
     """
-    hex_color = hex_str.lstrip("#")
-    hex_len = len(hex_color)
-    rgb = [int(hex_color[i : i + hex_len // 3], 16) for i in range(0, hex_len, hex_len // 3)]
+    rgb = _parse_hex(hex_str)
     if alpha is not None:
+        rgb = rgb[:3]
         if alpha == 1:
             warnings.warn(
                 "The provided alpha value is equal to 1 — this function accepts values in the 0-255 range.",
@@ -278,9 +280,10 @@ def get_next_color(n: int, other_colors: list[str] | None = None) -> str:
 def generate_distinct_colors(starting_colors: list[str], n_colors: int) -> list[str]:
     """Generate a list of distinct hex colors, extending a predefined palette as needed.
 
-    Converts the starting colors to HLS space, then fills any remaining
-    slots by distributing new hues evenly across the color wheel at fixed
-    saturation and lightness.
+    The starting colors are returned unchanged at the beginning of the list. Any remaining
+    slots are filled with new hues distributed evenly across the color wheel at fixed
+    saturation and lightness. The starting colors are converted to HLS, but these values are not
+    used in the output.
 
     Parameters
     ----------
@@ -292,7 +295,7 @@ def generate_distinct_colors(starting_colors: list[str], n_colors: int) -> list[
     Returns
     -------
     list of str
-        Hex color strings of length ``n_colors``.
+        Hex color strings of length ``n_colors`` (truncated if ``starting_colors`` is longer).
     """
 
     def hls_to_hex(hue: float, saturation: float, lightness: float) -> str:
@@ -431,12 +434,12 @@ def find_text_color(
     empirically for option 0.
     """
     coef_options = [
-        np.array((0.241, 0.691, 0.068, 0)),
-        np.array((0.299, 0.587, 0.114, 0)),
+        np.array((0.241, 0.691, 0.068)),
+        np.array((0.299, 0.587, 0.114)),
     ]
 
     coefs = coef_options[coef_choice]
-    rgb_255 = np.array(base_color) * 255
+    rgb_255 = np.asarray(base_color, dtype=float)[:3] * 255
     brightness = np.sqrt(np.dot(coefs, rgb_255**2))
 
     if brightness > 130:
@@ -472,7 +475,7 @@ def make_listed_colormap(
     if is_vispy:
         from vispy.color.colormap import Colormap
 
-        colors.insert(0, "#FFFFFF")
+        colors = ["#FFFFFF", *colors]  # don't mutate the caller's list
 
     colormap = LinearSegmentedColormap.from_list("colormap", colors, len(colors))
     if is_vispy:
@@ -512,7 +515,7 @@ def _check_color_dim(val: np.ndarray) -> np.ndarray:
         )
 
     if val.shape[1] == 3:
-        val = np.column_stack([val, np.float32(1.0)])
+        val = np.column_stack([val, np.ones(val.shape[0], dtype=np.float32)])
     return val
 
 
@@ -559,8 +562,9 @@ def transform_color(color: ColorType) -> np.ndarray | None:
     Returns
     -------
     np.ndarray or None
-        Array of shape ``(1, 4)`` with RGBA values in ``[0, 1]``, or
-        ``None`` if the input type is not recognized.
+        RGBA values in ``[0, 1]``. Hex and ``rgb()``/``rgba()`` strings return shape ``(1, 4)``.
+        Lists/tuples return shape ``(N, 4)`` (``N`` rows; a single color gives ``(1, 4)``).
+        A 1-D array returns shape ``(4,)``. ``None`` is returned if the input type is not recognized.
 
     Raises
     ------
@@ -577,7 +581,12 @@ def transform_color(color: ColorType) -> np.ndarray | None:
             start = color.find("(")
             if start == -1 or not color.endswith(")"):
                 raise ValueError(f"Invalid color string: {color!r}")
-            return np.atleast_2d(literal_eval(color[start:]))
+            values = [float(v) for v in literal_eval(color[start:])]
+            rgb = np.asarray(values[:3])
+            if rgb.max() > 1:  # CSS-style rgb(255, 0, 0)
+                rgb = rgb / 255.0
+            alpha = values[3] if len(values) == 4 else 1.0
+            return np.atleast_2d([*rgb, alpha])
         raise ValueError(f"Invalid color string: {color!r}")
 
     if isinstance(color, (list, tuple)):

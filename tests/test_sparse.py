@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
-from koyo.sparse import get_array_statistics
 from scipy import sparse
+
+from koyo.sparse import get_array_statistics
 
 
 @pytest.mark.parametrize(

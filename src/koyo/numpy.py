@@ -9,9 +9,9 @@ def nanquantile_along_axis(data: np.ndarray, q1: float, q2: float, axis: int = 0
     return np.vstack(_nanquantile_along_axis(data, q1, q2, axis == 0)).T
 
 
-@nb.njit(fastmath=True, nogil=True, cache=True)
+@nb.njit(nogil=True, cache=True)  # no fastmath - it assumes no NaNs and breaks nanquantile
 def _nanquantile_along_axis(data: np.ndarray, q1: float, q2: float, transpose: bool = True):
-    """Numba quantile."""
+    """Numba nan-quantile (`q1`, `q2`) of each column (`transpose=True`) or row."""
     return [np.nanquantile(d, (q1, q2)) for d in (data.T if transpose else data)]
 
 

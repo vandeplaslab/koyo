@@ -13,7 +13,7 @@ from functools import partial, wraps
 
 def retry(
     func: ty.Callable | None = None,
-    exception: Exception = Exception,
+    exception: type[BaseException] | tuple[type[BaseException], ...] = Exception,
     n_tries: int = 5,
     delay: float = 5,
     backoff: int = 1,
@@ -39,7 +39,8 @@ def retry(
     Returns
     -------
     typing.Callable
-        Decorated callable that calls itself when exception(s) occur.
+        Decorated callable. When exception(s) occur, its wrapper retries the call in a loop (it does not
+        call itself recursively).
 
     Notes
     -----
@@ -97,13 +98,14 @@ def deprecated(func: ty.Callable, context: str = "") -> ty.Callable:
 
     @functools.wraps(func)
     def new_func(*args, **kwargs):
-        warnings.simplefilter("always", DeprecationWarning)  # turn off filter
-        warnings.warn(
-            f"Call to deprecated function {func.__name__}. {context}",
-            category=DeprecationWarning,
-            stacklevel=2,
-        )
-        warnings.simplefilter("default", DeprecationWarning)  # reset filter
+        # always show the warning, but restore the user's warning filters afterwards
+        with warnings.catch_warnings():
+            warnings.simplefilter("always", DeprecationWarning)
+            warnings.warn(
+                f"Call to deprecated function {func.__name__}. {context}",
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
         return func(*args, **kwargs)
 
     return new_func

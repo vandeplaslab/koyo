@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sys
 import typing as ty
+from contextlib import contextmanager
 from functools import partial
 from pathlib import Path
 
@@ -27,8 +28,9 @@ COLOR_LOG_FMT = "<green>[LEVEL_FORMAT]</green><cyan>[TIME_FORMAT]</cyan><red>[{p
 ).replace("LEVEL_FORMAT", LEVEL_FORMAT)
 
 
-def timed_call(log_func: ty.Callable, message: str, *args: ty.Any, **kwargs: ty.Any) -> ty.Any:
-    """Time a function call."""
+@contextmanager
+def timed_call(log_func: ty.Callable, message: str, *args: ty.Any, **kwargs: ty.Any) -> ty.Generator[None, None, None]:
+    """Context manager that times the enclosed block and logs `message` with the elapsed time appended."""
     from koyo.timer import MeasureTimer
 
     with MeasureTimer() as timer:
@@ -61,13 +63,29 @@ def set_logger(
     logger: Logger | None = None,
     enable: tuple[str, ...] = ("koyo",),
 ):
-    """Setup logger."""
+    """Set up the loguru logger (console and optional file sink).
+
+    Parameters
+    ----------
+    verbosity : int
+        Verbosity level, mapped to a loguru level as ``verbosity * 10``:
+        0=TRACE, 1=DEBUG, 2=INFO, 3=WARNING, 4=ERROR, 5=CRITICAL. Callers usually invert
+        their CLI flag count to get this value.
+    no_color : bool
+        If True, disable colored output.
+    log : PathLike, optional
+        Path to a log file. If given, an additional file sink is added at the same level.
+    logger : Logger, optional
+        Loguru logger to configure. Defaults to the global loguru logger.
+    enable : tuple of str, optional
+        Module names to enable in the logger, by default ``("koyo",)``.
+    """
     if logger is None:
         from loguru import logger
 
     level = verbosity * 10
     level, fmt, colorize, enqueue = get_loguru_config(level, no_color=no_color)
-    set_loguru_env(fmt, level, colorize, enqueue)
+    set_loguru_env(fmt, level, enqueue, colorize)
     set_loguru_log(level=level.upper(), no_color=no_color, logger=logger)
     for enable_ in enable:
         logger.enable(enable_)
@@ -109,7 +127,7 @@ def set_loguru_env(fmt: str, level: str, enqueue: bool, colorize: bool) -> None:
     os.environ["LOGURU_AUTOINIT"] = "0"
     os.environ["LOGURU_FORMAT"] = str(fmt)
     os.environ["LOGURU_LEVEL"] = str(level)
-    os.environ["LOGURU_ENQEUE"] = str(enqueue)
+    os.environ["LOGURU_ENQUEUE"] = str(enqueue)
     os.environ["LOGURU_COLORIZE"] = str(colorize)
 
 
@@ -134,10 +152,10 @@ def get_loguru_level(level: int | str) -> str:
 
 
 def get_loguru_env() -> tuple[str, str, bool, bool]:
-    """Get logoru environment variables."""
-    colorize = bool(os.environ.get("LOGURU_COLORIZE", "True"))
+    """Get loguru environment variables as ``(fmt, level, enqueue, colorize)``."""
+    colorize = os.environ.get("LOGURU_COLORIZE", "True").lower() in ("true", "1", "yes")
     level = os.environ.get("LOGURU_LEVEL", "info")
-    enqueue = bool(os.environ.get("LOGURU_ENQEUE", "True"))
+    enqueue = os.environ.get("LOGURU_ENQUEUE", "True").lower() in ("true", "1", "yes")
     fmt = os.environ.get("LOGURU_FORMAT", LOG_FMT if not colorize else COLOR_LOG_FMT)
     return fmt, level, enqueue, colorize
 
@@ -149,7 +167,7 @@ def get_loguru_config(
     fmt: str = LOG_FMT,
     color_fmt: str = COLOR_LOG_FMT,
 ) -> tuple[str, str, bool, bool]:
-    """Return level."""
+    """Return the loguru configuration as ``(level, fmt, colorize, enqueue)``. The level is upper-cased."""
     level = get_loguru_level(level)
     colorize = not no_color
     fmt = fmt if no_color else color_fmt
@@ -168,7 +186,10 @@ def set_loguru_log(
     remove: bool = True,
     logger: Logger | None = None,
 ) -> int:
-    """Set loguru formatting."""
+    """Add a loguru sink with the given level and format and return its sink id.
+
+    If `remove` is True, all existing loguru sinks are removed first.
+    """
     if logger is None:
         from loguru import logger
     if logger is None:

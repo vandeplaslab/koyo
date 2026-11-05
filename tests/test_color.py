@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 import pytest
+
 from koyo.color import (
     _check_color_dim,
     colormap_to_hex,
@@ -290,3 +291,25 @@ def test_find_text_color_coef_options():
     for coef in (0, 1):
         assert find_text_color([0.0, 0.0, 0.0, 1.0], coef_choice=coef) == "white"
         assert find_text_color([1.0, 1.0, 1.0, 1.0], coef_choice=coef) == "black"
+
+
+def test_hex_shorthand_and_alpha_parsing():
+    from koyo.color import hex_to_rgb_1, hex_to_rgb_255, transform_color
+
+    assert hex_to_rgb_255("#f00") == [255, 0, 0]
+    assert hex_to_rgb_1("#ff000080") == [1.0, 0.0, 0.0, 0.502]
+    assert transform_color("#ff0000ff").shape == (1, 4)
+    np.testing.assert_allclose(transform_color("rgb(255, 0, 0)"), [[1.0, 0.0, 0.0, 1.0]])
+
+
+def test_find_text_color_accepts_rgb():
+    from koyo.color import find_text_color
+
+    assert find_text_color((1, 1, 1)) == "black"
+    assert find_text_color((0, 0, 0, 1)) == "white"
+
+
+def test_rgbs_to_hex_multiple():
+    from koyo.color import rgbs_to_hex
+
+    assert list(rgbs_to_hex([[1, 0, 0], [0, 1, 0]])) == ["#ff0000ff", "#00ff00ff"]
