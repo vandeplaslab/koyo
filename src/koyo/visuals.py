@@ -228,24 +228,25 @@ def compute_divider(value: float) -> int:
 def convert_divider_to_str(value: float, exp_value: int) -> str:
     """Convert divider to string."""
     value = float(value)
-    if exp_value in [0, 1, 2]:
-        if abs(value) < 0.0001:
-            return f"{value:.6G}"
-        if abs(value) < 0.01:
-            return f"{value:.4G}"
+    exp_value = np.round(np.log10(abs(value)))
+    if np.isinf(exp_value):
+        exp_value = 1
+    if exp_value < 3:
         if abs(value) <= 1:
             return f"{value:.2G}"
-        if abs(value) <= 1000:
+        if abs(value) <= 1e3:
             if value.is_integer():
                 return f"{value:.0F}"
             return f"{value:.1F}"
         return None
-    if exp_value in [3, 4, 5]:
-        return f"{value / 1000:.1f}k"
-    if exp_value in [6, 7, 8]:
-        return f"{value / 1000000:.1f}M"
-    if exp_value in [9, 10, 11, 12]:
-        return f"{value / 1000000000:.1f}B"
+    if exp_value < 6:
+        return f"{value / 1e3:.1f}k"
+    if exp_value < 9:
+        return f"{value / 1e6:.1f}M"
+    if exp_value < 12:
+        return f"{value / 1e9:.1f}B"
+    if exp_value < 16:
+        return f"{value / 1e12:.1f}T"
     return None
 
 
