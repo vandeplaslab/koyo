@@ -228,6 +228,8 @@ def compute_divider(value: float) -> int:
 def convert_divider_to_str(value: float, exp_value: int) -> str:
     """Convert divider to string."""
     value = float(value)
+    if value == 0:
+        return f"{value:.2G}"
     exp_value = np.round(np.log10(abs(value)))
     if np.isinf(exp_value):
         exp_value = 1

@@ -137,6 +137,8 @@ def test_compute_divider(value, expected):
 @pytest.mark.parametrize(
     ("value", "exp_value", "expected"),
     [
+        (0.0, 1, "0"),
+        (-0.0, 1, "-0"),
         (0.005, 0, "0.005"),
         (1500, 3, "1.5k"),
         (2_000_000, 6, "2.0M"),
